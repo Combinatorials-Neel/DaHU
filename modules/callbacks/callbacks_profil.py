@@ -185,7 +185,7 @@ def callbacks_profil(app):
         if results_dict:
             fig = profil_plot_measured_heights_from_dict(fig, results_dict)
 
-        fig.update_layout(plot_layout(title=""))
+        fig.update_layout(plot_layout(title=f"x = {target_x}, y = {target_y}"),)
 
         return fig
 

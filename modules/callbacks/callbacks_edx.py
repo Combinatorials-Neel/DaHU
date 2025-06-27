@@ -154,6 +154,8 @@ def callbacks_edx(app):
 
         fig = edx_plot_measurement_from_dataframe(measurement_df)
 
+        fig.update_layout(plot_layout(title=f"EDX spectrum <br>x = {target_x}, y = {target_y}"), )
+
         return fig
     
     
