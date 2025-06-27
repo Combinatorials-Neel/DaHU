@@ -76,7 +76,7 @@ def get_channels(xml_root):
     channels = []
 
     for elm in xml_root.iter("Channels"):
-        channels = [int(counts) for counts in elm.text.split(",")]
+        channels = [int(float(counts)) for counts in elm.text.split(",")]
 
     return channels
 

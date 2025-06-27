@@ -39,6 +39,7 @@ def callbacks_profil(app):
 
         return dataset_list, dataset_list[0]
 
+
     # Callback to check if HDF5 has results
     @app.callback(
         Output("profil_text_box", "children", allow_duplicate=True),
@@ -225,15 +226,11 @@ def callbacks_profil(app):
             if fit_mode == "Manual":
                 with h5py.File(hdf5_path, "a") as hdf5_file:
                     profil_group = hdf5_file[selected_dataset]
-                    position_group = get_target_position_group(
-                        profil_group, target_position[0], target_position[1]
-                    )
-                    results_group = safe_create_new_subgroup(
-                        position_group, new_subgroup_name="results"
-                    )
-                    results_group["measured_height"] = (
-                        nb_steps  # nb_steps input reused for manual height input
-                    )
+                    position_group = get_target_position_group(profil_group, target_position[0], target_position[1])
+                    results_group = safe_create_new_subgroup(position_group, new_subgroup_name="results")
+                    if "measured_height" in results_group:
+                        del results_group["measured_height"]
+                    results_group["measured_height"] = nb_steps #nb_steps input reused for manual height input
                     results_group["measured_height"].attrs["units"] = "nm"
                 return f"Manually assigned height to position {target_position}"
 
@@ -264,6 +261,7 @@ def callbacks_profil(app):
                 position_group.attrs["ignored"] = False
                 return f"{target_x}, {target_y} ignore set to False"
 
+
     # Callback for fit modes
     @app.callback(
         Output("profil_fit_inputs", "children"),
@@ -289,12 +287,8 @@ def callbacks_profil(app):
             ]
         else:
             new_children = [
-                dcc.Input(
-                    id="profil_fit_nb_steps",
-                    className="long-item",
-                    type="number",
-                    placeholder="Height",
-                    value=None,
-                ),
+                dcc.Input(id="profil_fit_nb_steps", className="long-item", type="number", placeholder="Height", value=None),
+                dcc.Input(id="profil_fit_x0", className="long-item", type="number", placeholder="First step position",
+                          value=None, style = {'display': 'none'})
             ]
         return new_children
