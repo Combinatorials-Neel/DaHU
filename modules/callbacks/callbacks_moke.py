@@ -66,8 +66,9 @@ def callbacks_moke(app, children_moke):
             moke_df = moke_make_results_dataframe_from_hdf5(moke_group)
 
             if heatmap_select is not None and selected_dataset is not None:
-                plot_title = f"{heatmap_select} MOKE map <br>{selected_dataset}"
-                colorbar_title = f"(T)"
+                name, unit = split_name_and_unit(heatmap_select)
+                plot_title = f"{name} MOKE map <br>{selected_dataset}"
+                colorbar_title = f"{unit}"
             else:
                 plot_title = ""
                 colorbar_title = ""

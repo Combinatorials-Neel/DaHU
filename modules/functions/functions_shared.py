@@ -520,3 +520,9 @@ def convert_bytes(target):
         return float(target)
     except ValueError:
         return target.decode("utf-8")
+
+def split_name_and_unit(name_str):
+    split = name_str.split("_")
+    name = "_".join(split[:-1])
+    unit = split[-1]
+    return name, unit
