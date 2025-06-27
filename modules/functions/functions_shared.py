@@ -284,7 +284,18 @@ def plot_layout(title="", showlegend=False):
     Returns:
         go.Layout(): layout object that can be passed to a figure
     """
-    layout = go.Layout(height=750, width=1100, title=title, showlegend=showlegend)
+    layout = go.Layout(height=750,
+                       width=1100,
+                       title=dict(text=title, font=dict(size=24)),
+                       xaxis=dict(
+                            tickfont=dict(size=18),
+                            title_font=dict(size=20),
+                        ),
+                        yaxis=dict(
+                            tickfont=dict(size=18),
+                            title_font=dict(size=20),
+                        ),
+                        showlegend=showlegend)
     return layout
 
 
@@ -520,3 +531,9 @@ def convert_bytes(target):
         return float(target)
     except ValueError:
         return target.decode("utf-8")
+
+def split_name_and_unit(name_str):
+    split = name_str.split("_")
+    name = "_".join(split[:-1])
+    unit = split[-1]
+    return name, unit

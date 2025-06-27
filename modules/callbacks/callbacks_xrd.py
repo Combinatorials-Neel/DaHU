@@ -121,19 +121,20 @@ def callbacks_xrd(app, children_xrd):
             if plot_select == "integrated":
                 measurement_df = xrd_get_integrated_from_hdf5(xrd_group, target_x, target_y)
                 fig = xrd_plot_integrated_from_dataframe(fig, measurement_df)
-                fig.update_layout(plot_layout(title=""))
+                fig.update_layout(plot_layout(title=f"Integrated spectrum <br>x = {target_x}, y = {target_y}"),)
 
             if plot_select == "fitted":
                 fits_df = xrd_get_fits_from_hdf5(xrd_group, target_x, target_y)
                 options = fits_df.columns[1:]
                 fig = xrd_plot_fits_from_dataframe(fig, fits_df, fits_select)
-                fig.update_layout(plot_layout(title="", showlegend=True))
+                fig.update_layout(plot_layout(title=f"Fit results <br>x = {target_x}, y = {target_y}"), showlegend=True)
 
             if plot_select == "image":
                 image_array = xrd_get_image_from_hdf5(xrd_group, target_x, target_y)
                 fig = xrd_plot_image_from_array(image_array, z_min, z_max)
                 z_min = np.round(fig.data[0].zmin, 0)
                 z_max = np.round(fig.data[0].zmax, 0)
+                fig.update_layout(title=f"Image <br>x = {target_x}, y = {target_y}"),
 
 
         # Prevent resetting of xrd_fits_select
@@ -141,9 +142,6 @@ def callbacks_xrd(app, children_xrd):
             fits_select_value = fits_select
         else:
             fits_select_value = options
-
-
-
 
         return fig, options, fits_select_value, z_min, z_max
         

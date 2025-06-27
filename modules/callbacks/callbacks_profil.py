@@ -93,13 +93,20 @@ def callbacks_profil(app):
             z_min = None
             z_max = None
 
+        masking = True
+        if edit_toggle in ["edit", "unfiltered"]:
+            masking = False
+
         with h5py.File(hdf5_path, "r") as hdf5_file:
             profil_group = hdf5_file[selected_dataset]
             profil_df = profil_make_results_dataframe_from_hdf5(profil_group)
 
-        masking = True
-        if edit_toggle in ["edit", "unfiltered"]:
-            masking = False
+        if heatmap_select is not None and selected_dataset is not None:
+            plot_title = f"Profilometry thickness map <br>{selected_dataset}"
+            colorbar_title = "Thickness <br>nm"
+        else:
+            plot_title = ""
+            colorbar_title = ""
 
         fig = make_heatmap_from_dataframe(
             profil_df,
@@ -178,7 +185,7 @@ def callbacks_profil(app):
         if results_dict:
             fig = profil_plot_measured_heights_from_dict(fig, results_dict)
 
-        fig.update_layout(plot_layout(title=""))
+        fig.update_layout(plot_layout(title=f"x = {target_x}, y = {target_y}"),)
 
         return fig
 

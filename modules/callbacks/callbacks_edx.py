@@ -85,41 +85,52 @@ def callbacks_edx(app):
         prevent_initial_call=True,
     )
     @check_conditions(edx_conditions, hdf5_path_index=5)
-    def edx_update_heatmap(heatmap_select, z_min, z_max, precision, edit_toggle, hdf5_path, selected_dataset):
+    def edx_update_heatmap(
+            heatmap_select,
+            z_min,
+            z_max,
+            precision,
+            edit_toggle,
+            hdf5_path,
+            selected_dataset):
+
+        if ctx.triggered_id in [
+            "edx_heatmap_select",
+            "edx_heatmap_edit",
+            "edx_heatmap_precision"
+        ]:
+            z_min = None
+            z_max = None
+
+        masking = True
+        if edit_toggle in ["edit", "unfiltered"]:
+            masking = False
+
         with h5py.File(hdf5_path, 'r') as hdf5_file:
             edx_group = hdf5_file[selected_dataset]
-
-            if ctx.triggered_id in ["edx_heatmap_select", "edx_heatmap_edit", "edx_heatmap_precision"]:
-                z_min = None
-                z_max = None
-
-            masking = True
-            if edit_toggle in ["edit", "unfiltered"]:
-                masking = False
-
             edx_df = edx_make_results_dataframe_from_hdf5(edx_group)
 
-            if heatmap_select is not None and selected_dataset is not None:
-                plot_title = f"EDX composition map <br>{selected_dataset}"
-                colorbar_title = f"{heatmap_select.replace('Element', '')} <br>at.%"
-            else:
-                plot_title = ""
-                colorbar_title = ""
+        if heatmap_select is not None and selected_dataset is not None:
+            plot_title = f"EDX composition map <br>{selected_dataset}"
+            colorbar_title = f"{heatmap_select.replace('Element', '')} <br>at.%"
+        else:
+            plot_title = ""
+            colorbar_title = ""
 
 
-            fig = make_heatmap_from_dataframe(edx_df, values=heatmap_select, z_min=z_min, z_max=z_max,
-                                              plot_title=plot_title, colorbar_title=colorbar_title,
-                                              precision=precision, masking=masking)
+        fig = make_heatmap_from_dataframe(edx_df, values=heatmap_select, z_min=z_min, z_max=z_max,
+                                          plot_title=plot_title, colorbar_title=colorbar_title,
+                                          precision=precision, masking=masking)
 
 
-            z_min = np.round(fig.data[0].zmin, precision)
-            z_max = np.round(fig.data[0].zmax, precision)
+        z_min = np.round(fig.data[0].zmin, precision)
+        z_max = np.round(fig.data[0].zmax, precision)
 
-            options = list(edx_df.columns[3:])
-            if "default" in options:
-                options.remove("default")
+        options = list(edx_df.columns[3:])
+        if "default" in options:
+            options.remove("default")
 
-            return fig, z_min, z_max, options
+        return fig, z_min, z_max, options
 
 
     # EDX plot
@@ -142,6 +153,8 @@ def callbacks_edx(app):
             measurement_df = edx_get_measurement_from_hdf5(edx_group, target_x, target_y)
 
         fig = edx_plot_measurement_from_dataframe(measurement_df)
+
+        fig.update_layout(plot_layout(title=f"EDX spectrum <br>x = {target_x}, y = {target_y}"), )
 
         return fig
     

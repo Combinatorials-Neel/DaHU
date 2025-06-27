@@ -66,8 +66,9 @@ def callbacks_moke(app, children_moke):
             moke_df = moke_make_results_dataframe_from_hdf5(moke_group)
 
             if heatmap_select is not None and selected_dataset is not None:
-                plot_title = f"{heatmap_select} MOKE map <br>{selected_dataset}"
-                colorbar_title = f"(T)"
+                name, unit = split_name_and_unit(heatmap_select)
+                plot_title = f"{name} MOKE map <br>{selected_dataset}"
+                colorbar_title = f"{unit}"
             else:
                 plot_title = ""
                 colorbar_title = ""
@@ -113,10 +114,13 @@ def callbacks_moke(app, children_moke):
 
         measurement_df = moke_treat_measurement_dataframe(measurement_df, treatment_dict)
 
+        title_tag = ""
         if plot_options == "oscilloscope":
             fig = moke_plot_oscilloscope_from_dataframe(fig, measurement_df)
+            title_tag = "oscilloscope plot"
         elif plot_options == "loop":
             fig = moke_plot_loop_from_dataframe(fig, measurement_df)
+            title_tag = "hysteresis loop"
         elif plot_options == "stored_result":
             fig = moke_plot_loop_from_dataframe(fig, measurement_df)
             if heatmap_select == "coercivity_m0":
@@ -129,7 +133,7 @@ def callbacks_moke(app, children_moke):
                 fig = moke_plot_vlines(fig, values=[results_dict["coercivity_dmdh"]["negative"],
                                               results_dict["coercivity_dmdh"]["positive"]])
 
-        fig.update_layout(plot_layout(title=''))
+        fig.update_layout(plot_layout(title=f"{title_tag} <br>x = {target_x}, y = {target_y}"),)
 
         return fig
 

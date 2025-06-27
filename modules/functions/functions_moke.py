@@ -363,7 +363,7 @@ def moke_batch_fit(moke_group, treatment_dict):
         intercepts = list(moke_fit_intercept(measurement_dataframe, treatment_dict))
 
         results_dict[f"{position}"] = {
-            "max_kerr_rotation":max_kerr_rotation,
+            "max_kerr_signal":max_kerr_rotation,
             "reflectivity":reflectivity,
             "coercivity_m0":{"negative":coercivity_m0[0], "positive":coercivity_m0[1], "mean":abs_mean(coercivity_m0)},
             "coercivity_dmdh":{"negative":coercivity_dmdh[0], "positive":coercivity_dmdh[1], "mean":abs_mean(coercivity_dmdh)},
@@ -390,21 +390,19 @@ def moke_make_results_dataframe_from_hdf5(moke_group):
                          "y_pos (mm)": instrument_group["y_pos"][()],
                          "ignored": position_group.attrs["ignored"]}
 
-            if results_group is None:
-                continue
+            if results_group is not None:
+                for value, value_group in results_group.items():
+                    if value == "parameters":
+                        continue
+                    if isinstance(value_group, h5py.Group):
+                        value_group = value_group["mean"]
 
-            for value, value_group in results_group.items():
-                if "units" in value_group.attrs:
-                    units = value_group.attrs["units"]
-                else:
-                    units = "arb"
+                    if "units" in value_group.attrs:
+                        units = value_group.attrs["units"]
+                    else:
+                        units = "arb"
 
-                if value == "parameters":
-                    continue
-                elif isinstance(value_group, h5py.Group):
-                    data_dict[f"{value}"] = value_group['mean'][()]
-                elif isinstance(value_group, h5py.Dataset):
-                    data_dict[f"{value}"] = value_group[()]
+                    data_dict[f"{value}_({units})"] = value_group[()]
 
             data_dict_list.append(data_dict)
 
@@ -452,7 +450,7 @@ def moke_plot_oscilloscope_from_dataframe(fig, df):
 
 def moke_plot_loop_from_dataframe(fig, df):
     fig.update_xaxes(title_text="Field (T)")
-    fig.update_yaxes(title_text="Kerr rotation (deg)")
+    fig.update_yaxes(title_text="Kerr signal (V)")
 
     fig.add_trace(
         go.Scatter(
