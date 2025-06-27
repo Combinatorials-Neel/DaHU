@@ -11,7 +11,7 @@
 
 - reading high number of datafiles from specific instruments at Institut Néel (Profilometry, XRD, EDX, MOKE)
 
-- displaying and treating all the data in an interactive way in a friendly graphic user interface
+- displaying and treating all the data in an interactive way in a graphic user interface
 
 
 Available on Windows, MacOS, and Linux. Requires Python 3.8+.
