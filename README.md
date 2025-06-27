@@ -9,7 +9,7 @@
 
 `Dash High-throughput Utilities` or DaHU for short is a Python software using Dash, providing:
 
-- reading high number of datafiles from specific instruments at Institut Néel (SmartLab diffractometer for XRD, Zeiss Ultra+ for EDX and in-house scanning MOKE)
+- reading high number of datafiles from specific instruments at Institut Néel (Profilometry, XRD, EDX, MOKE)
 
 - displaying and treating all the data in an interactive way in a friendly graphic user interface
 
