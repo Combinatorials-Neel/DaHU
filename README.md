@@ -46,4 +46,4 @@ To be completed
 
 ## Acknowledgements
 
-To be completed
+This work was financed by France 2030 through the PEPR DIADEM "MIAM" project (ANR-23-PEXD-0013), the French National Research Agency through the « Datamag » project (ANR-22-CE91-0008) and the European Union through the MaMMoS project (Grant number 101135546, HORIZON-CL4-2023-DIGITAL-EMERGING-01)
