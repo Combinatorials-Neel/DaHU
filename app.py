@@ -10,6 +10,7 @@ from modules.interface import (
     widgets_moke,
     widgets_xrd,
     widgets_hdf5,
+    widgets_freeplot,
 )
 from modules.callbacks import (
     callbacks_browser,
@@ -18,6 +19,7 @@ from modules.callbacks import (
     callbacks_moke,
     callbacks_xrd,
     callbacks_hdf5,
+    callbacks_freeplot,
 )
 
 pd.set_option('display.max_colwidth', None)

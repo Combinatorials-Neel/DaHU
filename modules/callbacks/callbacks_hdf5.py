@@ -6,6 +6,7 @@ from ..functions.functions_edx import edx_make_results_dataframe_from_hdf5
 from ..functions.functions_profil import profil_make_results_dataframe_from_hdf5
 from ..functions.functions_shared import *
 from ..functions.functions_xrd import xrd_make_results_dataframe_from_hdf5
+from ..hdf5_compilers.hdf5compile_annealing import write_annealing_to_hdf5
 from ..hdf5_compilers.hdf5compile_base import *
 from ..hdf5_compilers.hdf5compile_edx import *
 from ..hdf5_compilers.hdf5compile_esrf import write_esrf_to_hdf5, write_xrd_results_to_hdf5
@@ -123,6 +124,9 @@ def callbacks_hdf5(app):
             if measurement_type == "XRD results":
                 write_xrd_results_to_hdf5(hdf5_path, uploaded_folder_path, target_dataset=dataset_name)
                 return f'Added {measurement_type} measurement to {hdf5_path} as {dataset_name}.'
+            if measurement_type == "Annealing":
+                write_annealing_to_hdf5(hdf5_path, uploaded_folder_path)
+                return f'Added {measurement_type} data to {hdf5_path}.'
 
             return f'Failed to add measurement to {hdf5_path}.'
 

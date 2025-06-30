@@ -8,20 +8,20 @@ class WidgetsHDF5:
 
         # Widget for the drag and drop
         self.hdf5_left = html.Div(
-            className='textbox top-left',
+            className="textbox top-left",
             children=[
                 html.Div(
-                    className='text-top',
+                    className="text-top",
                     children=[
                     du.Upload(
-                        id='hdf5_upload',
-                        text='Drag and Drop or click to browse',
-                        filetypes=['zip', 'h5', 'hdf5'],
-                        upload_id='temp',
+                        id="hdf5_upload",
+                        text="Drag and Drop or click to browse",
+                        filetypes=["zip", "h5", "hdf5", "HIS"],
+                        upload_id="temp",
                     ),
                 ]),
                 html.Div(
-                    className='text-mid',
+                    className="text-mid",
                     id="hdf5_dataset_input",
                     children=[
                         html.Label("Dataset Name"),
@@ -35,14 +35,14 @@ class WidgetsHDF5:
                     ]
                 ),
                 html.Div(
-                    className='text-7',
-                    children=[html.Button(id='hdf5_add_button', children='Add measurement', n_clicks=0)]
+                    className="text-7",
+                    children=[html.Button(id="hdf5_add_button", children="Add measurement", n_clicks=0)]
                 ),
                 html.Div(
-                    className='text-9',
-                    children=[dcc.Dropdown(className='long-item',
-                                           id='hdf5_measurement_type',
-                                           options=['EDX', 'PROFIL', 'MOKE', 'XRD', "ESRF", "XRD results"],
+                    className="text-9",
+                    children=[dcc.Dropdown(className="long-item",
+                                           id="hdf5_measurement_type",
+                                           options=["EDX", "PROFIL", "MOKE", "XRD", "ESRF", "XRD results"],
                                            value=None)]
                 )
             ],
@@ -61,16 +61,16 @@ class WidgetsHDF5:
                     children=[html.Span(children="test", id="hdf5_text_box")],
                 ),
                 html.Div(
-                    className='text-7',
-                    children=[html.Button(id='hdf5_new', children="Create new HDF5", n_clicks=0)]
+                    className="text-7",
+                    children=[html.Button(id="hdf5_new", children="Create new HDF5", n_clicks=0)]
                 ),
                 html.Div(
-                    className='text-8',
-                    children=[html.Button(id='hdf5_update', children="Update HDF5 structure", n_clicks=0)]
+                    className="text-8",
+                    children=[html.Button(id="hdf5_update", children="Update HDF5 structure", n_clicks=0)]
                 ),
                 html.Div(
-                    className='text-9',
-                    children=[html.Button(id='hdf5_export', children="Export to CSV", n_clicks=0)]
+                    className="text-9",
+                    children=[html.Button(id="hdf5_export", children="Export to CSV", n_clicks=0)]
                 ),
             ],
         )
@@ -85,23 +85,23 @@ class WidgetsHDF5:
                         html.Label("Fabrication date"),
                         dcc.Input(
                             className="long-item",
-                            id='hdf5_sample_date',
-                            type='text',
-                            placeholder='Fabrication date'
+                            id="hdf5_sample_date",
+                            type="text",
+                            placeholder="Fabrication date"
                         ),
                         html.Label("Sample Name"),
                         dcc.Input(
                             className="long-item",
-                            id='hdf5_sample_name',
-                            type='text',
-                            placeholder='Sample name'
+                            id="hdf5_sample_name",
+                            type="text",
+                            placeholder="Sample name"
                         ),
                         html.Label("Operator Name"),
                         dcc.Input(
                             className="long-item",
-                            id='hdf5_sample_operator',
-                            type='text',
-                            placeholder='Operator name'
+                            id="hdf5_sample_operator",
+                            type="text",
+                            placeholder="Operator name"
                         )
                     ]
                 ),
@@ -109,24 +109,24 @@ class WidgetsHDF5:
                     className="subgrid-3",
                     children=[
                             dcc.Dropdown(
-                                className='long-item',
+                                className="long-item",
                                 id="hdf5_layer_dropdown",
-                                options=['Add layer']
+                                options=["Add layer"]
                             ),
                         html.Div(children=[
                             dcc.Input(
                                 id="hdf5_layer_element",
-                                type='text',
-                                placeholder='Layer element',
+                                type="text",
+                                placeholder="Layer element",
                                 debounce=True
                             ),
                             dcc.Input(
                                 id="hdf5_layer_thickness",
-                                type='number',
-                                placeholder='Layer thickness',
+                                type="number",
+                                placeholder="Layer thickness",
                                 debounce=True
                             )],
-                        style={'display': 'flex', 'gap': '10px'}
+                        style={"display": "flex", "gap": "10px"}
                         )
                     ]
                 )
@@ -144,9 +144,9 @@ class WidgetsHDF5:
 
     def make_tab_from_widgets(self):
         hdf5_tab = dcc.Tab(
-            id='hdf5',
-            label='HDF5',
-            value='hdf5',
+            id="hdf5",
+            label="HDF5",
+            value="hdf5",
             children=[html.Div(children=[
                 dcc.Loading(
                     id="loading-hdf5",

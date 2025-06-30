@@ -1,7 +1,7 @@
 """
 Functions for annealing parsing (RTA)
 """
-from ..build.lib.hdf5_compilers.hdf5compile_moke import set_instrument_from_dict
+
 from ..functions.functions_shared import *
 from ..hdf5_compilers.hdf5compile_base import *
 
