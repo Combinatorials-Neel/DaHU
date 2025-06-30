@@ -49,7 +49,7 @@ def write_annealing_to_hdf5(hdf5_path, source_path):
     header_dict = read_header_from_annealing(source_path)
     
     with h5py.File(hdf5_path, "a") as hdf5_file:
-        annealing_group = hdf5_file.create_group("Annealing")
+        annealing_group = hdf5_file.create_group("annealing")
         annealing_group.attrs["HT_type"] = "annealing"
         annealing_group.attrs["instrument"] = "JetFirst RTA"
         annealing_group.attrs["data_source"] = source_path.name
@@ -63,7 +63,6 @@ def write_annealing_to_hdf5(hdf5_path, source_path):
         hdf5_units_from_dict(annealing_measurement_units_dict, measurement_group)
 
         results_group = annealing_group.create_group("results")
-        results_group.create_dataset("max_temp", df["TC1"].max(), dtype="float")
         hdf5_units_from_dict(annealing_results_units_dict, results_group)
         
         
