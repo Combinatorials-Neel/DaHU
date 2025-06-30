@@ -59,6 +59,8 @@ moke_tab = children_moke.make_tab_from_widgets()
 children_xrd = widgets_xrd.WidgetsXRD(folderpath)
 xrd_tab = children_xrd.make_tab_from_widgets()
 
+children_freeplot = widgets_freeplot.WidgetsFREEPLOT()
+freeplot_tab = children_freeplot.make_tab_from_widgets()
 
 # Defining the main window layout
 app.layout = html.Div(
@@ -66,7 +68,7 @@ app.layout = html.Div(
         dcc.Tabs(
             id="tabs",
             value="browser",
-            children=[browser_tab, hdf5_tab, profil_tab, edx_tab, moke_tab, xrd_tab],
+            children=[browser_tab, hdf5_tab, profil_tab, edx_tab, moke_tab, xrd_tab, freeplot_tab],
 
         )
     ],
@@ -80,6 +82,7 @@ callbacks_profil.callbacks_profil(app)
 callbacks_edx.callbacks_edx(app)
 callbacks_moke.callbacks_moke(app, children_moke)
 callbacks_xrd.callbacks_xrd(app, children_xrd)
+callbacks_freeplot.callbacks_freeplot(app)
 
 if __name__ == "__main__":
     app.run(debug=True, port=8050)

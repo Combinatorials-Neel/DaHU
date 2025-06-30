@@ -31,6 +31,21 @@ class WidgetsHDF5:
                             type="text",
                             placeholder="Dataset Name",
                             value=None
+                        ),
+                        dcc.Input(
+                            id="hdf5_manual_1",
+                            className="long-item",
+                            style={'display': 'none'}
+                        ),
+                        dcc.Input(
+                            id="hdf5_manual_2",
+                            className="long-item",
+                            style={'display': 'none'}
+                        ),
+                        dcc.Input(
+                            id="hdf5_manual_3",
+                            className="long-item",
+                            style={'display': 'none'}
                         )
                     ]
                 ),
@@ -42,7 +57,7 @@ class WidgetsHDF5:
                     className="text-9",
                     children=[dcc.Dropdown(className="long-item",
                                            id="hdf5_measurement_type",
-                                           options=["EDX", "PROFIL", "MOKE", "XRD", "ESRF", "XRD results"],
+                                           options=["EDX", "PROFIL", "MOKE", "XRD", "ESRF", "XRD results", "Annealing"],
                                            value=None)]
                 )
             ],

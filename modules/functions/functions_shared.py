@@ -471,9 +471,10 @@ def check_group_for_results(hdf5_group):
 def get_hdf5_datasets(hdf5_file, dataset_type):
     dataset_list = []
     for dataset, dataset_group in hdf5_file.items():
-        if "HT_type" in dataset_group.attrs:
-            if dataset_type == dataset_group.attrs["HT_type"]:
+        if "HT_type" in dataset_group.attrs or dataset_type == "all":
+            if dataset_type == "all" or dataset_type == dataset_group.attrs["HT_type"]:
                 dataset_list.append(dataset)
+
 
     return dataset_list
 

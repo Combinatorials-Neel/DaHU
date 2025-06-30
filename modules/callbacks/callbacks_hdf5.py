@@ -106,6 +106,8 @@ def callbacks_hdf5(app):
     def add_measurement_to_file(n_clicks, uploaded_folder_path, measurement_type, hdf5_path, dataset_name):
         if n_clicks > 0:
             print(uploaded_folder_path)
+            uploaded_folder_path = Path(uploaded_folder_path)
+            hdf5_path = Path(hdf5_path)
             if measurement_type == 'EDX':
                 write_edx_to_hdf5(hdf5_path, uploaded_folder_path, dataset_name=dataset_name)
                 return f'Added {measurement_type} measurement to {hdf5_path} as {dataset_name}.'
@@ -125,7 +127,8 @@ def callbacks_hdf5(app):
                 write_xrd_results_to_hdf5(hdf5_path, uploaded_folder_path, target_dataset=dataset_name)
                 return f'Added {measurement_type} measurement to {hdf5_path} as {dataset_name}.'
             if measurement_type == "Annealing":
-                write_annealing_to_hdf5(hdf5_path, uploaded_folder_path)
+                uploaded_file_path = uploaded_folder_path.with_suffix(".HIS")
+                write_annealing_to_hdf5(hdf5_path, uploaded_file_path)
                 return f'Added {measurement_type} data to {hdf5_path}.'
 
             return f'Failed to add measurement to {hdf5_path}.'
@@ -160,6 +163,10 @@ def callbacks_hdf5(app):
                     output_message = f'{len(filenames_list)} {measurement_type} files detected in {uploaded_folder_path}'
                     zip_file.extractall(extract_dir)
                     return str(extract_dir), measurement_type, output_message
+
+        elif uploaded_path.name.endswith('.HIS'):
+            return str(extract_dir), "Annealing", f"1 Annealing file detected in {uploaded_folder_path}"
+
 
 
     @app.callback(
@@ -197,6 +204,10 @@ def callbacks_hdf5(app):
                         value=datasets[0],
                     )
                 ]
+
+        if measurement_type == "Annealing":
+            pass
+
         return new_children, ""
 
 
