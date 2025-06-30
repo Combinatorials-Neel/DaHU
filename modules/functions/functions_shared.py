@@ -126,6 +126,7 @@ def detect_measurement(filename_list: list):
         "PROFIL": ["asc2d"],
         "ESRF": ["h5"],
         "XRD results": ["lst"],
+        "Annealing": [".HIS"],
     }
 
     for measurement_type, file_type in measurement_dict.items():
