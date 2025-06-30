@@ -284,18 +284,20 @@ def plot_layout(title="", showlegend=False):
     Returns:
         go.Layout(): layout object that can be passed to a figure
     """
-    layout = go.Layout(height=750,
-                       width=1100,
-                       title=dict(text=title, font=dict(size=24)),
-                       xaxis=dict(
-                            tickfont=dict(size=18),
-                            title_font=dict(size=20),
-                        ),
-                        yaxis=dict(
-                            tickfont=dict(size=18),
-                            title_font=dict(size=20),
-                        ),
-                        showlegend=showlegend)
+    layout = go.Layout(
+        height=750,
+        width=1100,
+        title=dict(text=title, font=dict(size=24)),
+        xaxis=dict(
+            tickfont=dict(size=18),
+            title_font=dict(size=20),
+        ),
+        yaxis=dict(
+            tickfont=dict(size=18),
+            title_font=dict(size=20),
+        ),
+        showlegend=showlegend,
+    )
     return layout
 
 
@@ -409,6 +411,8 @@ def make_heatmap_from_dataframe(
     plot_title="",
     colorbar_title="",
     masking=False,
+    colorscale="Plasma",
+    scaling=1,
 ):
     if values is None:
         df["default"] = df["x_pos (mm)"] + df["y_pos (mm)"]
@@ -436,15 +440,15 @@ def make_heatmap_from_dataframe(
         heatmap_data = heatmap_data.where(mask, np.nan)
 
     if z_min is None:
-        z_min = np.nanmin(heatmap_data.values)
+        z_min = np.nanmin(heatmap_data.values * scaling)
     if z_max is None:
-        z_max = np.nanmax(heatmap_data.values)
+        z_max = np.nanmax(heatmap_data.values * scaling)
 
     heatmap = go.Heatmap(
         x=heatmap_data.columns,
         y=heatmap_data.index,
-        z=heatmap_data.values,
-        colorscale="Plasma",
+        z=heatmap_data.values * scaling,
+        colorscale=colorscale,
         # Set ticks for the colorbar
         colorbar=colorbar_layout(z_min, z_max, precision, title=colorbar_title),
     )
@@ -531,6 +535,7 @@ def convert_bytes(target):
         return float(target)
     except ValueError:
         return target.decode("utf-8")
+
 
 def split_name_and_unit(name_str):
     split = name_str.split("_")

@@ -1,37 +1,39 @@
 from ..hdf5_compilers.hdf5compile_moke import *
 
-'''Callbacks for MOKE tab'''
+"""Callbacks for MOKE tab"""
+
 
 def callbacks_moke(app, children_moke):
 
     # Callback to update moke plot based on heatmap click position
-    @app.callback(Output('moke_position_store', 'data'),
-                  Input('moke_heatmap', 'clickData'),
-                  prevent_initial_call=True
-                  )
+    @app.callback(
+        Output("moke_position_store", "data"),
+        Input("moke_heatmap", "clickData"),
+        prevent_initial_call=True,
+    )
     def update_position(heatmap_click):
         if heatmap_click is None:
             return None
-        target_x = heatmap_click['points'][0]['x']
-        target_y = heatmap_click['points'][0]['y']
+        target_x = heatmap_click["points"][0]["x"]
+        target_y = heatmap_click["points"][0]["y"]
 
         position = (target_x, target_y)
 
         return position
 
-
     @app.callback(
-        [Output("moke_select_dataset", "options"),
-        Output("moke_select_dataset", "value")],
+        [
+            Output("moke_select_dataset", "options"),
+            Output("moke_select_dataset", "value"),
+        ],
         Input("hdf5_path_store", "data"),
     )
     @check_conditions(moke_conditions, hdf5_path_index=0)
     def moke_scan_hdf5_for_datasets(hdf5_path):
         with h5py.File(hdf5_path, "r") as hdf5_file:
-            dataset_list = get_hdf5_datasets(hdf5_file, dataset_type='moke')
+            dataset_list = get_hdf5_datasets(hdf5_file, dataset_type="moke")
 
         return dataset_list, dataset_list[0]
-
 
     # Callback for heatmap selection
     @app.callback(
@@ -46,16 +48,28 @@ def callbacks_moke(app, children_moke):
         Input("moke_heatmap_max", "value"),
         Input("moke_heatmap_precision", "value"),
         Input("moke_heatmap_edit", "value"),
-        Input('hdf5_path_store', 'data'),
+        Input("hdf5_path_store", "data"),
         Input("moke_select_dataset", "value"),
         prevent_initial_call=True,
     )
     @check_conditions(moke_conditions, hdf5_path_index=5)
-    def moke_update_heatmap(heatmap_select, z_min, z_max, precision, edit_toggle, hdf5_path, selected_dataset):
-        with h5py.File(hdf5_path, 'r') as hdf5_file:
+    def moke_update_heatmap(
+        heatmap_select,
+        z_min,
+        z_max,
+        precision,
+        edit_toggle,
+        hdf5_path,
+        selected_dataset,
+    ):
+        with h5py.File(hdf5_path, "r") as hdf5_file:
             moke_group = hdf5_file[selected_dataset]
 
-            if ctx.triggered_id in ["moke_heatmap_select", "moke_heatmap_edit", "moke_heatmap_precision"]:
+            if ctx.triggered_id in [
+                "moke_heatmap_select",
+                "moke_heatmap_edit",
+                "moke_heatmap_precision",
+            ]:
                 z_min = None
                 z_max = None
 
@@ -65,17 +79,28 @@ def callbacks_moke(app, children_moke):
 
             moke_df = moke_make_results_dataframe_from_hdf5(moke_group)
 
+            colorscale = "Plasma"
             if heatmap_select is not None and selected_dataset is not None:
                 name, unit = split_name_and_unit(heatmap_select)
                 plot_title = f"{name} MOKE map <br>{selected_dataset}"
                 colorbar_title = f"{unit}"
+                if name == "coercivity_m0" or name == "max_kerr_signal":
+                    colorscale = "Rainbow"
             else:
                 plot_title = ""
                 colorbar_title = ""
 
-            fig = make_heatmap_from_dataframe(moke_df, values=heatmap_select, z_min=z_min, z_max=z_max,
-                                              plot_title=plot_title, colorbar_title=colorbar_title,
-                                              precision=precision, masking=masking)
+            fig = make_heatmap_from_dataframe(
+                moke_df,
+                values=heatmap_select,
+                z_min=z_min,
+                z_max=z_max,
+                plot_title=plot_title,
+                colorbar_title=colorbar_title,
+                precision=precision,
+                masking=masking,
+                colorscale=colorscale,
+            )
 
             z_min = np.round(fig.data[0].zmin, precision)
             z_max = np.round(fig.data[0].zmax, precision)
@@ -85,7 +110,6 @@ def callbacks_moke(app, children_moke):
                 options.remove("default")
 
             return fig, z_min, z_max, options
-
 
     # Profile plot
     @app.callback(
@@ -98,7 +122,14 @@ def callbacks_moke(app, children_moke):
         State("hdf5_path_store", "data"),
     )
     @check_conditions(moke_conditions, hdf5_path_index=5)
-    def moke_update_plot(position, plot_options, treatment_dict, heatmap_select, selected_dataset, hdf5_path):
+    def moke_update_plot(
+        position,
+        plot_options,
+        treatment_dict,
+        heatmap_select,
+        selected_dataset,
+        hdf5_path,
+    ):
         if position is None:
             raise PreventUpdate
 
@@ -107,12 +138,16 @@ def callbacks_moke(app, children_moke):
 
         fig = go.Figure()
 
-        with h5py.File(hdf5_path, 'r') as hdf5_file:
+        with h5py.File(hdf5_path, "r") as hdf5_file:
             moke_group = hdf5_file[selected_dataset]
-            measurement_df = moke_get_measurement_from_hdf5(moke_group, target_x, target_y)
+            measurement_df = moke_get_measurement_from_hdf5(
+                moke_group, target_x, target_y
+            )
             results_dict = moke_get_results_from_hdf5(moke_group, target_x, target_y)
 
-        measurement_df = moke_treat_measurement_dataframe(measurement_df, treatment_dict)
+        measurement_df = moke_treat_measurement_dataframe(
+            measurement_df, treatment_dict
+        )
 
         title_tag = ""
         if plot_options == "oscilloscope":
@@ -124,19 +159,35 @@ def callbacks_moke(app, children_moke):
         elif plot_options == "stored_result":
             fig = moke_plot_loop_from_dataframe(fig, measurement_df)
             if heatmap_select == "coercivity_m0":
-                fig = moke_plot_vlines(fig, values=[results_dict["coercivity_m0"]["negative"],
-                                              results_dict["coercivity_m0"]["positive"]])
+                fig = moke_plot_vlines(
+                    fig,
+                    values=[
+                        results_dict["coercivity_m0"]["negative"],
+                        results_dict["coercivity_m0"]["positive"],
+                    ],
+                )
             if heatmap_select == "coercivity_dmdh":
-                fig = moke_plot_vlines(fig, values=[results_dict["coercivity_dmdh"]["negative"],
-                                              results_dict["coercivity_dmdh"]["positive"]])
+                fig = moke_plot_vlines(
+                    fig,
+                    values=[
+                        results_dict["coercivity_dmdh"]["negative"],
+                        results_dict["coercivity_dmdh"]["positive"],
+                    ],
+                )
             if heatmap_select == "intercept_field":
-                fig = moke_plot_vlines(fig, values=[results_dict["coercivity_dmdh"]["negative"],
-                                              results_dict["coercivity_dmdh"]["positive"]])
+                fig = moke_plot_vlines(
+                    fig,
+                    values=[
+                        results_dict["coercivity_dmdh"]["negative"],
+                        results_dict["coercivity_dmdh"]["positive"],
+                    ],
+                )
 
-        fig.update_layout(plot_layout(title=f"{title_tag} <br>x = {target_x}, y = {target_y}"),)
+        fig.update_layout(
+            plot_layout(title=f"{title_tag} <br>x = {target_x}, y = {target_y}"),
+        )
 
         return fig
-
 
     @app.callback(
         Output("moke_text_box", "children", allow_duplicate=True),
@@ -149,27 +200,34 @@ def callbacks_moke(app, children_moke):
     @check_conditions(moke_conditions, hdf5_path_index=1)
     def moke_make_database(n_clicks, hdf5_path, treatment_dict, selected_dataset):
         if n_clicks > 0:
-            with h5py.File(hdf5_path, 'a') as hdf5_file:
+            with h5py.File(hdf5_path, "a") as hdf5_file:
                 moke_group = hdf5_file[selected_dataset]
                 results_dict = moke_batch_fit(moke_group, treatment_dict)
                 moke_results_dict_to_hdf5(moke_group, results_dict, treatment_dict)
                 return "Great Success!"
 
-
-    @app.callback([Output('moke_data_treatment_store', 'data'),
-                   Output('moke_coil_factor', 'value'),
-                   Output('moke_smoothing_polyorder', 'value'),
-                   Output('moke_smoothing_range', 'value')],
-                  Input('moke_data_treatment_checklist', 'value'),
-                  Input('moke_coil_factor', 'value'),
-                  Input('moke_smoothing_polyorder', 'value'),
-                  Input('moke_smoothing_range', 'value'),
-                  Input('moke_database_path_store', 'data'),
-                  State('moke_database_metadata_store', 'data'),
-                  )
-
-    def store_data_treatment(treatment_checklist, coil_factor, smoothing_polyorder,
-                             smoothing_range, database_path, metadata):
+    @app.callback(
+        [
+            Output("moke_data_treatment_store", "data"),
+            Output("moke_coil_factor", "value"),
+            Output("moke_smoothing_polyorder", "value"),
+            Output("moke_smoothing_range", "value"),
+        ],
+        Input("moke_data_treatment_checklist", "value"),
+        Input("moke_coil_factor", "value"),
+        Input("moke_smoothing_polyorder", "value"),
+        Input("moke_smoothing_range", "value"),
+        Input("moke_database_path_store", "data"),
+        State("moke_database_metadata_store", "data"),
+    )
+    def store_data_treatment(
+        treatment_checklist,
+        coil_factor,
+        smoothing_polyorder,
+        smoothing_range,
+        database_path,
+        metadata,
+    ):
         default_coil_factor = 0.92667
         default_smoothing_polyorder = 1
         default_smoothing_range = 10
@@ -178,17 +236,17 @@ def callbacks_moke(app, children_moke):
                 metadata = read_metadata(database_path)
             if coil_factor is None:
                 try:
-                    coil_factor = metadata['coil_factor']
+                    coil_factor = metadata["coil_factor"]
                 except TypeError or KeyError:
                     pass
             if smoothing_polyorder is None:
                 try:
-                    smoothing_polyorder = metadata['smoothing_polyorder']
+                    smoothing_polyorder = metadata["smoothing_polyorder"]
                 except TypeError or KeyError:
                     pass
             if smoothing_range is None:
                 try:
-                    smoothing_range = metadata['smoothing_range']
+                    smoothing_range = metadata["smoothing_range"]
                 except TypeError or KeyError:
                     pass
         else:
@@ -199,15 +257,15 @@ def callbacks_moke(app, children_moke):
             if smoothing_range is None:
                 smoothing_range = default_smoothing_range
 
-
-        treatment_dict = {"coil_factor" : coil_factor,
-                          "smoothing": False,
-                          "smoothing_polyorder": smoothing_polyorder,
-                          "smoothing_range": smoothing_range,
-                          "correct_offset": False,
-                          "filter_zero": False,
-                          "connect_loops": False,
-                          "pulse_voltage": 432
+        treatment_dict = {
+            "coil_factor": coil_factor,
+            "smoothing": False,
+            "smoothing_polyorder": smoothing_polyorder,
+            "smoothing_range": smoothing_range,
+            "correct_offset": False,
+            "filter_zero": False,
+            "connect_loops": False,
+            "pulse_voltage": 432,
         }
 
         if "smoothing" in treatment_checklist:
@@ -219,18 +277,16 @@ def callbacks_moke(app, children_moke):
         if "connect_loops" in treatment_checklist:
             treatment_dict.update({"connect_loops": True})
 
-
         return treatment_dict, coil_factor, smoothing_polyorder, smoothing_range
 
-  
     @app.callback(
-        Output('moke_loop_map_figure', 'figure'),
-        Input('moke_loop_map_button', 'n_clicks'),
-        State('hdf5_path_store', 'data'),
-        State('moke_data_treatment_store', 'data'),
-        State('moke_loop_map_checklist', 'value'),
+        Output("moke_loop_map_figure", "figure"),
+        Input("moke_loop_map_button", "n_clicks"),
+        State("hdf5_path_store", "data"),
+        State("moke_data_treatment_store", "data"),
+        State("moke_loop_map_checklist", "value"),
         State("moke_select_dataset", "value"),
-        prevent_initial_call=True
+        prevent_initial_call=True,
     )
     @check_conditions(moke_conditions, hdf5_path_index=1)
     def make_loop_map(n_clicks, hdf5_path, options_dict, checklist, dataset_select):
@@ -238,33 +294,30 @@ def callbacks_moke(app, children_moke):
         if "normalize" in checklist:
             normalize = True
 
-        if n_clicks>0:
-            with h5py.File(hdf5_path, 'a') as hdf5_file:
+        if n_clicks > 0:
+            with h5py.File(hdf5_path, "a") as hdf5_file:
                 moke_group = hdf5_file[dataset_select]
                 fig = moke_plot_loop_map(moke_group, options_dict, normalize)
                 return fig
 
-
-
-
     # Callback to deal with heatmap edit mode
     @app.callback(
-        Output('moke_text_box', 'children', allow_duplicate=True),
-        Input('moke_heatmap', 'clickData'),
-        State('moke_heatmap_edit', 'value'),
-        State('hdf5_path_store', 'data'),
-        State('moke_select_dataset', 'value'),
-        prevent_initial_call=True
+        Output("moke_text_box", "children", allow_duplicate=True),
+        Input("moke_heatmap", "clickData"),
+        State("moke_heatmap_edit", "value"),
+        State("hdf5_path_store", "data"),
+        State("moke_select_dataset", "value"),
+        prevent_initial_call=True,
     )
     @check_conditions(moke_conditions, hdf5_path_index=2)
     def heatmap_edit_mode(heatmap_click, edit_toggle, hdf5_path, selected_dataset):
-        if edit_toggle != 'edit':
+        if edit_toggle != "edit":
             raise PreventUpdate
 
-        target_x = heatmap_click['points'][0]['x']
-        target_y = heatmap_click['points'][0]['y']
+        target_x = heatmap_click["points"][0]["x"]
+        target_y = heatmap_click["points"][0]["y"]
 
-        with h5py.File(hdf5_path, 'a') as hdf5_file:
+        with h5py.File(hdf5_path, "a") as hdf5_file:
             moke_group = hdf5_file[selected_dataset]
             position_group = get_target_position_group(moke_group, target_x, target_y)
             if not position_group.attrs["ignored"]:
@@ -273,17 +326,6 @@ def callbacks_moke(app, children_moke):
             else:
                 position_group.attrs["ignored"] = False
                 return f"{target_x}, {target_y} ignore set to False"
-
-
-
-
-
-
-
-
-
-
-
 
     #
     #
