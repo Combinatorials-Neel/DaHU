@@ -1,13 +1,15 @@
 """
 Functions for XRD parsing (Rigaku SmartLab and ESRF NeXuS)
 """
+
 import fabio
 import h5py
 
 from ..functions.functions_shared import *
 from ..hdf5_compilers.hdf5compile_base import *
 
-SMARTLAB_WRITER_VERSION = '0.1 beta'
+SMARTLAB_WRITER_VERSION = "0.1 beta"
+
 
 def get_scan_numbers(filename):
     """
@@ -27,19 +29,20 @@ def get_scan_numbers(filename):
     tuple
         A tuple containing the x and y scan numbers.
     """
-    pattern = r'_(\d+)(?:_\d+)?\.' # Regular expression to match with all different filename structures (img and ras/lst)
+    pattern = r"_(\d+)(?:_\d+)?\."  # Regular expression to match with all different filename structures (img and ras/lst)
     match = re.search(pattern, filename)
     idx = match.group(1)
 
     return idx
 
+
 def group_files_by_position(filename_list, authorized_files=None):
     if authorized_files is None:
-        authorized_files = ['ras', "lst", 'img']
+        authorized_files = ["ras", "lst", "img"]
 
     grouped_dictionary = {}
     for filename in filename_list:
-        if filename.split('.')[-1] in authorized_files:
+        if filename.split(".")[-1] in authorized_files:
             try:
                 scan_numbers = get_scan_numbers(filename)
             except AttributeError:
@@ -179,7 +182,7 @@ def write_smartlab_to_hdf5(hdf5_path, source_path, dataset_name, mode="a"):
     Returns:
         None
     """
-    if isinstance (hdf5_path, str):
+    if isinstance(hdf5_path, str):
         hdf5_path = Path(hdf5_path)
     if isinstance(source_path, str):
         source_path = Path(source_path)
@@ -236,9 +239,11 @@ def write_smartlab_to_hdf5(hdf5_path, source_path, dataset_name, mode="a"):
             measurement_group.attrs["NX_class"] = "HTmeasurement"
             tth = [convertFloat(elm[0][0]) for elm in data]
             counts = [convertFloat(elm[1][0]) for elm in data]
-            tth_group = measurement_group.create_dataset("angle", (len(tth),), data=tth, dtype="float")
+            tth_group = measurement_group.create_dataset(
+                "angle", (len(tth),), data=tth, dtype="float"
+            )
             counts = measurement_group.create_dataset(
-                "counts", (len(counts),), data=counts, dtype="float"
+                "intensity", (len(counts),), data=counts, dtype="float"
             )
 
             tth_group.attrs["units"] = "deg"
