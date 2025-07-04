@@ -42,14 +42,14 @@ def read_header_from_annealing(file_path):
     return header_dict
 
 
-def write_annealing_to_hdf5(hdf5_path, source_path):
+def write_annealing_to_hdf5(hdf5_path, source_path, anneal_dict, dataset_name):
     df = pd.read_csv(source_path, skiprows=7)
     df = remove_zero_columns(df)
 
     header_dict = read_header_from_annealing(source_path)
     
     with h5py.File(hdf5_path, "a") as hdf5_file:
-        annealing_group = hdf5_file.create_group("annealing")
+        annealing_group = hdf5_file.create_group(dataset_name)
         annealing_group.attrs["HT_type"] = "annealing"
         annealing_group.attrs["instrument"] = "JetFirst RTA"
         annealing_group.attrs["data_source"] = source_path.name
@@ -63,12 +63,16 @@ def write_annealing_to_hdf5(hdf5_path, source_path):
         hdf5_units_from_dict(annealing_measurement_units_dict, measurement_group)
 
         results_group = annealing_group.create_group("results")
+        if "temperature" in anneal_dict.keys():
+            results_group.create_dataset("temperature", data=anneal_dict["temperature"])
+        if "time" in anneal_dict.keys():
+            results_group.create_dataset("time", data=anneal_dict["time"])
         hdf5_units_from_dict(annealing_results_units_dict, results_group)
         
         
-def manual_annealing_to_hdf5(hdf5_path, anneal_dict):
+def manual_annealing_to_hdf5(hdf5_path, anneal_dict, dataset_name):
     with h5py.File(hdf5_path, "a") as hdf5_file:
-        annealing_group = hdf5_file.create_group("Annealing")
+        annealing_group = hdf5_file.create_group(dataset_name)
         annealing_group.attrs["HT_type"] = "annealing"
         annealing_group.attrs["instrument"] = anneal_dict["instrument"]
         annealing_group.attrs["data_source"] = "manual"
