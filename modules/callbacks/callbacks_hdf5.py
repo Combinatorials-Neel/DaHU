@@ -206,7 +206,36 @@ def callbacks_hdf5(app):
                 ]
 
         if measurement_type == "Annealing":
-            pass
+            new_children = [
+                html.Label("Dataset Name"),
+                dcc.Input(
+                    id="hdf5_dataset_name",
+                    className="long-item",
+                    type="text",
+                    placeholder="Dataset Name",
+                    value=None,
+                ),
+                html.Label("Annealing temperature"),
+                dcc.Input(
+                    id="hdf5_manual_1",
+                    className="long-item",
+                    type="number",
+                    placeholder="Annealing temperature",
+                ),
+                html.Label("Annealing time"),
+                dcc.Input(
+                    id="hdf5_manual_2",
+                    className="long-item",
+                    type="number",
+                    placeholder="Annealing time",
+                ),
+                dcc.Dropdown(
+                    id="hdf5_manual_3",
+                    className="long-item",
+                    placeholder="Furnace",
+                    options=["RTA", "Tubular"]
+                )
+            ]
 
         return new_children, ""
 
