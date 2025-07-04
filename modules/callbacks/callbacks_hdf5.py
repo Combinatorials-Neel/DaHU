@@ -6,7 +6,7 @@ from ..functions.functions_edx import edx_make_results_dataframe_from_hdf5
 from ..functions.functions_profil import profil_make_results_dataframe_from_hdf5
 from ..functions.functions_shared import *
 from ..functions.functions_xrd import xrd_make_results_dataframe_from_hdf5
-from ..hdf5_compilers.hdf5compile_annealing import write_annealing_to_hdf5
+from ..hdf5_compilers.hdf5compile_annealing import write_annealing_to_hdf5, manual_annealing_to_hdf5
 from ..hdf5_compilers.hdf5compile_base import *
 from ..hdf5_compilers.hdf5compile_edx import *
 from ..hdf5_compilers.hdf5compile_esrf import write_esrf_to_hdf5, write_xrd_results_to_hdf5
@@ -100,13 +100,16 @@ def callbacks_hdf5(app):
         State('hdf5_measurement_type', 'value'),
         State('hdf5_path_store', 'data'),
         State("hdf5_dataset_name", "value"),
+        State("hdf5_manual_1", "value"),
+        State("hdf5_manual_2", "value"),
+        State("hdf5_manual_3", "value"),
         prevent_initial_call=True
     )
 
-    def add_measurement_to_file(n_clicks, uploaded_folder_path, measurement_type, hdf5_path, dataset_name):
+    def add_measurement_to_file(n_clicks, uploaded_folder_path, measurement_type, hdf5_path, dataset_name, manual_1, manual_2, manual_3):
         if n_clicks > 0:
-            print(uploaded_folder_path)
-            uploaded_folder_path = Path(uploaded_folder_path)
+            if uploaded_folder_path is not None:
+                uploaded_folder_path = Path(uploaded_folder_path)
             hdf5_path = Path(hdf5_path)
             if measurement_type == 'EDX':
                 write_edx_to_hdf5(hdf5_path, uploaded_folder_path, dataset_name=dataset_name)
@@ -127,8 +130,21 @@ def callbacks_hdf5(app):
                 write_xrd_results_to_hdf5(hdf5_path, uploaded_folder_path, target_dataset=dataset_name)
                 return f'Added {measurement_type} measurement to {hdf5_path} as {dataset_name}.'
             if measurement_type == "Annealing":
-                uploaded_file_path = uploaded_folder_path.with_suffix(".HIS")
-                write_annealing_to_hdf5(hdf5_path, uploaded_file_path)
+                # In annealing mode:
+                # manual 1 = int(temp, degC),
+                # manual 2 = int(time, seconds),
+                # manual 3 = str(RTA or Tubular)
+                anneal_dict = {
+                    "temperature": manual_1,
+                    "time": manual_2,
+                    "instrument": manual_3
+                }
+                if uploaded_folder_path is not None:
+                    uploaded_file_path = uploaded_folder_path.with_suffix(".HIS")
+                    write_annealing_to_hdf5(hdf5_path, uploaded_file_path, anneal_dict, dataset_name=dataset_name)
+                else:
+                    manual_annealing_to_hdf5(hdf5_path, anneal_dict, dataset_name=dataset_name)
+
                 return f'Added {measurement_type} data to {hdf5_path}.'
 
             return f'Failed to add measurement to {hdf5_path}.'
@@ -186,6 +202,21 @@ def callbacks_hdf5(app):
                 type="text",
                 placeholder="Dataset Name",
                 value=None
+            ),
+            dcc.Input(
+                id="hdf5_manual_1",
+                className="long-item",
+                style={'display': 'none'}
+            ),
+            dcc.Input(
+                id="hdf5_manual_2",
+                className="long-item",
+                style={'display': 'none'}
+            ),
+            dcc.Input(
+                id="hdf5_manual_3",
+                className="long-item",
+                style={'display': 'none'}
             )
         ]
 
@@ -202,6 +233,21 @@ def callbacks_hdf5(app):
                         className="long-item",
                         options=datasets,
                         value=datasets[0],
+                    ),
+                    dcc.Input(
+                        id="hdf5_manual_1",
+                        className="long-item",
+                        style={'display': 'none'}
+                    ),
+                    dcc.Input(
+                        id="hdf5_manual_2",
+                        className="long-item",
+                        style={'display': 'none'}
+                    ),
+                    dcc.Input(
+                        id="hdf5_manual_3",
+                        className="long-item",
+                        style={'display': 'none'}
                     )
                 ]
 
@@ -233,7 +279,7 @@ def callbacks_hdf5(app):
                     id="hdf5_manual_3",
                     className="long-item",
                     placeholder="Furnace",
-                    options=["RTA", "Tubular"]
+                    options=["JetFirst RTA", "UHV Tubular"]
                 )
             ]
 
