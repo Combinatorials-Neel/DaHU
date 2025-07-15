@@ -126,6 +126,7 @@ def detect_measurement(filename_list: list):
         "PROFIL": ["asc2d"],
         "ESRF": ["h5"],
         "XRD results": ["lst"],
+        "Annealing": [".HIS"],
     }
 
     for measurement_type, file_type in measurement_dict.items():
@@ -474,9 +475,10 @@ def check_group_for_results(hdf5_group):
 def get_hdf5_datasets(hdf5_file, dataset_type):
     dataset_list = []
     for dataset, dataset_group in hdf5_file.items():
-        if "HT_type" in dataset_group.attrs:
-            if dataset_type == dataset_group.attrs["HT_type"]:
+        if "HT_type" in dataset_group.attrs or dataset_type == "all":
+            if dataset_type == "all" or dataset_type == dataset_group.attrs["HT_type"]:
                 dataset_list.append(dataset)
+
 
     return dataset_list
 
@@ -542,3 +544,19 @@ def split_name_and_unit(name_str):
     name = "_".join(split[:-1])
     unit = split[-1]
     return name, unit
+
+def remove_zero_columns(df):
+    df = df.loc[:, (df != 0).any(axis=0)]
+    return df
+
+def dataframe_to_hdf5(df, hdf5_group):
+    for col in df.columns:
+        hdf5_group.create_dataset(
+            col, data=np.array(df[col]), dtype="float"
+        )
+    return True
+
+def hdf5_units_from_dict(units_dict, hdf5_group):
+    for subname, subgroup in hdf5_group.items():
+        if subname in units_dict.keys():
+            subgroup.attrs["units"] = units_dict[subname]

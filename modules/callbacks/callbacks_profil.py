@@ -103,7 +103,7 @@ def callbacks_profil(app):
 
         if heatmap_select is not None and selected_dataset is not None:
             plot_title = f"Profilometry thickness map <br>{selected_dataset}"
-            colorbar_title = "Thickness <br>nm"
+            colorbar_title = "Thickness <br>(nm)"
         else:
             plot_title = ""
             colorbar_title = ""
@@ -115,6 +115,8 @@ def callbacks_profil(app):
             z_max=z_max,
             precision=precision,
             masking=masking,
+            plot_title=plot_title,
+            colorbar_title=colorbar_title,
         )
 
         z_min = np.round(fig.data[0].zmin, precision)

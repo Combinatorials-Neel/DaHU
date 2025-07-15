@@ -1,8 +1,6 @@
 """
 Functions used in XRD interactive plot using Dash.
 Internal use for Institut Néel and within the MaMMoS project, to export and read big datasets produced at Institut Néel.
-
-@Author: Pierre Le Berre - Institut Néel (pierre.le-berre@neel.cnrs.fr)
 """
 
 import plotly.express as px
