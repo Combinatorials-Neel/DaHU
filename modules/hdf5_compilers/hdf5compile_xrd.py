@@ -247,7 +247,7 @@ def write_smartlab_to_hdf5(hdf5_path, source_path, dataset_name, mode="a"):
             )
 
             tth_group.attrs["units"] = "deg"
-            counts.attrs["units"] = "counts"
+            counts.attrs["units"] = "a.u."
 
             # Image group
             measurement_group.create_dataset("2Dimage", img_data.shape, data=img_data)

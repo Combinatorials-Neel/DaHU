@@ -1,10 +1,12 @@
 """
 Functions for EDX parsing
 """
+
 from ..functions.functions_shared import *
 from ..hdf5_compilers.hdf5compile_base import *
 
-EDX_WRITER_VERSION = '0.1 beta'
+EDX_WRITER_VERSION = "0.1 beta"
+
 
 def visit_items(item, edx_dict=None):
     """
@@ -115,7 +117,7 @@ def get_position_from_path(filepath):
     if isinstance(filepath, Path):
         filepath = str(filepath)
 
-    pattern = r'.*\((\d+),(\d+)\).*'
+    pattern = r".*\((\d+),(\d+)\).*"
     match = re.search(pattern, filepath)
     x_idx = match.group(1)
     y_idx = match.group(2)
@@ -123,7 +125,9 @@ def get_position_from_path(filepath):
     return int(x_idx), int(y_idx)
 
 
-def calculate_wafer_positions(scan_numbers, step_x=5, step_y=5, start_x=-40, start_y=-40):
+def calculate_wafer_positions(
+    scan_numbers, step_x=5, step_y=5, start_x=-40, start_y=-40
+):
     """
     Calculates the wafer positions based on scan numbers and specified step and start values.
 
@@ -137,8 +141,9 @@ def calculate_wafer_positions(scan_numbers, step_x=5, step_y=5, start_x=-40, sta
     Returns:
         tuple: A tuple containing the calculated x and y positions on the wafer.
     """
+    # Only valid if +X +Y direction scan is selected in the EDX scan and motors axis are aligned with wafer axis
     x_idx, y_idx = scan_numbers
-    x_pos, y_pos = (x_idx - 1) * step_x + start_x, (y_idx - 1) * step_y + start_y
+    x_pos, y_pos = -((x_idx - 1) * step_x + start_x), (y_idx - 1) * step_y + start_y
 
     return float(x_pos), float(y_pos)
 
@@ -246,7 +251,7 @@ def make_energy_dataset(edx_dict, channels):
     return energy
 
 
-def write_edx_to_hdf5(hdf5_path, source_path, dataset_name = None):
+def write_edx_to_hdf5(hdf5_path, source_path, dataset_name=None):
     """
     Writes the contents of the EDX data file (.spx) to the given HDF5 file.
 
@@ -258,7 +263,7 @@ def write_edx_to_hdf5(hdf5_path, source_path, dataset_name = None):
     Returns:
         None
     """
-    if isinstance (hdf5_path, str):
+    if isinstance(hdf5_path, str):
         hdf5_path = Path(hdf5_path)
     if isinstance(source_path, str):
         source_path = Path(source_path)
@@ -272,7 +277,7 @@ def write_edx_to_hdf5(hdf5_path, source_path, dataset_name = None):
         edx_group.attrs["instrument"] = "Bruker Quantax Xflash-7"
         edx_group.attrs["edx_writer"] = EDX_WRITER_VERSION
 
-        for file_name in safe_rglob(source_path, pattern='*.spx'):
+        for file_name in safe_rglob(source_path, pattern="*.spx"):
             file_path = source_path / file_name
 
             scan_numbers = get_position_from_path(file_path)
@@ -280,7 +285,9 @@ def write_edx_to_hdf5(hdf5_path, source_path, dataset_name = None):
             edx_dict, channels = read_data_from_spx(file_path)
             energy = make_energy_dataset(edx_dict, channels)
 
-            scan = edx_group.create_group(f"({wafer_positions[0]},{wafer_positions[1]})")
+            scan = edx_group.create_group(
+                f"({wafer_positions[0]},{wafer_positions[1]})"
+            )
             scan.attrs["index"] = scan_numbers
             scan.attrs["ignored"] = False
 

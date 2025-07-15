@@ -151,7 +151,7 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
         raise NameError("Couldn't locate RAW_DATA H5 file")
 
     with h5py.File(hdf5_path, "a") as hdf5_file:
-        with h5py.File(raw_h5_path, "r") as raw_source:
+        with h5py.File(raw_h5_path, "a") as raw_source:
             esrf_group = hdf5_file.create_group(dataset_name)
             esrf_group.attrs["HT_type"] = "xrd"
             esrf_group.attrs["instrument"] = "bm02 - esrf"
@@ -171,6 +171,14 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                     target_position_group = create_incremental_group(
                         alignment_group, f"{alignment_type}_alignment"
                     )
+
+                    # Remove CdTe data from alignment scans if present
+                    if "CdTe" in source_instrument_group.keys():
+                        del source_instrument_group["CdTe/data"]
+                        del source_instrument_group["CdTe/image"]
+                    if "CdTe" in source_measurement_group.keys():
+                        del source_measurement_group["CdTe"]
+
                 else:
                     target_position_group = esrf_group.create_group(
                         f"({x_pos},{y_pos})"
@@ -269,6 +277,7 @@ def write_xrd_results_to_hdf5(hdf5_path, results_folderpath, target_dataset):
         target_group = target.get(target_dataset)
 
         for lst_filepath in safe_rglob(results_folderpath, pattern="*.lst"):
+            # print(lst_filepath)
             dia_filepath = lst_filepath.with_suffix(".dia")
             file_index = str(lst_filepath.stem).split("_")[-1]
             for name, group in target_group.items():

@@ -5,7 +5,6 @@ Class containing all Dash items and layout information for the MOKE tab
 from dash import html, dcc
 
 
-
 class WidgetsMOKE:
 
     def __init__(self, folderpath):
@@ -17,12 +16,13 @@ class WidgetsMOKE:
             children=[
                 html.Div(
                     className="text-top",
-                    children=[dcc.Dropdown(
-                        id="moke_select_dataset",
-                        className="long-item",
-                        options=[],
-                        value=None,
-                    )
+                    children=[
+                        dcc.Dropdown(
+                            id="moke_select_dataset",
+                            className="long-item",
+                            options=[],
+                            value=None,
+                        )
                     ],
                 ),
                 html.Div(
@@ -31,8 +31,14 @@ class WidgetsMOKE:
                 ),
                 html.Div(
                     className="text_8",
-                    children=[html.Button(id='moke_make_database_button', children="Make database!", n_clicks=0)],
-                )
+                    children=[
+                        html.Button(
+                            id="moke_make_database_button",
+                            children="Make database!",
+                            n_clicks=0,
+                        )
+                    ],
+                ),
             ],
         )
 
@@ -46,9 +52,7 @@ class WidgetsMOKE:
                         html.Label("Currently plotting:"),
                         html.Br(),
                         dcc.Dropdown(
-                            id="moke_heatmap_select",
-                            className="long-item",
-                            options=[]
+                            id="moke_heatmap_select", className="long-item", options=[]
                         ),
                     ],
                 ),
@@ -72,7 +76,6 @@ class WidgetsMOKE:
                         ),
                     ],
                 ),
-
                 html.Div(
                     className="subgrid-8",
                     children=[
@@ -84,10 +87,8 @@ class WidgetsMOKE:
                             placeholder="Colorbar precision",
                             value=1,
                         ),
-                    ]
+                    ],
                 ),
-
-
                 html.Div(
                     className="subgrid-9",
                     children=[
@@ -128,8 +129,14 @@ class WidgetsMOKE:
                             options=[
                                 {"label": "Oscilloscope Data", "value": "oscilloscope"},
                                 {"label": "M(H) Loop", "value": "loop"},
-                                {"label": "M(H) Loop + Stored Result", "value": "stored_result"},
-                                {"label": "M(H) Loop + Live Result", "value": "live_result"},
+                                {
+                                    "label": "M(H) Loop + Stored Result",
+                                    "value": "stored_result",
+                                },
+                                {
+                                    "label": "M(H) Loop + Live Result",
+                                    "value": "live_result",
+                                },
                             ],
                             value="loop",
                             style={"display": "inline-block"},
@@ -139,55 +146,66 @@ class WidgetsMOKE:
                 html.Div(
                     className="subgrid-4",
                     children=[
-                        html.Label('Coil Factor (T/100V)'),
+                        html.Label("Coil Factor (T/100V)"),
                         dcc.Input(
-                            className='long-item',
-                            id='moke_coil_factor',
-                            type='number',
+                            className="long-item",
+                            id="moke_coil_factor",
+                            type="number",
                             min=0,
-                            step=0.00001
-                        )
-                    ]
+                            step=0.00001,
+                        ),
+                    ],
                 ),
                 html.Div(
                     className="subgrid-7",
                     children=[
                         dcc.Checklist(
-                            className='long-item',
+                            className="long-item",
                             id="moke_data_treatment_checklist",
                             options=[
                                 {"label": "Smoothing", "value": "smoothing"},
                                 {"label": "Correct offset", "value": "correct_offset"},
                                 {"label": "Low field filter", "value": "filter_zero"},
                                 {"label": "Connect loops", "value": "connect_loops"},
+                                # Shifting loops button, always disabled by default
+                                {
+                                    "label": "Shift loops",
+                                    "value": "shift_loops",
+                                    "disabled": True,
+                                },
                             ],
-                            value=["smoothing", "correct_offset", "filter_zero", "connect_loops"],
+                            value=[
+                                "smoothing",
+                                "correct_offset",
+                                "filter_zero",
+                                "connect_loops",
+                            ],
                         )
-                    ]
+                    ],
                 ),
                 html.Div(
                     className="subgrid-9",
-                    id='moke_data_treatment_inputs',
+                    id="moke_data_treatment_inputs",
                     children=[
-                        html.Label('Smoothing parameters'),
-                        html.Label('Polyorder'),
+                        html.Label("Smoothing parameters"),
+                        html.Label("Polyorder"),
                         dcc.Input(
-                            className='long-item',
-                            id='moke_smoothing_polyorder',
-                            type='number',
+                            className="long-item",
+                            id="moke_smoothing_polyorder",
+                            type="number",
                             min=0,
                             step=1,
                         ),
-                        html.Label('Range'),
+                        html.Label("Range"),
                         dcc.Input(
-                            className='long-item',
-                            id='moke_smoothing_range',
-                            type='number',
+                            className="long-item",
+                            id="moke_smoothing_range",
+                            type="number",
                             min=0,
-                            step=1
-                        )
-                    ]
-                )
+                            step=1,
+                        ),
+                    ],
+                ),
             ],
         )
 
@@ -214,7 +232,7 @@ class WidgetsMOKE:
                 dcc.Store(id="moke_database_path_store", data=None),
                 dcc.Store(id="moke_database_metadata_store", data=None),
                 dcc.Store(id="moke_data_treatment_store", data=None),
-                dcc.Store(id="moke_initial_load_trigger", data="load")
+                dcc.Store(id="moke_initial_load_trigger", data="load"),
             ]
         )
 
@@ -225,28 +243,26 @@ class WidgetsMOKE:
             children=[
                 dcc.Graph(id="moke_loop_map_figure"),
             ],
-            className='loop-map'
+            className="loop-map",
         )
 
         # Widget for the options on the loop map tab
         self.moke_loop_map_options = html.Div(
-            className='column-subgrid loop-options',
+            className="column-subgrid loop-options",
             children=[
                 html.Button(
-                    className='column-1 long-item',
+                    className="column-1 long-item",
                     children="Make Loop Map",
                     id="moke_loop_map_button",
                     n_clicks=0,
                 ),
                 dcc.Checklist(
-                    className='long-item',
+                    className="long-item",
                     id="moke_loop_map_checklist",
-                    options=[
-                        {"label": "Normalize", "value": "normalize"}
-                    ],
+                    options=[{"label": "Normalize", "value": "normalize"}],
                     value=[],
                 ),
-            ]
+            ],
         )
 
     def make_tab_from_widgets(self):
@@ -304,11 +320,11 @@ class WidgetsMOKE:
                                             ],
                                         )
                                     ],
-                                )
+                                ),
                             ],
                         )
                     ]
-                )
+                ),
             ],
         )
 

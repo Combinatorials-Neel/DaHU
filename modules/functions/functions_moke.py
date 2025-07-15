@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 from scipy.signal import savgol_filter
 
 from ..functions.functions_shared import *
@@ -31,8 +31,14 @@ def moke_get_measurement_from_hdf5(moke_group, target_x, target_y, index=1):
         integrated_pulse_array = mean_shot_group["integrated_pulse_mean"][()]
 
         measurement_dataframe = pd.DataFrame(
-            {"magnetization": magnetization_array, "pulse": pulse_array, "reflectivity": reflectivity_array,
-             "integrated_pulse": integrated_pulse_array, "time": time_array})
+            {
+                "magnetization": magnetization_array,
+                "pulse": pulse_array,
+                "reflectivity": reflectivity_array,
+                "integrated_pulse": integrated_pulse_array,
+                "time": time_array,
+            }
+        )
 
         return measurement_dataframe
 
@@ -40,7 +46,9 @@ def moke_get_measurement_from_hdf5(moke_group, target_x, target_y, index=1):
         shot_group = measurement_group.get(f"shot_{index}")
 
         if shot_group is None:
-            raise KeyError("Failed to retrieve shot group, index is probably out of bounds")
+            raise KeyError(
+                "Failed to retrieve shot group, index is probably out of bounds"
+            )
 
         magnetization_array = shot_group[f"magnetization_{index}"][()]
         pulse_array = shot_group[f"pulse_{index}"][()]
@@ -48,8 +56,14 @@ def moke_get_measurement_from_hdf5(moke_group, target_x, target_y, index=1):
         integrated_pulse_array = shot_group[f"integrated_pulse_{index}"][()]
 
         measurement_dataframe = pd.DataFrame(
-            {"magnetization": magnetization_array, "pulse": pulse_array, "reflectivity": reflectivity_array,
-             "integrated_pulse": integrated_pulse_array, "time": time_array})
+            {
+                "magnetization": magnetization_array,
+                "pulse": pulse_array,
+                "reflectivity": reflectivity_array,
+                "integrated_pulse": integrated_pulse_array,
+                "time": time_array,
+            }
+        )
 
         return measurement_dataframe
 
@@ -65,12 +79,13 @@ def moke_get_results_from_hdf5(moke_group, target_x, target_y):
 
 def moke_get_instrument_dict_from_hdf5(moke_group):
     instrument_dict = {}
-    
+
     parameters_group = moke_group.get("scan_parameters")
     for value, value_group in parameters_group.items():
         instrument_dict[value] = convert_bytes(value_group[()])
-    
+
     return instrument_dict
+
 
 def moke_integrate_pulse_array(pulse_array):
     field_array = np.zeros_like(np.array(pulse_array))
@@ -79,6 +94,7 @@ def moke_integrate_pulse_array(pulse_array):
     field_array[1350:1660] = np.cumsum(pulse_array[1350:1660])
 
     return field_array
+
 
 def moke_treat_measurement_dataframe(measurement_df, options_dict):
     # Check compatibility with the provided data treatment dictionary
@@ -91,6 +107,7 @@ def moke_treat_measurement_dataframe(measurement_df, options_dict):
         correct_offset = options_dict["correct_offset"]
         filter_zero = options_dict["filter_zero"]
         connect_loops = options_dict["connect_loops"]
+        shift_loops = options_dict["shift_loops"]
 
     except KeyError:
         raise KeyError(
@@ -102,31 +119,54 @@ def moke_treat_measurement_dataframe(measurement_df, options_dict):
     midpoint = len(measurement_df) // 2
     max_field = pulse_voltage * coil_factor / 100
 
-    measurement_df.loc[:midpoint, "field"] = measurement_df.loc[:midpoint, "integrated_pulse"].apply(
-        lambda x: -x * max_field / np.abs(measurement_df["integrated_pulse"].min())
-    )
-    measurement_df.loc[midpoint:, "field"] = measurement_df.loc[midpoint:, "integrated_pulse"].apply(
-        lambda x: -x * max_field / np.abs(measurement_df["integrated_pulse"].max())
-    )
+    measurement_df.loc[:midpoint, "field"] = measurement_df.loc[
+        :midpoint, "integrated_pulse"
+    ].apply(lambda x: -x * max_field / np.abs(measurement_df["integrated_pulse"].min()))
+    measurement_df.loc[midpoint:, "field"] = measurement_df.loc[
+        midpoint:, "integrated_pulse"
+    ].apply(lambda x: -x * max_field / np.abs(measurement_df["integrated_pulse"].max()))
 
     # Vertically center the loop
     if correct_offset:
         magnetization_offset = measurement_df["magnetization"].mean()
-        measurement_df.loc[:, "magnetization"] = measurement_df.loc[:, "magnetization"].apply(
-            lambda x: x - magnetization_offset
+        measurement_df.loc[:, "magnetization"] = measurement_df.loc[
+            :, "magnetization"
+        ].apply(lambda x: x - magnetization_offset)
+
+    # Shift loops
+    if shift_loops:
+        # Step 1: Remove NaNs (if filtering left them)
+        measurement_df = measurement_df[measurement_df["field"].notna()]
+
+        # Step 2: Split into two halves (assuming they're in time order)
+        midpoint = len(measurement_df) // 2
+        first_pulse = measurement_df.iloc[:midpoint]  # 0 → -X → 0
+        second_pulse = measurement_df.iloc[midpoint:]  # 0 → +X → 0
+
+        average_shift = (
+            second_pulse["magnetization"][:250].mean()
+            - first_pulse["magnetization"][:250].mean()
         )
+
+        measurement_df.loc[midpoint:, "magnetization"] = measurement_df.loc[
+            midpoint:, "magnetization"
+        ].apply(lambda x: x + average_shift)
+
+        measurement_df.loc[:midpoint, "magnetization"] = measurement_df.loc[
+            :midpoint, "magnetization"
+        ].apply(lambda x: x - average_shift)
 
     # Remove oddities around H=0 by forcing points in the positive(negative) loop to be over(under) a threshold
     if filter_zero:
         length = len(measurement_df)
         measurement_df = measurement_df[measurement_df["field"].notna()]
 
-        measurement_df.loc[: length // 2, "field"] = measurement_df.loc[: length // 2, "field"].where(
-            measurement_df["field"] > 1e-2
-        )
-        measurement_df.loc[length // 2 :, "field"] = measurement_df.loc[length // 2 :, "field"].where(
-            measurement_df["field"] < -1e-2
-        )
+        measurement_df.loc[: length // 2, "field"] = measurement_df.loc[
+            : length // 2, "field"
+        ].where(measurement_df["field"] > 1e-2)
+        measurement_df.loc[length // 2 :, "field"] = measurement_df.loc[
+            length // 2 :, "field"
+        ].where(measurement_df["field"] < -1e-2)
 
     if connect_loops:
         # Step 1: Remove NaNs (if filtering left them)
@@ -143,7 +183,9 @@ def moke_treat_measurement_dataframe(measurement_df, options_dict):
         # Step 4 (optional): Loop continuity — duplicate first few points at end
         wrap_points = 1  # number of points to "wrap"
         if len(reordered) >= wrap_points:
-            reordered = pd.concat([reordered, reordered.iloc[:wrap_points]], ignore_index=True)
+            reordered = pd.concat(
+                [reordered, reordered.iloc[:wrap_points]], ignore_index=True
+            )
 
         measurement_df = reordered
 
@@ -152,7 +194,6 @@ def moke_treat_measurement_dataframe(measurement_df, options_dict):
         measurement_df.loc[:, "magnetization"] = savgol_filter(
             measurement_df["magnetization"], smoothing_range, smoothing_polyorder
         )
-
 
     return measurement_df
 
@@ -174,7 +215,6 @@ def extract_loop_section(data: pd.DataFrame):
         return loop_section
     except NameError:
         raise NameError("field column not defined")
-
 
 
 def moke_calc_max_kerr_rotation(data: pd.DataFrame):
@@ -239,7 +279,7 @@ def moke_calc_derivative_coercivity(data: pd.DataFrame):
     return coercivity_positive, coercivity_negative
 
 
-def moke_calc_mzero_coercivity(data: pd.DataFrame):
+def moke_calc_mzero_coercivity(data: pd.DataFrame, threshold=8.0e-3):
     """
     From a dataframe, return the field values where magnetization is closest to 0
 
@@ -249,6 +289,13 @@ def moke_calc_mzero_coercivity(data: pd.DataFrame):
     Returns:
         float, float
     """
+
+    if (
+        data["magnetization"].max() < threshold
+        and data["magnetization"].min() > -threshold
+    ):
+        return 0, 0
+
     coercivity_positive = data.loc[
         np.abs(data.loc[data["field"] > 0, "magnetization"]).idxmin(skipna=True),
         "field",
@@ -338,6 +385,7 @@ def moke_fit_intercept(data: pd.DataFrame, treatment_dict: dict):
 
     return float(positive_intercept_field), float(negative_intercept_field), fit_dict
 
+
 def moke_batch_fit(moke_group, treatment_dict):
     results_dict = {}
     for position, position_group in moke_group.items():
@@ -350,11 +398,19 @@ def moke_batch_fit(moke_group, treatment_dict):
         pulse_array = mean_shot_group["pulse_mean"][()]
         reflectivity_array = mean_shot_group["reflectivity_mean"][()]
         integrated_pulse_array = mean_shot_group["integrated_pulse_mean"][()]
-        
-        measurement_dataframe = pd.DataFrame({"magnetization": magnetization_array, "pulse": pulse_array, "reflectivity": reflectivity_array,
-                                              "integrated_pulse": integrated_pulse_array})
 
-        measurement_dataframe = moke_treat_measurement_dataframe(measurement_dataframe, treatment_dict)
+        measurement_dataframe = pd.DataFrame(
+            {
+                "magnetization": magnetization_array,
+                "pulse": pulse_array,
+                "reflectivity": reflectivity_array,
+                "integrated_pulse": integrated_pulse_array,
+            }
+        )
+
+        measurement_dataframe = moke_treat_measurement_dataframe(
+            measurement_dataframe, treatment_dict
+        )
 
         max_kerr_rotation = moke_calc_max_kerr_rotation(measurement_dataframe)
         reflectivity = moke_calc_reflectivity(measurement_dataframe)
@@ -363,13 +419,26 @@ def moke_batch_fit(moke_group, treatment_dict):
         intercepts = list(moke_fit_intercept(measurement_dataframe, treatment_dict))
 
         results_dict[f"{position}"] = {
-            "max_kerr_signal":max_kerr_rotation,
-            "reflectivity":reflectivity,
-            "coercivity_m0":{"negative":coercivity_m0[0], "positive":coercivity_m0[1], "mean":abs_mean(coercivity_m0)},
-            "coercivity_dmdh":{"negative":coercivity_dmdh[0], "positive":coercivity_dmdh[1], "mean":abs_mean(coercivity_dmdh)},
-            "intercept_field":{"negative":intercepts[0], "positive":intercepts[1], "mean":abs_mean(intercepts[:2]), "coefficients":intercepts[2]},
+            "max_kerr_signal": max_kerr_rotation,
+            "reflectivity": reflectivity,
+            "coercivity_m0": {
+                "negative": coercivity_m0[0],
+                "positive": coercivity_m0[1],
+                "mean": abs_mean(coercivity_m0),
+            },
+            "coercivity_dmdh": {
+                "negative": coercivity_dmdh[0],
+                "positive": coercivity_dmdh[1],
+                "mean": abs_mean(coercivity_dmdh),
+            },
+            "intercept_field": {
+                "negative": intercepts[0],
+                "positive": intercepts[1],
+                "mean": abs_mean(intercepts[:2]),
+                "coefficients": intercepts[2],
+            },
         }
-            
+
     return results_dict
 
 
@@ -382,13 +451,19 @@ def moke_make_results_dataframe_from_hdf5(moke_group):
 
         instrument_group = position_group.get("instrument")
         # Exclude spots outside the wafer
-        if np.abs(instrument_group["x_pos"][()]) + np.abs(instrument_group["y_pos"][()]) <= 60:
+        if (
+            np.abs(instrument_group["x_pos"][()])
+            + np.abs(instrument_group["y_pos"][()])
+            <= 60
+        ):
 
             results_group = position_group.get("results")
 
-            data_dict = {"x_pos (mm)": instrument_group["x_pos"][()],
-                         "y_pos (mm)": instrument_group["y_pos"][()],
-                         "ignored": position_group.attrs["ignored"]}
+            data_dict = {
+                "x_pos (mm)": instrument_group["x_pos"][()],
+                "y_pos (mm)": instrument_group["y_pos"][()],
+                "ignored": position_group.attrs["ignored"],
+            }
 
             if results_group is not None:
                 for value, value_group in results_group.items():
@@ -471,26 +546,34 @@ def moke_plot_vlines(fig, values):
             annotation_position = "top left"
 
         fig.add_vline(
-        value,
-        line_width=2,
-        line_color="Firebrick",
-        annotation_text=f"{value:.2f} T",
-        annotation_font_size=14,
-        annotation_font_color="Firebrick",
-        annotation_position=annotation_position
-    )
+            value,
+            line_width=2,
+            line_color="Firebrick",
+            annotation_text=f"{value:.2f} T",
+            annotation_font_size=14,
+            annotation_font_color="Firebrick",
+            annotation_position=annotation_position,
+        )
 
     return fig
 
 
-def moke_plot_loop_map(hdf5_file, options_dict, normalize = False):
+def moke_plot_loop_map(hdf5_file, options_dict, normalize=False):
     results_dataframe = moke_make_results_dataframe_from_hdf5(hdf5_file)
     instrument_dict = moke_get_instrument_dict_from_hdf5(hdf5_file)
 
-    x_min, x_max = results_dataframe["x_pos (mm)"].min(), results_dataframe["x_pos (mm)"].max()
-    y_min, y_max = results_dataframe["y_pos (mm)"].min(), results_dataframe["y_pos (mm)"].max()
+    x_min, x_max = (
+        results_dataframe["x_pos (mm)"].min(),
+        results_dataframe["x_pos (mm)"].max(),
+    )
+    y_min, y_max = (
+        results_dataframe["y_pos (mm)"].min(),
+        results_dataframe["y_pos (mm)"].max(),
+    )
 
-    x_dim, y_dim = int(instrument_dict["number_of_points_x"]), int(instrument_dict["number_of_points_y"])
+    x_dim, y_dim = int(instrument_dict["number_of_points_x"]), int(
+        instrument_dict["number_of_points_y"]
+    )
 
     if x_dim == 1:
         step_x = 1
@@ -520,6 +603,9 @@ def moke_plot_loop_map(hdf5_file, options_dict, normalize = False):
     )
 
     for index, row in results_dataframe.iterrows():
+        if row["ignored"]:
+            continue
+
         target_x = row["x_pos (mm)"]
         target_y = row["y_pos (mm)"]
 
@@ -547,28 +633,7 @@ def moke_plot_loop_map(hdf5_file, options_dict, normalize = False):
                 col=fig_col,
             )
         if not normalize:
-            y_max = results_dataframe["max_kerr_rotation"].max()
+            y_max = results_dataframe["max_kerr_signal_(V)"].max()
             fig.update_yaxes(range=[-y_max, y_max], row=fig_row, col=fig_col)
 
     return fig
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
