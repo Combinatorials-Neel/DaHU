@@ -85,7 +85,7 @@ def callbacks_moke(app, children_moke):
                 plot_title = f"{name} MOKE map <br>{selected_dataset}"
                 colorbar_title = f"{unit}"
                 if name == "coercivity_m0" or name == "max_kerr_signal":
-                    colorscale = "Rainbow"
+                    colorscale = "Plasma"
             else:
                 plot_title = ""
                 colorbar_title = ""
@@ -266,6 +266,7 @@ def callbacks_moke(app, children_moke):
             "filter_zero": False,
             "connect_loops": False,
             "pulse_voltage": 432,
+            "shift_loops": False,
         }
 
         if "smoothing" in treatment_checklist:
@@ -276,6 +277,8 @@ def callbacks_moke(app, children_moke):
             treatment_dict.update({"filter_zero": True})
         if "connect_loops" in treatment_checklist:
             treatment_dict.update({"connect_loops": True})
+        if "shift_loops" in treatment_checklist:
+            treatment_dict.update({"shift_loops": False})
 
         return treatment_dict, coil_factor, smoothing_polyorder, smoothing_range
 
