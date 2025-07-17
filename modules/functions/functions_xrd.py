@@ -120,6 +120,11 @@ def xrd_make_results_dataframe_from_hdf5(xrd_group):
                             value_str = dataset.split("+")[0]
                             if value_str == "UNDEF":
                                 dataset = np.nan
+                            elif value_str == "ERROR":
+                                dataset = np.nan
+                                print(
+                                    f"Warning : Error in refined lattice parameter in {xrd_group} for phase {phase}"
+                                )
                             else:
                                 dataset = float(value_str)
 
