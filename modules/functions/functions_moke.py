@@ -144,17 +144,17 @@ def moke_treat_measurement_dataframe(measurement_df, options_dict):
         second_pulse = measurement_df.iloc[midpoint:]  # 0 → +X → 0
 
         average_shift = (
-            second_pulse["magnetization"][:250].mean()
-            - first_pulse["magnetization"][:250].mean()
+            second_pulse["magnetization"][:300].mean()
+            - first_pulse["magnetization"][700:].mean()
         )
 
         measurement_df.loc[midpoint:, "magnetization"] = measurement_df.loc[
             midpoint:, "magnetization"
-        ].apply(lambda x: x + average_shift)
+        ].apply(lambda x: x - average_shift / 2)
 
         measurement_df.loc[:midpoint, "magnetization"] = measurement_df.loc[
             :midpoint, "magnetization"
-        ].apply(lambda x: x - average_shift)
+        ].apply(lambda x: x + average_shift / 2)
 
     # Remove oddities around H=0 by forcing points in the positive(negative) loop to be over(under) a threshold
     if filter_zero:

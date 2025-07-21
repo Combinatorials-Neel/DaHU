@@ -174,8 +174,10 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
 
                     # Remove CdTe data from alignment scans if present
                     if "CdTe" in source_instrument_group.keys():
-                        del source_instrument_group["CdTe/data"]
-                        del source_instrument_group["CdTe/image"]
+                        if "CdTe/data" in source_instrument_group.keys():
+                            del source_instrument_group["CdTe/data"]
+                        if "CdTe/image" in source_instrument_group.keys():
+                            del source_instrument_group["CdTe/image"]
                     if "CdTe" in source_measurement_group.keys():
                         del source_measurement_group["CdTe"]
 
