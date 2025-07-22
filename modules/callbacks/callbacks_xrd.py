@@ -90,7 +90,7 @@ def callbacks_xrd(app, children_xrd):
                 name, unit = split_name_and_unit(heatmap_select)
 
                 if name.endswith("A") or name.endswith("B") or name.endswith("C"):
-                    colorscale = "Rainbow"
+                    colorscale = "Plasma"
                 if "phase_fraction" in name:
                     unit = "wt.%"
                     scaling = 100
