@@ -547,7 +547,7 @@ def moke_plot_loop_map(hdf5_file, options_dict, normalize = False):
                 col=fig_col,
             )
         if not normalize:
-            y_max = results_dataframe["max_kerr_rotation"].max()
+            y_max = results_dataframe["max_kerr_signal_(V)"].max()
             fig.update_yaxes(range=[-y_max, y_max], row=fig_row, col=fig_col)
 
     return fig
