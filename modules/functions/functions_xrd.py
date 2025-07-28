@@ -7,6 +7,7 @@ import plotly.express as px
 from itertools import cycle
 
 from ..functions.functions_shared import *
+from ..functions.functions_hdf5 import *
 
 
 def xrd_conditions(hdf5_path, *args, **kwargs):

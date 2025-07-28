@@ -79,13 +79,10 @@ def callbacks_moke(app, children_moke):
 
             moke_df = moke_make_results_dataframe_from_hdf5(moke_group)
 
-            colorscale = "Plasma"
             if heatmap_select is not None and selected_dataset is not None:
                 name, unit = split_name_and_unit(heatmap_select)
                 plot_title = f"{name} MOKE map <br>{selected_dataset}"
                 colorbar_title = f"{unit}"
-                if name == "coercivity_m0" or name == "max_kerr_signal":
-                    colorscale = "Plasma"
             else:
                 plot_title = ""
                 colorbar_title = ""
@@ -99,7 +96,6 @@ def callbacks_moke(app, children_moke):
                 colorbar_title=colorbar_title,
                 precision=precision,
                 masking=masking,
-                colorscale=colorscale,
             )
 
             z_min = np.round(fig.data[0].zmin, precision)
@@ -140,14 +136,10 @@ def callbacks_moke(app, children_moke):
 
         with h5py.File(hdf5_path, "r") as hdf5_file:
             moke_group = hdf5_file[selected_dataset]
-            measurement_df = moke_get_measurement_from_hdf5(
-                moke_group, target_x, target_y
-            )
+            measurement_df = moke_get_measurement_from_hdf5(moke_group, target_x, target_y)
             results_dict = moke_get_results_from_hdf5(moke_group, target_x, target_y)
 
-        measurement_df = moke_treat_measurement_dataframe(
-            measurement_df, treatment_dict
-        )
+        measurement_df = moke_treat_measurement_dataframe(measurement_df, treatment_dict)
 
         title_tag = ""
         if plot_options == "oscilloscope":
@@ -158,34 +150,17 @@ def callbacks_moke(app, children_moke):
             title_tag = "hysteresis loop"
         elif plot_options == "stored_result":
             fig = moke_plot_loop_from_dataframe(fig, measurement_df)
-            if heatmap_select == "coercivity_m0":
-                fig = moke_plot_vlines(
-                    fig,
-                    values=[
-                        results_dict["coercivity_m0"]["negative"],
-                        results_dict["coercivity_m0"]["positive"],
-                    ],
-                )
-            if heatmap_select == "coercivity_dmdh":
-                fig = moke_plot_vlines(
-                    fig,
-                    values=[
-                        results_dict["coercivity_dmdh"]["negative"],
-                        results_dict["coercivity_dmdh"]["positive"],
-                    ],
-                )
-            if heatmap_select == "intercept_field":
-                fig = moke_plot_vlines(
-                    fig,
-                    values=[
-                        results_dict["coercivity_dmdh"]["negative"],
-                        results_dict["coercivity_dmdh"]["positive"],
-                    ],
-                )
+            if heatmap_select == "coercivity_m0_(T)":
+                fig = moke_plot_vlines(fig, values=[results_dict["coercivity_m0"]["negative"],
+                                              results_dict["coercivity_m0"]["positive"]])
+            if heatmap_select == "coercivity_dmdh_(T)":
+                fig = moke_plot_vlines(fig, values=[results_dict["coercivity_dmdh"]["negative"],
+                                              results_dict["coercivity_dmdh"]["positive"]])
+            if heatmap_select == "intercept_field_(T)":
+                fig = moke_plot_vlines(fig, values=[results_dict["coercivity_dmdh"]["negative"],
+                                              results_dict["coercivity_dmdh"]["positive"]])
 
-        fig.update_layout(
-            plot_layout(title=f"{title_tag} <br>x = {target_x}, y = {target_y}"),
-        )
+        fig.update_layout(plot_layout(title=f"{title_tag} <br>x = {target_x}, y = {target_y}"),)
 
         return fig
 
@@ -231,31 +206,12 @@ def callbacks_moke(app, children_moke):
         default_coil_factor = 0.92667
         default_smoothing_polyorder = 1
         default_smoothing_range = 10
-        if database_path is not None:
-            if metadata is None:
-                metadata = read_metadata(database_path)
-            if coil_factor is None:
-                try:
-                    coil_factor = metadata["coil_factor"]
-                except TypeError or KeyError:
-                    pass
-            if smoothing_polyorder is None:
-                try:
-                    smoothing_polyorder = metadata["smoothing_polyorder"]
-                except TypeError or KeyError:
-                    pass
-            if smoothing_range is None:
-                try:
-                    smoothing_range = metadata["smoothing_range"]
-                except TypeError or KeyError:
-                    pass
-        else:
-            if coil_factor is None:
-                coil_factor = default_coil_factor
-            if smoothing_polyorder is None:
-                smoothing_polyorder = default_smoothing_polyorder
-            if smoothing_range is None:
-                smoothing_range = default_smoothing_range
+        if coil_factor is None:
+            coil_factor = default_coil_factor
+        if smoothing_polyorder is None:
+            smoothing_polyorder = default_smoothing_polyorder
+        if smoothing_range is None:
+            smoothing_range = default_smoothing_range
 
         treatment_dict = {
             "coil_factor": coil_factor,
