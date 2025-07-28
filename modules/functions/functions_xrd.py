@@ -32,7 +32,7 @@ def xrd_get_integrated_from_hdf5(xrd_group, target_x, target_y):
 
     elif xrd_group.attrs["instrument"] == "Rigaku Smartlab":
         q_array = measurement_group["angle"][()]
-        intensity_array = measurement_group["counts"]
+        intensity_array = measurement_group["intensity"]
 
     else:
         raise KeyError(

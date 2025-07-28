@@ -123,13 +123,13 @@ def callbacks_moke(app, children_moke):
             title_tag = "hysteresis loop"
         elif plot_options == "stored_result":
             fig = moke_plot_loop_from_dataframe(fig, measurement_df)
-            if heatmap_select == "coercivity_m0":
+            if heatmap_select == "coercivity_m0_(T)":
                 fig = moke_plot_vlines(fig, values=[results_dict["coercivity_m0"]["negative"],
                                               results_dict["coercivity_m0"]["positive"]])
-            if heatmap_select == "coercivity_dmdh":
+            if heatmap_select == "coercivity_dmdh_(T)":
                 fig = moke_plot_vlines(fig, values=[results_dict["coercivity_dmdh"]["negative"],
                                               results_dict["coercivity_dmdh"]["positive"]])
-            if heatmap_select == "intercept_field":
+            if heatmap_select == "intercept_field_(T)":
                 fig = moke_plot_vlines(fig, values=[results_dict["coercivity_dmdh"]["negative"],
                                               results_dict["coercivity_dmdh"]["positive"]])
 
