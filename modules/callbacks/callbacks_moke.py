@@ -181,28 +181,19 @@ def callbacks_moke(app, children_moke):
                 moke_results_dict_to_hdf5(moke_group, results_dict, treatment_dict)
                 return "Great Success!"
 
-    @app.callback(
-        [
-            Output("moke_data_treatment_store", "data"),
-            Output("moke_coil_factor", "value"),
-            Output("moke_smoothing_polyorder", "value"),
-            Output("moke_smoothing_range", "value"),
-        ],
-        Input("moke_data_treatment_checklist", "value"),
-        Input("moke_coil_factor", "value"),
-        Input("moke_smoothing_polyorder", "value"),
-        Input("moke_smoothing_range", "value"),
-        Input("moke_database_path_store", "data"),
-        State("moke_database_metadata_store", "data"),
-    )
-    def store_data_treatment(
-        treatment_checklist,
-        coil_factor,
-        smoothing_polyorder,
-        smoothing_range,
-        database_path,
-        metadata,
-    ):
+
+    @app.callback([Output('moke_data_treatment_store', 'data'),
+                   Output('moke_coil_factor', 'value'),
+                   Output('moke_smoothing_polyorder', 'value'),
+                   Output('moke_smoothing_range', 'value')],
+                  Input('moke_data_treatment_checklist', 'value'),
+                  Input('moke_coil_factor', 'value'),
+                  Input('moke_smoothing_polyorder', 'value'),
+                  Input('moke_smoothing_range', 'value'),
+                  )
+
+    def store_data_treatment(treatment_checklist, coil_factor, smoothing_polyorder,
+                             smoothing_range):
         default_coil_factor = 0.92667
         default_smoothing_polyorder = 1
         default_smoothing_range = 10
