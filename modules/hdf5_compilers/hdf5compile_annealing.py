@@ -9,10 +9,10 @@ ANNEALING_WRITER_VERSION = '0.1'
 
 annealing_measurement_units_dict = {
     "Time": "s",
-    "TC1": "celsius",
-    "TC3": "celsius",
-    "Pyro": "celsius",
-    "Setpoint": "celsius",
+    "TC1": "°C",
+    "TC3": "°C",
+    "Pyro": "°C",
+    "Setpoint": "°C",
     "Pyro_mV": "mV",
     "Pressure": "mbar",
     "Power": "%",
@@ -20,9 +20,9 @@ annealing_measurement_units_dict = {
 }
 
 annealing_results_units_dict = {
-    "max_temperature": "celsius",
+    "max_temperature": "°C",
     "time": "s",
-    "temperature": "celsius",
+    "temperature": "°C",
 }
 
 
