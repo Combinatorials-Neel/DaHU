@@ -36,3 +36,72 @@ def write_dict_to_hdf5(xrd_dict, node):
     return None
 
 
+def dataframe_to_hdf5(df, hdf5_group):
+    for col in df.columns:
+        hdf5_group.create_dataset(
+            col, data=np.array(df[col]), dtype="float"
+        )
+    return True
+
+def hdf5_units_from_dict(units_dict, hdf5_group):
+    for subname, subgroup in hdf5_group.items():
+        if subname in units_dict.keys():
+            subgroup.attrs["units"] = units_dict[subname]
+
+
+def save_dict_to_hdf5(hdf5_group, results_dict):
+    for key, value in results_dict.items():
+        if isinstance(value, dict):
+            # Create a group and recurse
+            subgroup = hdf5_group.create_group(key)
+            save_dict_to_hdf5(subgroup, value)
+        else:
+            if isinstance(value, (int, float, str, np.ndarray, list, tuple)):
+                hdf5_group.create_dataset(key, data=value)
+            else:
+                # Fallback: store as string representation
+                hdf5_group.create_dataset(key, data=str(value))
+
+
+def check_group_for_results(hdf5_group):
+    for position, position_group in hdf5_group.items():
+        if "results" not in position_group:
+            return False
+    return True
+
+
+def get_hdf5_datasets(hdf5_file, dataset_type):
+    dataset_list = []
+    for dataset, dataset_group in hdf5_file.items():
+        if "HT_type" in dataset_group.attrs or dataset_type == "all":
+            if dataset_type == "all" or dataset_type == dataset_group.attrs["HT_type"]:
+                dataset_list.append(dataset)
+
+    return dataset_list
+
+
+def hdf5_group_to_dict(hdf5_group):
+    """
+    Recursively converts a h5py.Group into a nested dictionary.
+    Datasets are read into memory.
+    """
+    nested_dict = {}
+
+    for key, item in hdf5_group.items():
+        if isinstance(item, h5py.Dataset):
+            nested_dict[key] = item[()]
+        elif isinstance(item, h5py.Group):
+            nested_dict[key] = hdf5_group_to_dict(item)
+
+    return nested_dict
+
+
+def get_sample_info_from_hdf5(hdf5_path):
+    info_dict = {}
+
+    with h5py.File(hdf5_path, "r") as f:
+        sample_group = f["/sample"]
+
+        info_dict["sample_name"] = sample_group["sample_name"][()]
+    return info_dict
+
