@@ -164,40 +164,19 @@ def callbacks_moke(app, children_moke):
                   Input('moke_coil_factor', 'value'),
                   Input('moke_smoothing_polyorder', 'value'),
                   Input('moke_smoothing_range', 'value'),
-                  Input('moke_database_path_store', 'data'),
-                  State('moke_database_metadata_store', 'data'),
                   )
 
     def store_data_treatment(treatment_checklist, coil_factor, smoothing_polyorder,
-                             smoothing_range, database_path, metadata):
+                             smoothing_range):
         default_coil_factor = 0.92667
         default_smoothing_polyorder = 1
         default_smoothing_range = 10
-        if database_path is not None:
-            if metadata is None:
-                metadata = read_metadata(database_path)
-            if coil_factor is None:
-                try:
-                    coil_factor = metadata['coil_factor']
-                except TypeError or KeyError:
-                    pass
-            if smoothing_polyorder is None:
-                try:
-                    smoothing_polyorder = metadata['smoothing_polyorder']
-                except TypeError or KeyError:
-                    pass
-            if smoothing_range is None:
-                try:
-                    smoothing_range = metadata['smoothing_range']
-                except TypeError or KeyError:
-                    pass
-        else:
-            if coil_factor is None:
-                coil_factor = default_coil_factor
-            if smoothing_polyorder is None:
-                smoothing_polyorder = default_smoothing_polyorder
-            if smoothing_range is None:
-                smoothing_range = default_smoothing_range
+        if coil_factor is None:
+            coil_factor = default_coil_factor
+        if smoothing_polyorder is None:
+            smoothing_polyorder = default_smoothing_polyorder
+        if smoothing_range is None:
+            smoothing_range = default_smoothing_range
 
 
         treatment_dict = {"coil_factor" : coil_factor,
