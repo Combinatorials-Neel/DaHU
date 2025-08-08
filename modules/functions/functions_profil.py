@@ -4,8 +4,8 @@ import plotly.graph_objs as go
 from sklearn.linear_model import RANSACRegressor, LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import HuberRegressor
-from functions_shared import *
-from modules.hdf5_compilers.hdf5compile_profil import write_dektak_results_to_hdf5
+from ..functions.functions_shared import *
+from ..functions.functions_hdf5 import *
 
 
 def profil_conditions(hdf5_path, *args, **kwargs):
