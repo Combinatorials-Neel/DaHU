@@ -57,7 +57,7 @@ class WidgetsHDF5:
                     className="text-9",
                     children=[dcc.Dropdown(className="long-item",
                                            id="hdf5_measurement_type",
-                                           options=["EDX", "PROFIL", "MOKE", "XRD", "ESRF", "XRD results", "Annealing"],
+                                           options=["EDX", "PROFIL", "MOKE", "XRD", "ESRF", "XRD results", "Annealing", "Magnetron", "Triode"],
                                            value=None)]
                 )
             ],

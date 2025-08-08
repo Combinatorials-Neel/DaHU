@@ -143,10 +143,11 @@ def format_measurement_df_magnetron(df):
 
 def read_measurement_df_magnetron(file_path):
     df = pd.read_csv(file_path, encoding="ANSI", skiprows=1)
-    df = df.loc[:, (df != 0).any(axis=0)]
-    df = remove_zero_columns(df)
+    df = df.iloc[2:].reset_index(drop=True) # Drop first row, filled with "?"
 
     df = format_measurement_df_magnetron(df)
+    df = df.apply(pd.to_numeric, errors='coerce')
+    df = remove_zero_columns(df)
 
     return df
 
@@ -161,22 +162,22 @@ def read_prp_from_magnetron(prp_path):
         if line.startswith("STEP"):
             prp_dict = read_prp_line(line)
             prp_dict = translate_prp_dict(prp_dict)
-            print(prp_dict)
             step_number = prp_dict.pop("step number")
             final_dict[step_number] = prp_dict
 
     return final_dict
 
 
-def write_magnetron_to_hdf5(hdf5_path, source_path, deposition_dict):
+def write_magnetron_to_hdf5(hdf5_path, source_path):
     source_path = Path(source_path)
-    for file_path in safe_glob(source_path, ".txt"):
+    for file_path in safe_rglob(source_path, "*.txt"):
         measurement_df = read_measurement_df_magnetron(file_path)
-    for file_path in safe_glob(source_path, ".prp"):
+        print(measurement_df)
+    for file_path in safe_rglob(source_path, "*.prp"):
         instrument_dict = read_prp_from_magnetron(file_path)
 
     with h5py.File(hdf5_path, "a") as hdf5_file:
-        deposition_group = hdf5_file.create_group("deposition")
+        deposition_group = hdf5_file.create_group("deposition10")
         deposition_group.attrs["HT_type"] = "magnetron"
         deposition_group.attrs["instrument"] = "AllianceConcept DP850"
         deposition_group.attrs["magnetron_writer"] = MAGNETRON_WRITER_VERSION
