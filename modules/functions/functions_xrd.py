@@ -7,6 +7,7 @@ import plotly.express as px
 from itertools import cycle
 
 from ..functions.functions_shared import *
+from ..functions.functions_hdf5 import *
 
 
 def xrd_conditions(hdf5_path, *args, **kwargs):
@@ -32,7 +33,7 @@ def xrd_get_integrated_from_hdf5(xrd_group, target_x, target_y):
 
     elif xrd_group.attrs["instrument"] == "Rigaku Smartlab":
         q_array = measurement_group["angle"][()]
-        intensity_array = measurement_group["intensity"][()]
+        intensity_array = measurement_group["intensity"]
 
     else:
         raise KeyError(

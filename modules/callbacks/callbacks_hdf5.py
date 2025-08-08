@@ -6,8 +6,9 @@ from ..functions.functions_edx import edx_make_results_dataframe_from_hdf5
 from ..functions.functions_profil import profil_make_results_dataframe_from_hdf5
 from ..functions.functions_shared import *
 from ..functions.functions_xrd import xrd_make_results_dataframe_from_hdf5
-from ..hdf5_compilers.hdf5compile_annealing import write_annealing_to_hdf5, manual_annealing_to_hdf5
+from ..hdf5_compilers.hdf5compile_annealing import *
 from ..hdf5_compilers.hdf5compile_base import *
+from ..hdf5_compilers.hdf5compile_deposition import write_magnetron_to_hdf5
 from ..hdf5_compilers.hdf5compile_edx import *
 from ..hdf5_compilers.hdf5compile_esrf import write_esrf_to_hdf5, write_xrd_results_to_hdf5
 from ..hdf5_compilers.hdf5compile_moke import *
@@ -111,6 +112,9 @@ def callbacks_hdf5(app):
             if uploaded_folder_path is not None:
                 uploaded_folder_path = Path(uploaded_folder_path)
             hdf5_path = Path(hdf5_path)
+            if measurement_type == "Magnetron":
+                write_magnetron_to_hdf5(hdf5_path, uploaded_folder_path)
+                return f'Added {measurement_type} measurement to {hdf5_path} as {dataset_name}.'
             if measurement_type == 'EDX':
                 write_edx_to_hdf5(hdf5_path, uploaded_folder_path, dataset_name=dataset_name)
                 return f'Added {measurement_type} measurement to {hdf5_path} as {dataset_name}.'
@@ -144,6 +148,7 @@ def callbacks_hdf5(app):
                     write_annealing_to_hdf5(hdf5_path, uploaded_file_path, anneal_dict, dataset_name=dataset_name)
                 else:
                     manual_annealing_to_hdf5(hdf5_path, anneal_dict, dataset_name=dataset_name)
+
 
                 return f'Added {measurement_type} data to {hdf5_path}.'
 

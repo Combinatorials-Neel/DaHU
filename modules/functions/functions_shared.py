@@ -49,25 +49,6 @@ def cleanup_directory(folderpath):
         os.makedirs(folderpath)
 
 
-def get_version(tag: str):
-    """
-    Scan the versions.txt file to extract version information.
-
-    Parameters:
-        tag (str): 'app', 'dektak', 'moke' Select which version to extract
-
-    Returns:
-        version (str): version of selected item
-    """
-
-    version_file_path = Path(os.path.abspath("./config/versions.txt"))
-    with open(version_file_path, "r") as version_file:
-        for line in version_file:
-            if line.startswith(tag.strip()):
-                version = line.split(" = ")[1]
-                return version
-
-
 def safe_glob(directory, pattern="*"):
     return [
         f
@@ -126,7 +107,8 @@ def detect_measurement(filename_list: list):
         "PROFIL": ["asc2d"],
         "ESRF": ["h5"],
         "XRD results": ["lst"],
-        "Annealing": [".HIS"],
+        "Annealing": ["HIS"],
+        "Magnetron": ["prp"]
     }
 
     for measurement_type, file_type in measurement_dict.items():
@@ -139,103 +121,6 @@ def detect_measurement(filename_list: list):
                 depth = filename.count("/")
                 return measurement_type, depth
     return None
-
-
-def get_sample_info_from_hdf5(hdf5_path):
-    info_dict = {}
-
-    with h5py.File(hdf5_path, "r") as f:
-        sample_group = f["/sample"]
-
-        info_dict["sample_name"] = sample_group["sample_name"][()]
-    return info_dict
-
-
-def get_database_path(folderpath: Path):
-    """
-    Scan a folder to find a database file, tagged as *_database.csv
-
-    Parameters:
-        folderpath (pathlib.Path): Path to the folder containing the database
-
-    Returns:
-        database_path (pathlib.Path): Path to the database file within the specified folder
-    """
-
-    database_path = None
-    for path in folderpath.glob("*_database.csv"):
-        if database_path is None:
-            database_path = path
-        elif database_path is not None:
-            raise NameError(
-                "Multiple files ending in _database.csv found, check your folder"
-            )
-    if database_path is None:
-        return None
-    return folderpath / database_path
-
-
-def compare_version(database_path: Path):
-    metadata_dict = read_metadata(database_path)
-    try:
-        tag = metadata_dict["Database type"].lower()
-        version = metadata_dict["Database version"]
-        if version.strip() == get_version(tag).strip():
-            return True
-        else:
-            return False
-
-    except KeyError:
-        return False
-
-
-def save_with_metadata(df: pd.DataFrame, export_path: Path, metadata=None):
-    """
-    Save a dataframe to a csv while including metadata as comments (#).
-
-    Parameters:
-        df: The dataframe to be saved.
-        export_path: The path to save the dataframe to.
-        metadata: Metadata to be added to the dataframe.
-
-    Returns:
-        N/A. A file is created without returning anything
-    """
-
-    if metadata is None:
-        metadata = {}
-
-    with open(export_path, "w") as file:
-        for key, line in metadata.items():
-            file.write(f"# {key} = {line} \n")
-
-    df.to_csv(export_path, mode="a", index=False)
-
-
-def read_metadata(database_path):
-    """
-    For a given database path, read the metadata in the file, as marked by (#) tags
-
-    Parameters:
-        database_path (pathlib.Path): Path to the database file
-
-    Returns:
-        metadata (list): Metadata extracted from the database
-    """
-
-    metadata = {}
-    with open(database_path, "r") as file:
-        for line in file:
-            if line.startswith("#"):
-                line = line.strip("# ")
-                try:
-                    key, value = line.split(" = ")[0], line.split(" = ")[1].strip("\n")
-                except IndexError:
-                    key, value = line.split(": ")[0], line.split(": ")[1].strip("\n")
-                metadata[key] = value
-
-    return metadata
-
 
 def heatmap_layout(title=""):
     """
@@ -465,41 +350,9 @@ def make_heatmap_from_dataframe(
     return fig
 
 
-def check_group_for_results(hdf5_group):
-    for position, position_group in hdf5_group.items():
-        if "results" not in position_group:
-            return False
-    return True
-
-
-def get_hdf5_datasets(hdf5_file, dataset_type):
-    dataset_list = []
-    for dataset, dataset_group in hdf5_file.items():
-        if "HT_type" in dataset_group.attrs or dataset_type == "all":
-            if dataset_type == "all" or dataset_type == dataset_group.attrs["HT_type"]:
-                dataset_list.append(dataset)
-
-
-    return dataset_list
-
-
 def pairwise(list):
     a = iter(list)
     return zip(a, a)
-
-
-def save_dict_to_hdf5(hdf5_group, results_dict):
-    for key, value in results_dict.items():
-        if isinstance(value, dict):
-            # Create a group and recurse
-            subgroup = hdf5_group.create_group(key)
-            save_dict_to_hdf5(subgroup, value)
-        else:
-            if isinstance(value, (int, float, str, np.ndarray, list, tuple)):
-                hdf5_group.create_dataset(key, data=value)
-            else:
-                # Fallback: store as string representation
-                hdf5_group.create_dataset(key, data=str(value))
 
 
 def get_target_position_group(measurement_group, target_x, target_y):
@@ -514,22 +367,6 @@ def get_target_position_group(measurement_group, target_x, target_y):
 
 def abs_mean(value_list):
     return np.mean(np.abs(value_list))
-
-
-def hdf5_group_to_dict(hdf5_group):
-    """
-    Recursively converts a h5py.Group into a nested dictionary.
-    Datasets are read into memory.
-    """
-    nested_dict = {}
-
-    for key, item in hdf5_group.items():
-        if isinstance(item, h5py.Dataset):
-            nested_dict[key] = item[()]
-        elif isinstance(item, h5py.Group):
-            nested_dict[key] = hdf5_group_to_dict(item)
-
-    return nested_dict
 
 
 def convert_bytes(target):
@@ -549,14 +386,14 @@ def remove_zero_columns(df):
     df = df.loc[:, (df != 0).any(axis=0)]
     return df
 
-def dataframe_to_hdf5(df, hdf5_group):
-    for col in df.columns:
-        hdf5_group.create_dataset(
-            col, data=np.array(df[col]), dtype="float"
-        )
-    return True
 
-def hdf5_units_from_dict(units_dict, hdf5_group):
-    for subname, subgroup in hdf5_group.items():
-        if subname in units_dict.keys():
-            subgroup.attrs["units"] = units_dict[subname]
+def extract_value_unit(str):
+    """
+    Use regex to extract values and units from a string, provided the format is 'value(unit)'
+    If no unit is found, unit is returned as None
+    """
+    match = re.match(r'^(.*?)\s*(?:\(([^)]+)\))?$', str)
+    if match:
+        value = match.group(1).strip()
+        unit = match.group(2)
+        return {"value" : value, "unit" : unit}
