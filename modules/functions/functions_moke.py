@@ -380,9 +380,15 @@ def moke_fit_intercept(data: pd.DataFrame, treatment_dict: dict):
 
     # Make dictionary with results from the fits, can be used for plotting
     fit_dict = {
-        "linear_section": [float(intercept1), float(slope1)],
-        "positive_section": [float(intercept2), float(slope2)],
-        "negative_section": [float(intercept3), float(slope3)],
+        "linear_section_intercept": float(intercept1),
+        "linear_section_slope": float(slope1),
+        "linear_section_range": x1,
+        "positive_section_intercept": float(intercept2),
+        "positive_section_slope": float(slope2),
+        "positive_section_range": x2,
+        "negative_section_intercept": float(intercept3),
+        "negative_section_slope": float(slope3),
+        "negative_section_range": x3,
     }
 
     return float(positive_intercept_field), float(negative_intercept_field), fit_dict
@@ -437,7 +443,7 @@ def moke_batch_fit(moke_group, treatment_dict):
                 "positive": intercepts[0],
                 "negative": intercepts[1],
                 "mean": abs_mean(intercepts[:2]),
-                "coefficients": intercepts[2],
+                "fit_parameters": intercepts[2],
             },
         }
 
@@ -559,15 +565,15 @@ def moke_plot_vlines(fig, values):
 
     return fig
 
-def loop_intercept_plot(fig, intercept_dict, treatment_dict: dict):
-    slope_linear, intercept_linear, x_linear = intercept_dict["linear_section"]
-    slope_positive, intercept_positive, x_positive = intercept_dict["positive_section"]
-    slope_negative, intercept_negative, x_negative = intercept_dict["negative_section"]
+def moke_plot_intercept(fig, intercept_dict):
+    negative_intercept_field = intercept_dict["negative"]
+    positive_intercept_field = intercept_dict["positive"]
 
-    negative_intercept_field = intercept_dict["negative_field"]
-    positive_intercept_field = intercept_dict["positive_field"]
-
-    max_field = 4
+    max_field = max(
+        max(trace.x)
+        for trace in fig.data
+        if hasattr(trace, "x") and trace.x is not None
+    )
 
     # Define ranges that will be used to extrapolate the fits
     range_linear = np.arange(
@@ -581,8 +587,10 @@ def loop_intercept_plot(fig, intercept_dict, treatment_dict: dict):
     # Plot linear section fit
     fig.add_trace(
         go.Scatter(
-            x=x_linear,
-            y=intercept_linear + slope_linear * x_linear,
+            x=intercept_dict["fit_parameters"]["linear_section_range"],
+            y=intercept_dict["fit_parameters"]["linear_section_intercept"] +
+              intercept_dict["fit_parameters"]["linear_section_slope"] *
+              intercept_dict["fit_parameters"]["linear_section_range"],
             mode="lines",
             line=dict(color="Firebrick", width=3),
         )
@@ -592,7 +600,8 @@ def loop_intercept_plot(fig, intercept_dict, treatment_dict: dict):
     fig.add_trace(
         go.Scatter(
             x=range_linear,
-            y=intercept_linear + slope_linear * range_linear,
+            y=intercept_dict["fit_parameters"]["linear_section_intercept"] +
+              intercept_dict["fit_parameters"]["linear_section_slope"] *  range_linear,
             mode="lines",
             line=dict(color="Firebrick", width=3, dash="dash"),
         )
@@ -601,8 +610,10 @@ def loop_intercept_plot(fig, intercept_dict, treatment_dict: dict):
     # Plot positive section fit
     fig.add_trace(
         go.Scatter(
-            x=x_positive,
-            y=intercept_positive + slope_positive * x_positive,
+            x=intercept_dict["fit_parameters"]["positive_section_range"],
+            y=intercept_dict["fit_parameters"]["positive_section_intercept"] +
+              intercept_dict["fit_parameters"]["positive_section_slope"] *
+              intercept_dict["fit_parameters"]["positive_section_range"],
             mode="lines",
             line=dict(color="Firebrick", width=3),
         )
@@ -612,7 +623,8 @@ def loop_intercept_plot(fig, intercept_dict, treatment_dict: dict):
     fig.add_trace(
         go.Scatter(
             x=range_positive,
-            y=intercept_positive + slope_positive * range_positive,
+            y=intercept_dict["fit_parameters"]["positive_section_intercept"] +
+              intercept_dict["fit_parameters"]["positive_section_slope"] * range_positive,
             mode="lines",
             line=dict(color="Firebrick", width=3, dash="dash"),
         )
@@ -621,8 +633,10 @@ def loop_intercept_plot(fig, intercept_dict, treatment_dict: dict):
     # Plot negative section fit
     fig.add_trace(
         go.Scatter(
-            x=x_negative,
-            y=intercept_negative + slope_negative * x_negative,
+            x=intercept_dict["fit_parameters"]["negative_section_range"],
+            y=intercept_dict["fit_parameters"]["negative_section_intercept"] +
+              intercept_dict["fit_parameters"]["negative_section_slope"] *
+              intercept_dict["fit_parameters"]["negative_section_range"],
             mode="lines",
             line=dict(color="Firebrick", width=3),
         )
@@ -632,7 +646,8 @@ def loop_intercept_plot(fig, intercept_dict, treatment_dict: dict):
     fig.add_trace(
         go.Scatter(
             x=range_negative,
-            y=intercept_negative + slope_negative * range_negative,
+            y=intercept_dict["fit_parameters"]["negative_section_intercept"] +
+              intercept_dict["fit_parameters"]["negative_section_slope"] * range_negative,
             mode="lines",
             line=dict(color="Firebrick", width=3, dash="dash"),
         )
