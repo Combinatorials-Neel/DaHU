@@ -157,8 +157,8 @@ def callbacks_moke(app, children_moke):
                 fig = moke_plot_vlines(fig, values=[results_dict["coercivity_dmdh"]["negative"],
                                               results_dict["coercivity_dmdh"]["positive"]])
             if heatmap_select == "intercept_field_(T)":
-                fig = moke_plot_vlines(fig, values=[results_dict["coercivity_dmdh"]["negative"],
-                                              results_dict["coercivity_dmdh"]["positive"]])
+                print(results_dict["intercept_field"])
+                fig = moke_plot_intercept(fig, intercept_dict=results_dict["intercept_field"])
 
         fig.update_layout(plot_layout(title=f"{title_tag} <br>x = {target_x}, y = {target_y}"),)
 
