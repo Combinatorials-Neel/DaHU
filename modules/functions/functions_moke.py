@@ -1,6 +1,7 @@
 """ """
 
 from scipy.signal import savgol_filter
+from sklearn.decomposition import non_negative_factorization
 
 from ..functions.functions_shared import *
 from ..functions.functions_hdf5 import *
@@ -423,18 +424,18 @@ def moke_batch_fit(moke_group, treatment_dict):
             "max_kerr_signal": max_kerr_rotation,
             "reflectivity": reflectivity,
             "coercivity_m0": {
-                "negative": coercivity_m0[0],
-                "positive": coercivity_m0[1],
+                "positive": coercivity_m0[0],
+                "negative": coercivity_m0[1],
                 "mean": abs_mean(coercivity_m0),
             },
             "coercivity_dmdh": {
-                "negative": coercivity_dmdh[0],
-                "positive": coercivity_dmdh[1],
+                "positive": coercivity_dmdh[0],
+                "negative": coercivity_dmdh[1],
                 "mean": abs_mean(coercivity_dmdh),
             },
             "intercept_field": {
-                "negative": intercepts[0],
-                "positive": intercepts[1],
+                "positive": intercepts[0],
+                "negative": intercepts[1],
                 "mean": abs_mean(intercepts[:2]),
                 "coefficients": intercepts[2],
             },
@@ -558,6 +559,107 @@ def moke_plot_vlines(fig, values):
 
     return fig
 
+def loop_intercept_plot(fig, intercept_dict, treatment_dict: dict):
+    slope_linear, intercept_linear, x_linear = intercept_dict["linear_section"]
+    slope_positive, intercept_positive, x_positive = intercept_dict["positive_section"]
+    slope_negative, intercept_negative, x_negative = intercept_dict["negative_section"]
+
+    negative_intercept_field = intercept_dict["negative_field"]
+    positive_intercept_field = intercept_dict["positive_field"]
+
+    max_field = 4
+
+    # Define ranges that will be used to extrapolate the fits
+    range_linear = np.arange(
+        1.2 * negative_intercept_field, 1.2 * positive_intercept_field, 0.1
+    )
+    range_positive = np.arange(0.8 * positive_intercept_field, max_field, 0.1)
+    range_negative = np.arange(-max_field, 0.8 * negative_intercept_field, 0.1)
+
+
+
+    # Plot linear section fit
+    fig.add_trace(
+        go.Scatter(
+            x=x_linear,
+            y=intercept_linear + slope_linear * x_linear,
+            mode="lines",
+            line=dict(color="Firebrick", width=3),
+        )
+    )
+
+    # Plot linear section extrapolation
+    fig.add_trace(
+        go.Scatter(
+            x=range_linear,
+            y=intercept_linear + slope_linear * range_linear,
+            mode="lines",
+            line=dict(color="Firebrick", width=3, dash="dash"),
+        )
+    )
+
+    # Plot positive section fit
+    fig.add_trace(
+        go.Scatter(
+            x=x_positive,
+            y=intercept_positive + slope_positive * x_positive,
+            mode="lines",
+            line=dict(color="Firebrick", width=3),
+        )
+    )
+
+    # Plot positive section extrapolation
+    fig.add_trace(
+        go.Scatter(
+            x=range_positive,
+            y=intercept_positive + slope_positive * range_positive,
+            mode="lines",
+            line=dict(color="Firebrick", width=3, dash="dash"),
+        )
+    )
+
+    # Plot negative section fit
+    fig.add_trace(
+        go.Scatter(
+            x=x_negative,
+            y=intercept_negative + slope_negative * x_negative,
+            mode="lines",
+            line=dict(color="Firebrick", width=3),
+        )
+    )
+
+    # Plot negative section extrapolation
+    fig.add_trace(
+        go.Scatter(
+            x=range_negative,
+            y=intercept_negative + slope_negative * range_negative,
+            mode="lines",
+            line=dict(color="Firebrick", width=3, dash="dash"),
+        )
+    )
+
+    # Plot intercept values
+    fig.add_vline(
+        positive_intercept_field,
+        line_width=2,
+        line_color="green",
+        annotation_text=f"{positive_intercept_field:.2f} T",
+        annotation_position="top left",
+        annotation_font_size=18,
+        annotation_font_color="green",
+    )
+
+    fig.add_vline(
+        negative_intercept_field,
+        line_width=2,
+        line_color="green",
+        annotation_text=f"{negative_intercept_field:.2f} T",
+        annotation_position="top right",
+        annotation_font_size=18,
+        annotation_font_color="green",
+    )
+
+    return fig
 
 def moke_plot_loop_map(hdf5_file, options_dict, normalize=False):
     results_dataframe = moke_make_results_dataframe_from_hdf5(hdf5_file)
