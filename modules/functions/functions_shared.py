@@ -397,4 +397,4 @@ def extract_value_unit(str):
     if match:
         value = match.group(1).strip()
         unit = match.group(2)
-        return {"value" : value, "unit" : unit}
+        return {"value" : value, "units" : unit}

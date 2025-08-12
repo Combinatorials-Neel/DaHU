@@ -45,7 +45,8 @@ def dataframe_to_hdf5(df, hdf5_group, auto_units=False):
             dataset = hdf5_group.create_dataset(
                 value_unit_dict["value"], data=np.array(df[col]), dtype="float"
             )
-            dataset.attrs["units"] = value_unit_dict["units"]
+            if value_unit_dict["units"] is not None:
+                dataset.attrs["units"] = value_unit_dict["units"]
         else:
             hdf5_group.create_dataset(
                 col, data=np.array(df[col]), dtype="float"

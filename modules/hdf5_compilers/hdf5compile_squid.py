@@ -11,12 +11,12 @@ def read_instrument_and_measurement_from_squid(file_path):
     squid_measurement_columns = ["Time Stamp (sec)", "Temperature (K)"]
     df = pd.read_csv(file_path, skiprows=44)
 
-    instrument_df = df[[col for col in df.columns if col not in squid_measurement_columns]]
-    measurement_df = df[squid_measurement_columns]
+    instrument_df = df[[col for col in df.columns if col not in squid_measurement_columns]].copy()
+    measurement_df = df[squid_measurement_columns].copy()
 
     # Conversion to SI units
-    measurement_df["Magnetic Field (T)"] = instrument_df["Magnetic Field (Oe)"].apply(lambda x: x*1e-4)
-    measurement_df["Moment (A.m2)"] = instrument_df["Moment (emu)"].apply(lambda x: x*1e-3)
+    measurement_df["Magnetic Field (T)"] = instrument_df["Magnetic Field (Oe)"] * 1e-4
+    measurement_df["Moment (A.m2)"] = instrument_df["Moment (emu)"] * 1e-3
 
     return instrument_df, measurement_df
 
@@ -37,24 +37,29 @@ def write_squid_to_hdf5(hdf5_path, source_path, info_dict, dataset_name=None, mo
             squid_group = hdf5_file.create_group("squid")
             squid_group.attrs["HT_type"] = "vsmsquid"
             squid_group.attrs["instrument"] = "Quantum Design MPMS3"
+        else:
+            squid_group = hdf5_file.get("squid")
             
-        sample_group = squid_group.create_group(f"{dataset_name}")
-        sample_group.attrs["squid_writer"] = SQUID_WRITER_VERSION
+        dataset_group = squid_group.create_group(f"{dataset_name}")
+        dataset_group.attrs["squid_writer"] = SQUID_WRITER_VERSION
+
+        # Sample group for sample information
+        sample_group = dataset_group.create_group("sample")
+        sample_group["x_pos"] = convertFloat(info_dict["x_pos"])
+        sample_group["y_pos"] = convertFloat(info_dict["y_pos"])
+        sample_group["surface_area"] = convertFloat(info_dict["surface_area"])
+        sample_group["x_pos"].attrs["units"] = "mm"
+        sample_group["y_pos"].attrs["units"] = "mm"
+        sample_group["surface_area"].attrs["units"] = "cm2"
 
         # Instrument group for metadata
-        instrument = sample_group.create_group("instrument")
+        instrument = dataset_group.create_group("instrument")
         instrument.attrs["NX_class"] = "HTinstrument"
-        instrument["x_pos"] = convertFloat(info_dict["x_pos"])
-        instrument["y_pos"] = convertFloat(info_dict["y_pos"])
-        instrument["surface_area"] = convertFloat(info_dict["surface_area"])
-        instrument["x_pos"].attrs["units"] = "mm"
-        instrument["y_pos"].attrs["units"] = "mm"
-        instrument["surface_area"].attrs["units"] = "cm2"
 
         dataframe_to_hdf5(instrument_df, instrument, auto_units=True)
 
         # Measurement group for data
-        measurement_group = sample_group.create_group("measurement")
+        measurement_group = dataset_group.create_group("measurement")
         measurement_group.attrs["NX_class"] = "HTmeasurement"
 
         dataframe_to_hdf5(measurement_df, measurement_group, auto_units=True)
