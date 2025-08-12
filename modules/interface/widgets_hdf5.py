@@ -16,7 +16,7 @@ class WidgetsHDF5:
                     du.Upload(
                         id="hdf5_upload",
                         text="Drag and Drop or click to browse",
-                        filetypes=["zip", "h5", "hdf5", "HIS"],
+                        filetypes=["zip", "h5", "hdf5", "HIS", "dat"],
                         upload_id="temp",
                     ),
                 ]),
@@ -57,7 +57,7 @@ class WidgetsHDF5:
                     className="text-9",
                     children=[dcc.Dropdown(className="long-item",
                                            id="hdf5_measurement_type",
-                                           options=["EDX", "PROFIL", "MOKE", "XRD", "ESRF", "XRD results", "Annealing", "Magnetron", "Triode"],
+                                           options=["EDX", "PROFIL", "MOKE", "XRD", "ESRF", "XRD results", "Annealing", "Magnetron", "Triode", "SQUID"],
                                            value=None)]
                 )
             ],

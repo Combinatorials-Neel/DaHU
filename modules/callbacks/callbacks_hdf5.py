@@ -8,12 +8,13 @@ from ..functions.functions_shared import *
 from ..functions.functions_xrd import xrd_make_results_dataframe_from_hdf5
 from ..hdf5_compilers.hdf5compile_annealing import *
 from ..hdf5_compilers.hdf5compile_base import *
-from ..hdf5_compilers.hdf5compile_deposition import write_magnetron_to_hdf5
+from ..hdf5_compilers.hdf5compile_deposition import *
 from ..hdf5_compilers.hdf5compile_edx import *
-from ..hdf5_compilers.hdf5compile_esrf import write_esrf_to_hdf5, write_xrd_results_to_hdf5
+from ..hdf5_compilers.hdf5compile_esrf import *
 from ..hdf5_compilers.hdf5compile_moke import *
 from ..hdf5_compilers.hdf5compile_profil import *
 from ..hdf5_compilers.hdf5compile_xrd import *
+from ..hdf5_compilers.hdf5compile_squid import *
 
 
 def callbacks_hdf5(app):
@@ -148,7 +149,20 @@ def callbacks_hdf5(app):
                     write_annealing_to_hdf5(hdf5_path, uploaded_file_path, anneal_dict, dataset_name=dataset_name)
                 else:
                     manual_annealing_to_hdf5(hdf5_path, anneal_dict, dataset_name=dataset_name)
+            if measurement_type == "SQUID":
+                # In squid mode:
+                # manual 1 = float(x_pos, mm)
+                # manual 2 = float(y_pos, mm)
+                # manual 3 = float(surface_area, cm2)
 
+                squid_dict = {
+                    "x_pos": manual_1,
+                    "y_pos": manual_2,
+                    "surface_area": manual_3,
+                }
+                if uploaded_folder_path is not None:
+                    uploaded_file_path = uploaded_folder_path.with_suffix(".dat")
+                    write_squid_to_hdf5(hdf5_path, uploaded_file_path, squid_dict, dataset_name=dataset_name)
 
                 return f'Added {measurement_type} data to {hdf5_path}.'
 
@@ -188,6 +202,9 @@ def callbacks_hdf5(app):
         elif uploaded_path.name.endswith('.HIS'):
             return str(extract_dir), "Annealing", f"1 Annealing file detected in {uploaded_folder_path}"
 
+        elif uploaded_path.name.endswith('.dat'):
+            return str(extract_dir), "SQUID", f"1 Squid file detected in {uploaded_folder_path}"
+
 
 
     @app.callback(
@@ -197,7 +214,7 @@ def callbacks_hdf5(app):
         State("hdf5_path_store", "data"),
         prevent_initial_call=True
     )
-    def switch_to_results_mode(measurement_type, hdf5_path):
+    def switch_input_mode(measurement_type, hdf5_path):
         # Redefine the base children for fallback
         new_children = [
             html.Label("Dataset Name"),
@@ -286,6 +303,39 @@ def callbacks_hdf5(app):
                     placeholder="Furnace",
                     options=["JetFirst RTA", "UHV Tubular"]
                 )
+            ]
+
+        if measurement_type == "SQUID":
+            new_children = [
+                html.Label("Dataset Name"),
+                dcc.Input(
+                    id="hdf5_dataset_name",
+                    className="long-item",
+                    type="text",
+                    placeholder="Dataset Name",
+                    value=None,
+                ),
+                html.Label("x_pos (mm)"),
+                dcc.Input(
+                    id="hdf5_manual_1",
+                    className="long-item",
+                    type="number",
+                    placeholder="x_pos (mm)",
+                ),
+                html.Label("y_pos (mm)"),
+                dcc.Input(
+                    id="hdf5_manual_2",
+                    className="long-item",
+                    type="number",
+                    placeholder="y_pos (mm)",
+                ),
+                html.Label("surface area (cm2)"),
+                dcc.Input(
+                    id="hdf5_manual_3",
+                    className="long-item",
+                    type="number",
+                    placeholder="surface area (cm2)",
+                ),
             ]
 
         return new_children, ""

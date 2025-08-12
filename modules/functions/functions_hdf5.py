@@ -7,6 +7,8 @@ import numpy as np
 import re
 from collections import defaultdict
 
+from modules.functions.functions_shared import extract_value_unit
+
 
 def write_dict_to_hdf5(xrd_dict, node):
     """
@@ -36,11 +38,19 @@ def write_dict_to_hdf5(xrd_dict, node):
     return None
 
 
-def dataframe_to_hdf5(df, hdf5_group):
+def dataframe_to_hdf5(df, hdf5_group, auto_units=False):
     for col in df.columns:
-        hdf5_group.create_dataset(
-            col, data=np.array(df[col]), dtype="float"
-        )
+        if auto_units:
+            value_unit_dict = extract_value_unit(col)
+            dataset = hdf5_group.create_dataset(
+                value_unit_dict["value"], data=np.array(df[col]), dtype="float"
+            )
+            if value_unit_dict["units"] is not None:
+                dataset.attrs["units"] = value_unit_dict["units"]
+        else:
+            hdf5_group.create_dataset(
+                col, data=np.array(df[col]), dtype="float"
+            )
     return True
 
 def hdf5_units_from_dict(units_dict, hdf5_group):

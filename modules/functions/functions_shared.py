@@ -108,7 +108,8 @@ def detect_measurement(filename_list: list):
         "ESRF": ["h5"],
         "XRD results": ["lst"],
         "Annealing": ["HIS"],
-        "Magnetron": ["prp"]
+        "Magnetron": ["prp"],
+        "SQUID": ["dat"]
     }
 
     for measurement_type, file_type in measurement_dict.items():
@@ -396,4 +397,4 @@ def extract_value_unit(str):
     if match:
         value = match.group(1).strip()
         unit = match.group(2)
-        return {"value" : value, "unit" : unit}
+        return {"value" : value, "units" : unit}
