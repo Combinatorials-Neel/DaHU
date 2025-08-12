@@ -108,7 +108,8 @@ def detect_measurement(filename_list: list):
         "ESRF": ["h5"],
         "XRD results": ["lst"],
         "Annealing": ["HIS"],
-        "Magnetron": ["prp"]
+        "Magnetron": ["prp"],
+        "SQUID": ["dat"]
     }
 
     for measurement_type, file_type in measurement_dict.items():

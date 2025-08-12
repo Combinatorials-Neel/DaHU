@@ -1,7 +1,8 @@
 from ..functions.functions_profil import *
 from dash import html, dcc
 
-from ..hdf5_compilers.hdf5compile_base import safe_create_new_subgroup
+from ..hdf5_compilers.hdf5compile_profil import *
+from ..functions.functions_profil import *
 
 """Callbacks for profil tab"""
 

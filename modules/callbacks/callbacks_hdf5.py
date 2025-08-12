@@ -148,7 +148,20 @@ def callbacks_hdf5(app):
                     write_annealing_to_hdf5(hdf5_path, uploaded_file_path, anneal_dict, dataset_name=dataset_name)
                 else:
                     manual_annealing_to_hdf5(hdf5_path, anneal_dict, dataset_name=dataset_name)
+            if measurement_type == "SQUID":
+                # In squid mode:
+                # manual 1 = float(x_pos, mm)
+                # manual 2 = float(y_pos, mm)
+                # manual 3 = float(surface_area, cm2)
 
+                squid_dict = {
+                    "x_pos": manual_1,
+                    "y_pos": manual_2,
+                    "surface_area": manual_3,
+                }
+                if uploaded_folder_path is not None:
+                    uploaded_file_path = uploaded_folder_path.with_suffix(".dat")
+                    write_annealing_to_hdf5(hdf5_path, uploaded_file_path, squid_dict, dataset_name=dataset_name)
 
                 return f'Added {measurement_type} data to {hdf5_path}.'
 
