@@ -1,7 +1,7 @@
 """
 """
-from ..functions.functions_shared import *
 from ..functions.functions_hdf5 import *
+from ..functions.functions_shared import *
 
 
 def edx_conditions(hdf5_path, *args, **kwargs):

@@ -5,6 +5,8 @@ Functions for EDX parsing
 from ..functions.functions_shared import *
 from ..hdf5_compilers.hdf5compile_base import *
 
+import xml.etree.ElementTree as et
+
 EDX_WRITER_VERSION = "0.1 beta"
 
 

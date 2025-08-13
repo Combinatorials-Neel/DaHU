@@ -1,10 +1,9 @@
 """ """
 
 from scipy.signal import savgol_filter
-from sklearn.decomposition import non_negative_factorization
 
-from ..functions.functions_shared import *
 from ..functions.functions_hdf5 import *
+from ..functions.functions_shared import *
 
 
 def moke_conditions(hdf5_path, *args, **kwargs):

@@ -1,11 +1,7 @@
-""" """
+from dash import html, dcc, Input, Output, State, ctx
 
-from array import array
-
-from dash import Input, Output, callback
-from dash.exceptions import PreventUpdate
-from ..functions.functions_xrd import *
 from ..functions.functions_shared import *
+from ..functions.functions_xrd import *
 
 
 def callbacks_xrd(app, children_xrd):

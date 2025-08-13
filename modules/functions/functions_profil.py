@@ -1,11 +1,9 @@
+import plotly.graph_objs as go
 from scipy.optimize import least_squares, curve_fit
 from scipy.signal import savgol_filter
-import plotly.graph_objs as go
-from sklearn.linear_model import RANSACRegressor, LinearRegression
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.linear_model import HuberRegressor
-from ..functions.functions_shared import *
+
 from ..functions.functions_hdf5 import *
+from ..functions.functions_shared import *
 
 
 def profil_conditions(hdf5_path, *args, **kwargs):

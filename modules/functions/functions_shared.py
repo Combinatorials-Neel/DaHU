@@ -1,18 +1,14 @@
+import functools
 import os.path
+import re
+import shutil
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from pathlib import Path
-import h5py
-import shutil
 from dash.exceptions import PreventUpdate
-import functools
-from plotly.subplots import make_subplots
-from dash import Input, Output, State, ctx
-from datetime import datetime
-import re
-import stringcase
+from scipy.stats import linregress
 
 
 # Decorator function to check conditions before executing callbacks, preventing errors
@@ -398,3 +394,12 @@ def extract_value_unit(str):
         value = match.group(1).strip()
         unit = match.group(2)
         return {"value" : value, "units" : unit}
+
+def linear_fit(df, x_col, y_col):
+    x = df[x_col]
+    y = df[y_col]
+    result = linregress(x, y)
+    print(f"Slope: {result.slope}")
+    print(f"Intercept: {result.intercept}")
+    print(f"R-squared: {result.rvalue**2}")
+    return result

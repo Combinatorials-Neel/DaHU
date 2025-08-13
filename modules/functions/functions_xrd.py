@@ -3,11 +3,12 @@ Functions used in XRD interactive plot using Dash.
 Internal use for Institut Néel and within the MaMMoS project, to export and read big datasets produced at Institut Néel.
 """
 
-import plotly.express as px
 from itertools import cycle
 
-from ..functions.functions_shared import *
+import plotly.express as px
+
 from ..functions.functions_hdf5 import *
+from ..functions.functions_shared import *
 
 
 def xrd_conditions(hdf5_path, *args, **kwargs):

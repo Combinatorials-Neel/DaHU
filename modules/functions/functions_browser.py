@@ -1,13 +1,9 @@
 import datetime
-import os
-from pathlib import Path
 
-import dash_bootstrap_components as dbc
-import pandas as pd
-from dash import ALL, Dash, Input, Output, State, callback_context, dcc, html
-from dash.exceptions import PreventUpdate
+from dash import html
 
 from modules.interface.icons import icons
+
 
 def icon_file(app, extension, width=24, height=24):
     """Retrun an html.img of the svg icon for a given extension."""
