@@ -1,8 +1,8 @@
-from ..functions.functions_profil import *
-from dash import html, dcc
+from dash import html, dcc, Input, Output, State, ctx
+from plotly.subplots import make_subplots
 
-from ..hdf5_compilers.hdf5compile_profil import *
 from ..functions.functions_profil import *
+from ..hdf5_compilers.hdf5compile_profil import *
 
 """Callbacks for profil tab"""
 

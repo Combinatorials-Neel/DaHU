@@ -3,6 +3,7 @@ Functions for MOKE parsing
 """
 
 import stringcase
+from collections import defaultdict
 
 from ..functions.functions_moke import *
 from ..hdf5_compilers.hdf5compile_base import *

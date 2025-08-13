@@ -1,20 +1,18 @@
-from dash import Input, Output, State, ctx, html, dcc
-from dash.exceptions import PreventUpdate
 import zipfile
+
+from dash import html, dcc, Input, Output, State
 
 from ..functions.functions_edx import edx_make_results_dataframe_from_hdf5
 from ..functions.functions_profil import profil_make_results_dataframe_from_hdf5
-from ..functions.functions_shared import *
 from ..functions.functions_xrd import xrd_make_results_dataframe_from_hdf5
 from ..hdf5_compilers.hdf5compile_annealing import *
-from ..hdf5_compilers.hdf5compile_base import *
 from ..hdf5_compilers.hdf5compile_deposition import *
 from ..hdf5_compilers.hdf5compile_edx import *
 from ..hdf5_compilers.hdf5compile_esrf import *
 from ..hdf5_compilers.hdf5compile_moke import *
 from ..hdf5_compilers.hdf5compile_profil import *
-from ..hdf5_compilers.hdf5compile_xrd import *
 from ..hdf5_compilers.hdf5compile_squid import *
+from ..hdf5_compilers.hdf5compile_xrd import *
 
 
 def callbacks_hdf5(app):

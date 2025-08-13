@@ -1,8 +1,9 @@
-from select import select
+from dash import html, dcc, Input, Output, State, ctx
+import dash_bootstrap_components as dbc
 
-from ..functions.functions_shared import *
+
 from ..functions.functions_hdf5 import *
-from dash import dcc
+from ..functions.functions_shared import *
 
 
 def callbacks_freeplot(app):

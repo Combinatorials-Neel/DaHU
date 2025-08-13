@@ -1,5 +1,6 @@
-from dash import html, dcc
 import dash_uploader as du
+from dash import html, dcc
+
 
 class WidgetsHDF5:
 
