@@ -18,6 +18,12 @@ from ..interface.widgets_base import *
 
 def callbacks_hdf5(app):
 
+    @app.callback(Output("hdf5_path_box", "children", allow_duplicate=True),
+                  Input("hdf5_path_store", "data"),
+                  prevent_initial_call=True)
+    def display_current_hdf5_path(hdf5_path):
+        return str(Path(hdf5_path))
+
     @app.callback([Output('hdf5_path_box', 'children'),
                    Output('hdf5_text_box', 'children')],
                   Input('hdf5_new', 'n_clicks'),
@@ -423,42 +429,143 @@ def callbacks_hdf5(app):
                     widget_title,
                     widget_measurement_missing()
                 ]
-
-            deposition_group = hdf5_file.get("deposition")
-            date = deposition_group["instrument/date"].asstr()[()]
-            httype = deposition_group.attrs["HT_type"]
-            return [
-                widget_title,
-                widget_measurement_found(date, httype)
-            ]
+            else:
+                return [
+                    widget_title,
+                    widget_measurement_found(number = 1)
+                ]
 
 
     @app.callback(
         Output("hdf5_annealing_info", "children"),
         Input("hdf5_path_store", "data"),
     )
-    def update_deposition_info(hdf5_path):
+    def update_annealing_info(hdf5_path):
         if hdf5_path is None:
             raise PreventUpdate
 
         widget_title = widget_title_card("Annealing")
 
         with h5py.File(hdf5_path, "r") as hdf5_file:
-            if "annealing" not in hdf5_file.keys():
+            annealing_groups = get_hdf5_datasets(hdf5_file, "annealing")
+            number = len(annealing_groups)
+            if number == 0:
                 return [
                     widget_title,
                     widget_measurement_missing()
                 ]
 
-            deposition_group = hdf5_file.get("annealing")
-            date = deposition_group["instrument/date"].asstr()[()]
-            httype = deposition_group.attrs["HT_type"]
-            return [
-                widget_title,
-                widget_measurement_found(date, httype)
-            ]
+            else:
+                if hdf5_file[annealing_groups[0]].attrs["data_source"] == "manual":
+                    return [
+                        widget_title,
+                        widget_manual_data(number)
+                    ]
+                else:
+                    return [
+                        widget_title,
+                        widget_measurement_found(number)
+                    ]
 
+    @app.callback(
+        Output("hdf5_edx_info", "children"),
+        Input("hdf5_path_store", "data"),
+    )
+    def update_annealing_info(hdf5_path):
+        if hdf5_path is None:
+            raise PreventUpdate
 
+        widget_title = widget_title_card("EDX")
+
+        with h5py.File(hdf5_path, "r") as hdf5_file:
+            edx_groups = get_hdf5_datasets(hdf5_file, "edx")
+            number = len(edx_groups)
+            if number == 0:
+                return [
+                    widget_title,
+                    widget_measurement_missing()
+                ]
+
+            else:
+                return [
+                    widget_title,
+                    widget_measurement_found(number)
+                ]
+
+    @app.callback(
+        Output("hdf5_profil_info", "children"),
+        Input("hdf5_path_store", "data"),
+    )
+    def update_annealing_info(hdf5_path):
+        if hdf5_path is None:
+            raise PreventUpdate
+
+        widget_title = widget_title_card("Profilometry")
+
+        with h5py.File(hdf5_path, "r") as hdf5_file:
+            profil_groups = get_hdf5_datasets(hdf5_file, "profil")
+            number = len(profil_groups)
+            if number == 0:
+                return [
+                    widget_title,
+                    widget_measurement_missing()
+                ]
+
+            else:
+                return [
+                    widget_title,
+                    widget_measurement_found(number)
+                ]
+
+    @app.callback(
+        Output("hdf5_moke_info", "children"),
+        Input("hdf5_path_store", "data"),
+    )
+    def update_annealing_info(hdf5_path):
+        if hdf5_path is None:
+            raise PreventUpdate
+
+        widget_title = widget_title_card("Moke")
+
+        with h5py.File(hdf5_path, "r") as hdf5_file:
+            moke_groups = get_hdf5_datasets(hdf5_file, "moke")
+            number = len(moke_groups)
+            if number == 0:
+                return [
+                    widget_title,
+                    widget_measurement_missing()
+                ]
+
+            else:
+                return [
+                    widget_title,
+                    widget_measurement_found(number)
+                ]
+
+    @app.callback(
+        Output("hdf5_xrd_info", "children"),
+        Input("hdf5_path_store", "data"),
+    )
+    def update_annealing_info(hdf5_path):
+        if hdf5_path is None:
+            raise PreventUpdate
+
+        widget_title = widget_title_card("XRD")
+
+        with h5py.File(hdf5_path, "r") as hdf5_file:
+            xrd_groups = get_hdf5_datasets(hdf5_file, "xrd")
+            number = len(xrd_groups)
+            if number == 0:
+                return [
+                    widget_title,
+                    widget_measurement_missing()
+                ]
+
+            else:
+                return [
+                    widget_title,
+                    widget_measurement_found(number)
+                ]
 
 
 

@@ -1,5 +1,6 @@
 import dash_uploader as du
 from dash import html, dcc
+from datetime import datetime
 
 
 class WidgetsHDF5:
@@ -58,7 +59,18 @@ class WidgetsHDF5:
                     className="text-9",
                     children=[dcc.Dropdown(className="long-item",
                                            id="hdf5_measurement_type",
-                                           options=["EDX", "PROFIL", "MOKE", "XRD", "ESRF", "XRD results", "Annealing", "Magnetron", "Triode", "SQUID"],
+                                           options=[
+                                               "EDX",
+                                                "PROFIL",
+                                                "MOKE",
+                                                "XRD",
+                                                "ESRF",
+                                                "XRD results",
+                                                "Annealing",
+                                                "Magnetron",
+                                                "Triode",
+                                                "SQUID"
+                                            ],
                                            value=None)]
                 )
             ],
@@ -98,12 +110,21 @@ class WidgetsHDF5:
                 html.Div(
                     className="subgrid-1",
                     children=[
-                        html.Label("Fabrication date"),
+                        html.Label("Fabrication date dd/mm/yyyy"),
                         dcc.Input(
                             className="long-item",
                             id="hdf5_sample_date",
                             type="text",
-                            placeholder="Fabrication date"
+                            placeholder="Fabrication date",
+                            value=datetime.now().strftime("%d/%m/%Y")
+                        ),
+                        html.Label("Operator Name"),
+                        dcc.Input(
+                            className="long-item",
+                            id="hdf5_sample_operator",
+                            type="text",
+                            placeholder="Operator name",
+                            value="Batman"
                         ),
                         html.Label("Sample Name"),
                         dcc.Input(
@@ -112,13 +133,6 @@ class WidgetsHDF5:
                             type="text",
                             placeholder="Sample name"
                         ),
-                        html.Label("Operator Name"),
-                        dcc.Input(
-                            className="long-item",
-                            id="hdf5_sample_operator",
-                            type="text",
-                            placeholder="Operator name"
-                        )
                     ]
                 ),
                 html.Div(
@@ -129,20 +143,63 @@ class WidgetsHDF5:
                                 id="hdf5_layer_dropdown",
                                 options=["Add layer"]
                             ),
-                        html.Div(children=[
+                            html.Label("Layer element"),
                             dcc.Input(
+                                className="long-item",
                                 id="hdf5_layer_element",
                                 type="text",
                                 placeholder="Layer element",
                                 debounce=True
                             ),
+                            html.Label("Sputtering time (s)"),
                             dcc.Input(
-                                id="hdf5_layer_thickness",
+                                className="long-item",
+                                id="hdf5_layer_time",
                                 type="number",
-                                placeholder="Layer thickness",
+                                placeholder="Sputtering time (s)",
                                 debounce=True
-                            )],
-                        style={"display": "flex", "gap": "10px"}
+                            ),
+                    ],
+                ),
+                html.Div(
+                    className="subgrid-6",
+                    children=[
+                        html.Label("Sputtering power (W)"),
+                        dcc.Input(
+                            className="long-item",
+                            id="hdf5_layer_power",
+                            type="number",
+                            placeholder="Sputtering power (W)",
+                            debounce=True
+                        ),
+                        html.Label("Sputtering temperature (°C)"),
+                        dcc.Input(
+                            className="long-item",
+                            id="hdf5_layer_temperature",
+                            type="number",
+                            placeholder="Sputtering temperature (°C)",
+                            debounce=True,
+                        ),
+                    ]
+                ),
+                html.Div(
+                    className="subgrid-9",
+                    children=[
+                        html.Label("Sputtering distance (mm)"),
+                        dcc.Input(
+                            className="long-item",
+                            id="hdf5_layer_distance",
+                            type="number",
+                            placeholder="Sputtering distance (mm)",
+                            debounce=True
+                        ),
+                        html.Label("Sputtering offset (deg)"),
+                        dcc.Input(
+                            className="long-item",
+                            id="hdf5_layer_offset",
+                            type="number",
+                            placeholder="Sputtering offset (deg)",
+                            debounce=True
                         )
                     ]
                 )
@@ -290,13 +347,7 @@ class WidgetsHDF5:
             children=[
                 dcc.Store(id="hdf5_upload_folder_root", data=upload_folder_root),
                 dcc.Store(id="hdf5_upload_folder_path", data=None),
-                dcc.Store(id="hdf5_deposition_store", data=None),
-                dcc.Store(id="hdf5_annealing_store", data=None),
-                dcc.Store(id="hdf5_edx_store", data=None),
-                dcc.Store(id="hdf5_profil_store", data=None),
-                dcc.Store(id="hdf5_moke_store", data=None),
-                dcc.Store(id="hdf5_xrd_store", data=None),
-                dcc.Store(id="hdf5_misc_store", data=None),
+                dcc.Store(id="sample_structure_store", data=None),
             ]
         )
 

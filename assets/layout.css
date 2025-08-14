@@ -390,6 +390,7 @@
 .card {
   background: #fff;
   border-radius: 16px;
+  font-size: 1.4rem;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   padding: 16px;
 }
@@ -429,7 +430,7 @@
 /* Optional styling for the title vs other sections */
 .split-6 .section-1 {
   font-weight: bold;
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   background: #f0f4ff;
   display: flex;
   align-items: center;
@@ -442,7 +443,7 @@
 	flex-direction: column;
 	align-items: center;
 	font-weight: bold;
-	font-size: 1.4rem;
+	font-size: 1.2rem;
 	justify-content: center;
 	background: #fafafa;
 	border-radius: 8px;
@@ -453,7 +454,7 @@
 .split-6 .section-5,
 .split-6 .section-6 {
   display: flex;
-  font-size: 1.2rem;
+  font-size: 1rem;
   align-items: center;
   justify-content: center;
   background: #fafafa;

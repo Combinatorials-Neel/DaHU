@@ -17,13 +17,26 @@ def widget_measurement_missing():
     )
     return widget
 
-def widget_measurement_found(date, httype):
+def widget_manual_data(number):
     widget = html.Div(
         id="hdf5_deposition_state",
         className="section-2",
         children=[
-            html.Div(f"{httype}"),
-            html.Div(f"{date}")
+            html.Div(f"{number} manual entries")
+        ],
+        style={
+            "background-color": "#3D9499",
+        }
+    )
+    return widget
+
+
+def widget_measurement_found(number):
+    widget = html.Div(
+        id="hdf5_deposition_state",
+        className="section-2",
+        children=[
+            html.Div(f"{number} measurements")
         ],
         style = {
             "background-color": "#3D994C",
