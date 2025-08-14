@@ -67,7 +67,7 @@ app.layout = html.Div(
         dcc.Tabs(
             id="tabs",
             value="browser",
-            children=[browser_tab, hdf5_tab, profil_tab, edx_tab, moke_tab, xrd_tab, freeplot_tab],
+            children=[browser_tab, hdf5_tab, profil_tab, edx_tab, moke_tab, xrd_tab],
 
         )
     ],

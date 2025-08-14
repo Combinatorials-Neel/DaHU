@@ -13,6 +13,7 @@ from ..hdf5_compilers.hdf5compile_moke import *
 from ..hdf5_compilers.hdf5compile_profil import *
 from ..hdf5_compilers.hdf5compile_squid import *
 from ..hdf5_compilers.hdf5compile_xrd import *
+from ..interface.widgets_base import *
 
 
 def callbacks_hdf5(app):
@@ -403,6 +404,60 @@ def callbacks_hdf5(app):
             if not checklist:
                 return "All datasets are already up to date"
             return f"Successfully updated datasets {checklist}"
+
+
+
+    @app.callback(
+        Output("hdf5_deposition_info", "children"),
+        Input("hdf5_path_store", "data"),
+    )
+    def update_deposition_info(hdf5_path):
+        if hdf5_path is None:
+            raise PreventUpdate
+
+        widget_title = widget_title_card("Deposition")
+
+        with h5py.File(hdf5_path, "r") as hdf5_file:
+            if "deposition" not in hdf5_file.keys():
+                return [
+                    widget_title,
+                    widget_measurement_missing()
+                ]
+
+            deposition_group = hdf5_file.get("deposition")
+            date = deposition_group["instrument/date"].asstr()[()]
+            httype = deposition_group.attrs["HT_type"]
+            return [
+                widget_title,
+                widget_measurement_found(date, httype)
+            ]
+
+
+    @app.callback(
+        Output("hdf5_annealing_info", "children"),
+        Input("hdf5_path_store", "data"),
+    )
+    def update_deposition_info(hdf5_path):
+        if hdf5_path is None:
+            raise PreventUpdate
+
+        widget_title = widget_title_card("Annealing")
+
+        with h5py.File(hdf5_path, "r") as hdf5_file:
+            if "annealing" not in hdf5_file.keys():
+                return [
+                    widget_title,
+                    widget_measurement_missing()
+                ]
+
+            deposition_group = hdf5_file.get("annealing")
+            date = deposition_group["instrument/date"].asstr()[()]
+            httype = deposition_group.attrs["HT_type"]
+            return [
+                widget_title,
+                widget_measurement_found(date, httype)
+            ]
+
 
 
 

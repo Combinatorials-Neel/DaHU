@@ -9,7 +9,7 @@ class WidgetsHDF5:
 
         # Widget for the drag and drop
         self.hdf5_left = html.Div(
-            className="textbox top-left",
+            className="card textbox top-1",
             children=[
                 html.Div(
                     className="text-top",
@@ -66,7 +66,7 @@ class WidgetsHDF5:
 
         # Widget for the center box (text box + database options)
         self.hdf5_center = html.Div(
-            className="textbox top-center",
+            className="card textbox top-2",
             children=[
                 html.Div(
                     className="text-top",
@@ -93,7 +93,7 @@ class WidgetsHDF5:
 
         # Widget for the right box (sample info)
         self.hdf5_right = html.Div(
-            className="subgrid top-right",
+            className="card subgrid top-3",
             children=[
                 html.Div(
                     className="subgrid-1",
@@ -149,11 +149,154 @@ class WidgetsHDF5:
             ]
         )
 
+        self.hdf5_inventory = html.Div(
+            className="hdf5-bottom-grid",
+            children=[
+                html.Div(
+                    id="hdf5_deposition_info",
+                    className="card split-6 row-1",
+                    children = [
+                        html.Div(
+                            className="section-1",
+                            children=["Deposition"]
+                        ),
+                        html.Div(
+                            id="hdf5_deposition_state",
+                            className="section-2",
+                            children=["State"]
+                        ),
+                        html.Div(
+                            id="hdf5_deposition_date",
+                            className="section-3",
+                            children=["Date"]
+                        ),
+                    ],
+                ),
+                html.Div(
+                    id="hdf5_annealing_info",
+                    className="card split-6 row-2",
+                    children=[
+                        html.Div(
+                            className="section-1",
+                            children=["Annealing"]
+                        ),
+                        html.Div(
+                            id="hdf5_annealing_state",
+                            className="section-2",
+                            children=["State"]
+                        ),
+                        html.Div(
+                            id="hdf5_date_date",
+                            className="section-3",
+                            children=["Date"]
+                        ),
+                    ],
+                ),
+                html.Div(
+                    id="hdf5_edx_info",
+                    className="card split-6 row-3",
+                    children=[
+                        html.Div(
+                            className="section-1",
+                            children=["EDX"]
+                        ),
+                        html.Div(
+                            id="hdf5_edx_state",
+                            className="section-2",
+                            children=["State"]
+                        ),
+                        html.Div(
+                            id="hdf5_edx_date",
+                            className="section-3",
+                            children=["Date"]
+                        ),
+                    ],
+                ),
+                html.Div(
+                    id="hdf5_profil_info",
+                    className="card split-6 row-4",
+                    children=[
+                        html.Div(
+                            className="section-1",
+                            children=["Profil"]
+                        ),
+                        html.Div(
+                            id="hdf5_profil_state",
+                            className="section-2",
+                            children=["State"]
+                        ),
+                        html.Div(
+                            id="hdf5_profil_date",
+                            className="section-3",
+                            children=["Date"]
+                        ),
+                    ],
+                ),
+                html.Div(
+                    id="hdf5_moke_info",
+                    className="card split-6 row-5",
+                    children=[
+                        html.Div(
+                            className="section-1",
+                            children=["Moke"]
+                        ),
+                        html.Div(
+                            id="hdf5_moke_state",
+                            className="section-2",
+                            children=["State"]
+                        ),
+                        html.Div(
+                            id="hdf5_moke_date",
+                            className="section-3",
+                            children=["Date"]
+                        ),
+                    ],
+                ),
+                html.Div(
+                    id="hdf5_xrd_info",
+                    className="card split-6 row-6",
+                    children=[
+                        html.Div(
+                            className="section-1",
+                            children=["XRD"]
+                        ),
+                        html.Div(
+                            id="hdf5_xrd_state",
+                            className="section-2",
+                            children=["State"]
+                        ),
+                        html.Div(
+                            id="hdf5_xrd_date",
+                            className="section-3",
+                            children=["Date"]
+                        ),
+                    ],
+                ),
+                html.Div(
+                    id="hdf5_misc_info",
+                    className="card split-6 row-7",
+                    children=[
+                        html.Div(
+                            className="section-1",
+                            children=["Misc"]
+                        ),
+                    ],
+                ),
+            ]
+        )
+
         # Stored variables
         self.hdf5_stores = html.Div(
             children=[
                 dcc.Store(id="hdf5_upload_folder_root", data=upload_folder_root),
                 dcc.Store(id="hdf5_upload_folder_path", data=None),
+                dcc.Store(id="hdf5_deposition_store", data=None),
+                dcc.Store(id="hdf5_annealing_store", data=None),
+                dcc.Store(id="hdf5_edx_store", data=None),
+                dcc.Store(id="hdf5_profil_store", data=None),
+                dcc.Store(id="hdf5_moke_store", data=None),
+                dcc.Store(id="hdf5_xrd_store", data=None),
+                dcc.Store(id="hdf5_misc_store", data=None),
             ]
         )
 
@@ -169,16 +312,23 @@ class WidgetsHDF5:
                     type="default",
                     delay_show=500,
                     children=[
-                html.Div(
-                    [
-                        self.hdf5_left,
-                        self.hdf5_center,
-                        self.hdf5_right,
-                        self.hdf5_stores,
-                    ],
-                    className="grid-container",
+                        html.Div(
+                            className="hdf5-page",
+                            children = [
+                                html.Div(
+                                    className="hdf5-top-grid",
+                                    children = [
+                                        self.hdf5_left,
+                                        self.hdf5_center,
+                                        self.hdf5_right,
+                                    ]
+                                ),
+                                self.hdf5_inventory,
+                                self.hdf5_stores,
+                            ],
+                        )
+                    ]
                 )
-                ])
             ])]
         )
 
