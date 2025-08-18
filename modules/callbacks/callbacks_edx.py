@@ -157,13 +157,13 @@ def callbacks_edx(app):
 
         fig = edx_plot_measurement_from_dataframe(measurement_df)
 
-        # elements_dict={
-        #     "Si": {"energies" : [1.739], "color": "black" },
-        #     "Y" : {"energies" : [14.931, 1.922], "color" : "yellow"},
-        #     "Co": {"energies" : [7.649, 6.914, 0.776], "color" : "blue"},
-        # }
+        elements_dict={
+            "Si": {"energies" : [1.739], "color": "black" },
+            "Y" : {"energies" : [14.931, 1.922], "color" : "orange"},
+            "Co": {"energies" : [7.649, 6.914, 0.776], "color" : "blue"},
+        }
 
-        # fig = edx_plot_element_rays(fig, elements_dict)
+        fig = edx_plot_element_rays(fig, elements_dict)
 
         fig.update_layout(plot_layout(title=f"EDX spectrum <br>x = {target_x}, y = {target_y}"), )
 
