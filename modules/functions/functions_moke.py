@@ -1,6 +1,7 @@
 """ """
 
 from scipy.signal import savgol_filter
+from plotly.subplots import make_subplots
 
 from ..functions.functions_hdf5 import *
 from ..functions.functions_shared import *

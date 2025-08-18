@@ -11,17 +11,6 @@ class WidgetsFREEPLOT:
         self.freeplot_center = (html.Div(
             className="textbox top-center",
             children=[
-                html.Div(
-                    className="text-top",
-                    children=[dcc.Dropdown(
-                        id="freeplot_select_dataset",
-                        className="long-item",
-                        options=[],
-                        value=None,
-                    )
-                    ],
-                ),
-
                 html.Div(className="text-mid", children=[
                     html.Span(children="test", id="freeplot_text_box")
                 ])
@@ -43,6 +32,16 @@ class WidgetsFREEPLOT:
                 ]
             ),
             html.Div(
+                className="subgrid-4",
+                children=[dcc.Dropdown(
+                    id="freeplot_x_axis_dataset",
+                    className="long-item",
+                    options=[],
+                    value=None,
+                )
+                ],
+            ),
+            html.Div(
                 className="subgrid-7",
                 children=[
                     html.Label("X axis"),
@@ -53,6 +52,16 @@ class WidgetsFREEPLOT:
                         value=None,
                     ),
                 ]
+            ),
+            html.Div(
+                className="subgrid-5",
+                children=[dcc.Dropdown(
+                    id="freeplot_y_axis_dataset",
+                    className="long-item",
+                    options=[],
+                    value=None,
+                )
+                ],
             ),
             html.Div(
                 className="subgrid-8",

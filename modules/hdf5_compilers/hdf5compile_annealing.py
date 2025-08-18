@@ -47,9 +47,12 @@ def write_annealing_to_hdf5(hdf5_path, source_path, anneal_dict, dataset_name):
     df = remove_zero_columns(df)
 
     header_dict = read_header_from_annealing(source_path)
+
+    if dataset_name is None:
+        dataset_name = source_path.stem
     
     with h5py.File(hdf5_path, "a") as hdf5_file:
-        annealing_group = hdf5_file.create_group(dataset_name)
+        annealing_group = hdf5_file.create_group(f"{dataset_name}")
         annealing_group.attrs["HT_type"] = "annealing"
         annealing_group.attrs["instrument"] = "JetFirst RTA"
         annealing_group.attrs["data_source"] = source_path.name

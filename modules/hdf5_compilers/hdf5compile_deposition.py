@@ -104,6 +104,7 @@ def translate_prp_dict(prp_dict):
 
 
 def format_measurement_df_magnetron(df):
+    date = df["Date et heure"].iloc[1].split(" ")[0]
     df.drop("Date et heure", axis=1, inplace=True)
     df["time"] = df.index * 2
 
@@ -137,6 +138,7 @@ def format_measurement_df_magnetron(df):
     }
 
     df.rename(columns=translation_dict, inplace=True)
+    df.attrs["date"] = date
 
     return df
 
@@ -172,17 +174,17 @@ def write_magnetron_to_hdf5(hdf5_path, source_path):
     source_path = Path(source_path)
     for file_path in safe_rglob(source_path, "*.txt"):
         measurement_df = read_measurement_df_magnetron(file_path)
-        print(measurement_df)
     for file_path in safe_rglob(source_path, "*.prp"):
         instrument_dict = read_prp_from_magnetron(file_path)
 
     with h5py.File(hdf5_path, "a") as hdf5_file:
-        deposition_group = hdf5_file.create_group("deposition10")
+        deposition_group = hdf5_file.create_group("deposition")
         deposition_group.attrs["HT_type"] = "magnetron"
         deposition_group.attrs["instrument"] = "AllianceConcept DP850"
         deposition_group.attrs["magnetron_writer"] = MAGNETRON_WRITER_VERSION
 
         instrument_group = deposition_group.create_group("instrument")
+        instrument_group.create_dataset("date", data=measurement_df.attrs["date"])
         save_dict_to_hdf5(instrument_group, instrument_dict)
 
         measurement_group = deposition_group.create_group("measurement")

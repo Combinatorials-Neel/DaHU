@@ -1,5 +1,6 @@
 import dash_uploader as du
 from dash import html, dcc
+from datetime import datetime
 
 
 class WidgetsHDF5:
@@ -9,7 +10,7 @@ class WidgetsHDF5:
 
         # Widget for the drag and drop
         self.hdf5_left = html.Div(
-            className="textbox top-left",
+            className="card textbox top-1",
             children=[
                 html.Div(
                     className="text-top",
@@ -58,7 +59,18 @@ class WidgetsHDF5:
                     className="text-9",
                     children=[dcc.Dropdown(className="long-item",
                                            id="hdf5_measurement_type",
-                                           options=["EDX", "PROFIL", "MOKE", "XRD", "ESRF", "XRD results", "Annealing", "Magnetron", "Triode", "SQUID"],
+                                           options=[
+                                               "EDX",
+                                                "PROFIL",
+                                                "MOKE",
+                                                "XRD",
+                                                "ESRF",
+                                                "XRD results",
+                                                "Annealing",
+                                                "Magnetron",
+                                                "Triode",
+                                                "SQUID"
+                                            ],
                                            value=None)]
                 )
             ],
@@ -66,7 +78,7 @@ class WidgetsHDF5:
 
         # Widget for the center box (text box + database options)
         self.hdf5_center = html.Div(
-            className="textbox top-center",
+            className="card textbox top-2",
             children=[
                 html.Div(
                     className="text-top",
@@ -93,17 +105,26 @@ class WidgetsHDF5:
 
         # Widget for the right box (sample info)
         self.hdf5_right = html.Div(
-            className="subgrid top-right",
+            className="card subgrid top-3",
             children=[
                 html.Div(
                     className="subgrid-1",
                     children=[
-                        html.Label("Fabrication date"),
+                        html.Label("Fabrication date dd/mm/yyyy"),
                         dcc.Input(
                             className="long-item",
                             id="hdf5_sample_date",
                             type="text",
-                            placeholder="Fabrication date"
+                            placeholder="Fabrication date",
+                            value=datetime.now().strftime("%d/%m/%Y")
+                        ),
+                        html.Label("Operator Name"),
+                        dcc.Input(
+                            className="long-item",
+                            id="hdf5_sample_operator",
+                            type="text",
+                            placeholder="Operator name",
+                            value="Batman"
                         ),
                         html.Label("Sample Name"),
                         dcc.Input(
@@ -112,13 +133,6 @@ class WidgetsHDF5:
                             type="text",
                             placeholder="Sample name"
                         ),
-                        html.Label("Operator Name"),
-                        dcc.Input(
-                            className="long-item",
-                            id="hdf5_sample_operator",
-                            type="text",
-                            placeholder="Operator name"
-                        )
                     ]
                 ),
                 html.Div(
@@ -129,23 +143,202 @@ class WidgetsHDF5:
                                 id="hdf5_layer_dropdown",
                                 options=["Add layer"]
                             ),
-                        html.Div(children=[
+                            html.Label("Layer element"),
                             dcc.Input(
+                                className="long-item",
                                 id="hdf5_layer_element",
                                 type="text",
                                 placeholder="Layer element",
                                 debounce=True
                             ),
+                            html.Label("Sputtering time (s)"),
                             dcc.Input(
-                                id="hdf5_layer_thickness",
+                                className="long-item",
+                                id="hdf5_layer_time",
                                 type="number",
-                                placeholder="Layer thickness",
+                                placeholder="Sputtering time (s)",
                                 debounce=True
-                            )],
-                        style={"display": "flex", "gap": "10px"}
+                            ),
+                    ],
+                ),
+                html.Div(
+                    className="subgrid-6",
+                    children=[
+                        html.Label("Sputtering power (W)"),
+                        dcc.Input(
+                            className="long-item",
+                            id="hdf5_layer_power",
+                            type="number",
+                            placeholder="Sputtering power (W)",
+                            debounce=True
+                        ),
+                        html.Label("Sputtering temperature (°C)"),
+                        dcc.Input(
+                            className="long-item",
+                            id="hdf5_layer_temperature",
+                            type="number",
+                            placeholder="Sputtering temperature (°C)",
+                            debounce=True,
+                        ),
+                    ]
+                ),
+                html.Div(
+                    className="subgrid-9",
+                    children=[
+                        html.Label("Sputtering distance (mm)"),
+                        dcc.Input(
+                            className="long-item",
+                            id="hdf5_layer_distance",
+                            type="number",
+                            placeholder="Sputtering distance (mm)",
+                            debounce=True
+                        ),
+                        html.Label("Sputtering offset (deg)"),
+                        dcc.Input(
+                            className="long-item",
+                            id="hdf5_layer_offset",
+                            type="number",
+                            placeholder="Sputtering offset (deg)",
+                            debounce=True
                         )
                     ]
                 )
+            ]
+        )
+
+        self.hdf5_inventory = html.Div(
+            className="hdf5-bottom-grid",
+            children=[
+                html.Div(
+                    id="hdf5_deposition_info",
+                    className="card split-6 row-1",
+                    children = [
+                        html.Div(
+                            className="section-1",
+                            children=["Deposition"]
+                        ),
+                        html.Div(
+                            id="hdf5_deposition_state",
+                            className="section-2",
+                            children=["State"]
+                        ),
+                        html.Div(
+                            id="hdf5_deposition_date",
+                            className="section-3",
+                            children=["Date"]
+                        ),
+                    ],
+                ),
+                html.Div(
+                    id="hdf5_annealing_info",
+                    className="card split-6 row-2",
+                    children=[
+                        html.Div(
+                            className="section-1",
+                            children=["Annealing"]
+                        ),
+                        html.Div(
+                            id="hdf5_annealing_state",
+                            className="section-2",
+                            children=["State"]
+                        ),
+                        html.Div(
+                            id="hdf5_date_date",
+                            className="section-3",
+                            children=["Date"]
+                        ),
+                    ],
+                ),
+                html.Div(
+                    id="hdf5_edx_info",
+                    className="card split-6 row-3",
+                    children=[
+                        html.Div(
+                            className="section-1",
+                            children=["EDX"]
+                        ),
+                        html.Div(
+                            id="hdf5_edx_state",
+                            className="section-2",
+                            children=["State"]
+                        ),
+                        html.Div(
+                            id="hdf5_edx_date",
+                            className="section-3",
+                            children=["Date"]
+                        ),
+                    ],
+                ),
+                html.Div(
+                    id="hdf5_profil_info",
+                    className="card split-6 row-4",
+                    children=[
+                        html.Div(
+                            className="section-1",
+                            children=["Profil"]
+                        ),
+                        html.Div(
+                            id="hdf5_profil_state",
+                            className="section-2",
+                            children=["State"]
+                        ),
+                        html.Div(
+                            id="hdf5_profil_date",
+                            className="section-3",
+                            children=["Date"]
+                        ),
+                    ],
+                ),
+                html.Div(
+                    id="hdf5_moke_info",
+                    className="card split-6 row-5",
+                    children=[
+                        html.Div(
+                            className="section-1",
+                            children=["Moke"]
+                        ),
+                        html.Div(
+                            id="hdf5_moke_state",
+                            className="section-2",
+                            children=["State"]
+                        ),
+                        html.Div(
+                            id="hdf5_moke_date",
+                            className="section-3",
+                            children=["Date"]
+                        ),
+                    ],
+                ),
+                html.Div(
+                    id="hdf5_xrd_info",
+                    className="card split-6 row-6",
+                    children=[
+                        html.Div(
+                            className="section-1",
+                            children=["XRD"]
+                        ),
+                        html.Div(
+                            id="hdf5_xrd_state",
+                            className="section-2",
+                            children=["State"]
+                        ),
+                        html.Div(
+                            id="hdf5_xrd_date",
+                            className="section-3",
+                            children=["Date"]
+                        ),
+                    ],
+                ),
+                html.Div(
+                    id="hdf5_misc_info",
+                    className="card split-6 row-7",
+                    children=[
+                        html.Div(
+                            className="section-1",
+                            children=["Misc"]
+                        ),
+                    ],
+                ),
             ]
         )
 
@@ -154,6 +347,7 @@ class WidgetsHDF5:
             children=[
                 dcc.Store(id="hdf5_upload_folder_root", data=upload_folder_root),
                 dcc.Store(id="hdf5_upload_folder_path", data=None),
+                dcc.Store(id="sample_structure_store", data=None),
             ]
         )
 
@@ -169,16 +363,23 @@ class WidgetsHDF5:
                     type="default",
                     delay_show=500,
                     children=[
-                html.Div(
-                    [
-                        self.hdf5_left,
-                        self.hdf5_center,
-                        self.hdf5_right,
-                        self.hdf5_stores,
-                    ],
-                    className="grid-container",
+                        html.Div(
+                            className="hdf5-page",
+                            children = [
+                                html.Div(
+                                    className="hdf5-top-grid",
+                                    children = [
+                                        self.hdf5_left,
+                                        self.hdf5_center,
+                                        self.hdf5_right,
+                                    ]
+                                ),
+                                self.hdf5_inventory,
+                                self.hdf5_stores,
+                            ],
+                        )
+                    ]
                 )
-                ])
             ])]
         )
 
