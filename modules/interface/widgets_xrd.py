@@ -24,7 +24,12 @@ class WidgetsXRD:
 
                 html.Div(className="text-mid", children=[
                     html.Span(children="test", id="xrd_text_box")
-                ])
+                ]),
+
+                html.Div(
+                    className="text-8",
+                    children=[html.Button(id="xrd_export_xy", children="Export for fitting", n_clicks=0)]
+                ),
             ]))
 
         # Heatmap plot options

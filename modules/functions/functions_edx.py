@@ -82,8 +82,16 @@ def edx_plot_measurement_from_dataframe(df):
             x=df['Energy (keV)'],
             y=df['Counts'],
             mode='lines',
-            line=dict(color="SlateBlue", width=2),
+            line=dict(color="SlateBlue", width=3),
         )
     )
+
+    return fig
+
+def edx_plot_element_rays(fig, elements_dict):
+    for element in elements_dict.keys():
+        for energy in elements_dict[element]["energies"]:
+            fig.add_vline(x=energy, line_width=3, line_color=elements_dict[element]["color"], line_dash="dash",
+                          annotation_text=element, annotation_position="top right", annotation_font_size=20)
 
     return fig
