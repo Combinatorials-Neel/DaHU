@@ -6,6 +6,7 @@ Internal use for Institut Néel and within the MaMMoS project, to export and rea
 from itertools import cycle
 
 import plotly.express as px
+import fabio
 
 from ..functions.functions_hdf5 import *
 from ..functions.functions_shared import *
@@ -219,3 +220,34 @@ def xrd_plot_image_from_array(array, z_min, z_max):
         fig.data[0].update(zmax=z_max)
 
     return fig
+
+
+
+def export_xrd_position_to_files(position_group, export_path, save_metadata = True):
+    index = position_group.attrs["index"]
+
+    image_path = (export_path / index).with_suffix(".img")
+    file_path = (export_path / index).with_suffix(".xy")
+
+    instrument_group = position_group.get("instrument")
+    metadata_dict = hdf5_group_to_dict(instrument_group)
+
+    image_array = position_group["measurement/CdTe"][0]
+    # Creating a new image with fabio
+    image_file = fabio.dtrekimage.DtrekImage()
+    image_file.data = image_array
+
+    image_file.save(image_path)
+
+    integrated_group = position_group.get("measurement/CdTe_integrate")
+    intensity_array = integrated_group["intensity"][0]
+    q_array = integrated_group["q"][()]
+
+    with open(file_path, "w") as export_file:
+        if save_metadata:
+            for key, metadata in metadata_dict.items():
+                export_file.write(f"#{key}: {metadata}\n")
+        for x, y in zip(q_array, intensity_array):
+            export_file.write(f"{x}\t{y}\n")
+
+    return True

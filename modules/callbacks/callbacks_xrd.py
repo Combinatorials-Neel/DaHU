@@ -220,3 +220,30 @@ def callbacks_xrd(app, children_xrd):
             else:
                 position_group.attrs["ignored"] = False
                 return f"{target_x}, {target_y} ignore set to False"
+
+
+
+
+    @app.callback(
+        Output("xrd_text_box", "children", allow_duplicate=True),
+        Input("xrd_export_button", "n_clicks"),
+        State("hdf5_path_store", "data"),
+        State("xrd_select_dataset", "value"),
+        prevent_initial_call=True,
+    )
+    @check_conditions(xrd_conditions, hdf5_path_index=1)
+    def xrd_export_all(n_clicks, hdf5_path, selected_dataset):
+        if n_clicks > 0:
+            hdf5_path = Path(hdf5_path)
+            export_path = hdf5_path.with_suffix("")
+            if not os.path.exists(export_path):
+                os.makedirs(export_path)
+
+            with h5py.File(hdf5_path, "r") as hdf5_file:
+                xrd_group = hdf5_file[selected_dataset]
+                for position, position_group in xrd_group.items():
+                    if position == "alignment_scans":
+                        continue
+                    export_xrd_position_to_files(position_group, export_path)
+
+            return f"Successfully exported to {export_path}"
