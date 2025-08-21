@@ -279,7 +279,6 @@ def write_xrd_results_to_hdf5(hdf5_path, results_folderpath, target_dataset):
         target_group = target.get(target_dataset)
 
         for lst_filepath in safe_rglob(results_folderpath, pattern="*.lst"):
-            # print(lst_filepath)
             dia_filepath = lst_filepath.with_suffix(".dia")
             file_index = str(lst_filepath.stem).split("_")[-1]
             for name, group in target_group.items():
