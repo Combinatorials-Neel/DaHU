@@ -179,7 +179,11 @@ def callbacks_xrd(app, children_xrd):
 
             if plot_select == "image":
                 image_array = xrd_get_image_from_hdf5(xrd_group, target_x, target_y)
-                fig = xrd_plot_image_from_array(image_array, z_min, z_max)
+                if xrd_group.attrs["instrument"] == "bm02 esrf":
+                    fig = xrd_plot_esrfimage_from_array(image_array, z_min, z_max)
+                else:
+                    fig = xrd_plot_xrdimage_from_array(image_array, z_min, z_max)
+
                 z_min = np.round(fig.data[0].zmin, 0)
                 z_max = np.round(fig.data[0].zmax, 0)
                 fig.update_layout(

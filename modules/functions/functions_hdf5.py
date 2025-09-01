@@ -109,3 +109,14 @@ def get_sample_info_from_hdf5(hdf5_path):
         info_dict["sample_name"] = sample_group["sample_name"][()]
     return info_dict
 
+
+def hdf5_squeeze_dataset(hdf5_file, dataset_group):
+    attrs_dict = dict(dataset_group.attrs)
+    data = np.squeeze(dataset_group[()])
+    group_path = dataset_group.name
+
+    del hdf5_file[dataset_group.name]
+    new_dataset_group = hdf5_file.create_dataset(group_path, data=data)
+    for name, value in attrs_dict.items():
+        new_dataset_group.attrs["name"] = value
+

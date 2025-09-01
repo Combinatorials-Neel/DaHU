@@ -6,9 +6,10 @@ import fabio
 import h5py
 
 from ..functions.functions_shared import *
+from ..functions.functions_xrd import *
 from ..hdf5_compilers.hdf5compile_base import *
 
-SMARTLAB_WRITER_VERSION = "0.1 beta"
+SMARTLAB_WRITER_VERSION = "0.2"
 
 
 def get_scan_numbers(filename):
@@ -236,18 +237,31 @@ def write_smartlab_to_hdf5(hdf5_path, source_path, dataset_name, mode="a"):
 
             # Data group
             measurement_group = position_group.create_group("measurement")
+            integrated_group = measurement_group.create_group("integrated")
             measurement_group.attrs["NX_class"] = "HTmeasurement"
-            tth = [convertFloat(elm[0][0]) for elm in data]
-            counts = [convertFloat(elm[1][0]) for elm in data]
-            tth_group = measurement_group.create_dataset(
-                "angle", (len(tth),), data=tth, dtype="float"
+            tth_data = [convertFloat(elm[0][0]) for elm in data]
+            counts_data = [convertFloat(elm[1][0]) for elm in data]
+            q_data = xrd_tth_q(tth_data, energy = 8.04)
+            intensity_data = [i / np.sum(counts_data) for i in counts_data]
+
+            tth_group = integrated_group.create_dataset(
+                "tth", (len(tth_data),), data=tth_data, dtype="float"
             )
-            counts = measurement_group.create_dataset(
-                "intensity", (len(counts),), data=counts, dtype="float"
+            q_group = integrated_group.create_dataset(
+                "q", (len(tth_data),), data=q_data, dtype="float"
+            )
+            counts_group = integrated_group.create_dataset(
+                "counts", (len(counts_data),), data=counts_data, dtype="float"
+            )
+            intensity_group = integrated_group.create_dataset(
+                "intensity", (len(counts_data),), data=intensity_data, dtype="float"
             )
 
             tth_group.attrs["units"] = "deg"
-            counts.attrs["units"] = "a.u."
+            q_group.attrs["units"] = "nm-1"
+            counts_group.attrs["units"] = "a.u."
+            intensity_group.attrs["units"] = "a.u."
+
 
             # Image group
             measurement_group.create_dataset("2Dimage", img_data.shape, data=img_data)
