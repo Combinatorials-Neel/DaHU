@@ -167,12 +167,7 @@ class WidgetsMOKE:
                                 {"label": "Correct offset", "value": "correct_offset"},
                                 {"label": "Low field filter", "value": "filter_zero"},
                                 {"label": "Connect loops", "value": "connect_loops"},
-                                # Shifting loops button, always disabled by default
-                                {
-                                    "label": "Shift loops",
-                                    "value": "shift_loops",
-                                    "disabled": True,
-                                },
+                                {"label": "Shift loops", "value": "shift_loops"},
                             ],
                             value=[
                                 "smoothing",

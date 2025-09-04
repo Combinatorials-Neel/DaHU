@@ -28,7 +28,7 @@ class WidgetsXRD:
 
                 html.Div(
                     className="text-8",
-                    children=[html.Button(id="xrd_export_xy", children="Export for fitting", n_clicks=0)]
+                    children=[html.Button(id="xrd_export_button", children="Export for fitting", n_clicks=0)]
                 ),
             ]))
 

@@ -6,6 +6,7 @@ Internal use for Institut Néel and within the MaMMoS project, to export and rea
 from itertools import cycle
 
 import plotly.express as px
+from fabio import dtrekimage
 
 from ..functions.functions_hdf5 import *
 from ..functions.functions_shared import *
@@ -22,24 +23,37 @@ def xrd_conditions(hdf5_path, *args, **kwargs):
             return False
     return True
 
+def xrd_q_tth(q_list, energy):
+    constant = 1.2363 # hc/e in keV.nm
+    wavelength = constant / energy # in nm
+    to_theta = lambda q: np.arcsin(q * wavelength / (4 * np.pi))  # in rad
+    to_degree = lambda t: t * 180 / np.pi
+
+    tth_list = [
+        2 * to_degree(to_theta(q)) for q in q_list
+    ]
+
+    return tth_list
+
+
+def xrd_tth_q(tth_list, energy):
+    constant = 1.2363  # hc/e in keV.nm
+    wavelength = constant / energy  # in nm
+    to_rad = lambda t: t * np.pi / 180
+    to_q = lambda t: (4*np.pi)/wavelength * np.sin(t/2)
+
+    q_list = [to_q(to_rad(tth)) for tth in tth_list]
+
+    return q_list
+
 
 def xrd_get_integrated_from_hdf5(xrd_group, target_x, target_y):
     position_group = get_target_position_group(xrd_group, target_x, target_y)
     measurement_group = position_group.get("measurement")
 
-    if xrd_group.attrs["instrument"] == "bm02 - esrf":
-        integrated_group = measurement_group.get("CdTe_integrate")
-        q_array = integrated_group["q"][()]
-        intensity_array = integrated_group["intensity"][0]
-
-    elif xrd_group.attrs["instrument"] == "Rigaku Smartlab":
-        q_array = measurement_group["angle"][()]
-        intensity_array = measurement_group["intensity"]
-
-    else:
-        raise KeyError(
-            "XRD instrument is neither bm02 - esrf nor Rigaku Smartlab, can not retrieve integrated data."
-        )
+    integrated_group = measurement_group.get("integrated")
+    q_array = integrated_group["q"][()]
+    intensity_array = integrated_group["intensity"][()]
 
     measurement_dataframe = pd.DataFrame({"q": q_array, "intensity": intensity_array})
 
@@ -50,16 +64,7 @@ def xrd_get_image_from_hdf5(xrd_group, target_x, target_y):
     position_group = get_target_position_group(xrd_group, target_x, target_y)
     measurement_group = position_group.get("measurement")
 
-    if xrd_group.attrs["instrument"] == "bm02 - esrf":
-        image_array = measurement_group["CdTe"][0]
-
-    elif xrd_group.attrs["instrument"] == "Rigaku Smartlab":
-        image_array = measurement_group["2Dimage"]
-
-    else:
-        raise KeyError(
-            "XRD instrument is neither bm02 - esrf nor Rigaku Smartlab, can not retrieve 2D image."
-        )
+    image_array = measurement_group["2Dimage"][()]
 
     return image_array
 
@@ -189,7 +194,39 @@ def xrd_plot_fits_from_dataframe(fig, df, fits=None):
     return fig
 
 
-def xrd_plot_image_from_array(array, z_min, z_max):
+def xrd_plot_xrdimage_from_array(array, z_min, z_max):
+    if z_min is None:
+        z_min = np.nanmin(array)
+    if z_max is None:
+
+        z_max = np.nanmax(array)
+
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=array,
+            colorscale="Plasma",
+            colorbar=colorbar_layout(z_min, z_max, precision=0, title="count"),
+        )
+    )
+
+    fig.update_layout(
+        title="Image",
+        xaxis_title="x",
+        yaxis_title="y",
+        height=800,
+        width=1100,
+        margin=dict(r=100, t=100),
+    )
+
+    if z_min is not None:
+        fig.data[0].update(zmin=z_min)
+    if z_max is not None:
+        fig.data[0].update(zmax=z_max)
+
+    return fig
+
+
+def xrd_plot_esrfimage_from_array(array, z_min, z_max):
     if z_min is None:
         z_min = np.nanmin(array)
     if z_max is None:
@@ -219,3 +256,34 @@ def xrd_plot_image_from_array(array, z_min, z_max):
         fig.data[0].update(zmax=z_max)
 
     return fig
+
+
+
+def export_xrd_position_to_files(position_group, export_path, save_metadata = True):
+    index = position_group.attrs["index"]
+
+    image_path = (export_path / index).with_suffix(".img")
+    file_path = (export_path / index).with_suffix(".xy")
+
+    instrument_group = position_group.get("instrument")
+    metadata_dict = hdf5_group_to_dict(instrument_group)
+
+    image_array = position_group["measurement/2Dimage"][()]
+    # Creating a new image with fabio
+    image_file = dtrekimage.DtrekImage()
+    image_file.data = image_array
+
+    image_file.save(image_path)
+
+    integrated_group = position_group.get("measurement/integrated")
+    intensity_array = integrated_group["intensity"][()]
+    tth_array = integrated_group["tth"][()]
+
+    with open(file_path, "w") as export_file:
+        if save_metadata:
+            for key, metadata in metadata_dict.items():
+                export_file.write(f"#{key}: {metadata}\n")
+        for x, y in zip(tth_array, intensity_array):
+            export_file.write(f"{x}\t{y}\n")
+
+    return True

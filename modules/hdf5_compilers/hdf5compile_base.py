@@ -116,13 +116,12 @@ def create_incremental_group(hdf5_file, base_name):
     return hdf5_file.create_group(group_name)
 
 
-def create_new_hdf5(hdf5_path, sample_metadata):
+def create_new_hdf5(hdf5_path):
     """
     Creates a new HDF5 file with the structure for an HT experiment.
 
     Args:
         hdf5_path (str or Path): The path to the HDF5 file to be created.
-        sample_metadata (dict): A dictionary containing metadata for the sample.
 
     Returns:
         None
@@ -132,17 +131,5 @@ def create_new_hdf5(hdf5_path, sample_metadata):
 
         sample = hdf5_file.create_group("sample")
         sample.attrs["HT_class"] = "sample"
-        current_group = sample
-        counts = 0
-        for key, value in get_all_keys(sample_metadata):
-            if isinstance(value, dict):
-                counts = len(value)
-                current_group = current_group.create_group(key)
-            else:
-                current_group[key] = convertFloat(value)
-                counts -= 1
-                if counts <= 0:
-                    current_group = sample
-                    counts = 0
 
         return True

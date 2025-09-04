@@ -3,9 +3,10 @@ Functions for XRD parsing (Rigaku SmartLab and ESRF NeXuS)
 """
 
 from ..functions.functions_shared import *
+from ..functions.functions_xrd import xrd_q_tth
 from ..hdf5_compilers.hdf5compile_base import *
 
-ESRF_WRITER_VERSION = "0.1 beta"
+ESRF_WRITER_VERSION = "0.2"
 
 
 def return_cdte_source_path(dataset_group):
@@ -154,7 +155,7 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
         with h5py.File(raw_h5_path, "a") as raw_source:
             esrf_group = hdf5_file.create_group(dataset_name)
             esrf_group.attrs["HT_type"] = "xrd"
-            esrf_group.attrs["instrument"] = "bm02 - esrf"
+            esrf_group.attrs["instrument"] = "bm02 esrf"
             esrf_group.attrs["esrf_writer"] = ESRF_WRITER_VERSION
 
             alignment_group = esrf_group.create_group("alignment_scans")
@@ -217,7 +218,7 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                                 "entry_0000/measurement"
                             )
                             cdte_measurement_group.copy(
-                                "data", target_measurement_group, "CdTe"
+                                "data", target_measurement_group, "2Dimage"
                             )
 
                     if "CdTe_" in subname:
@@ -255,14 +256,55 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                         target_integrated_group = target_instrument_group.get(
                             "CdTe_integrate/integrated"
                         )
-                        processed_source.copy(
+                        # Move integrated group into measurement subgroup
+                        final_integrated_group = processed_source.copy(
                             target_integrated_group,
                             target_measurement_group,
-                            "CdTe_integrate",
+                            "integrated",
                         )
                         del target_integrated_group
 
+        # Formatting and renaming of datasets for consistency with SmartLab
+        for position, position_group in esrf_group.items():
+            if position == "alignment_scans":
+                continue
+
+            measurement_group = position_group.get("measurement")
+
+            integrated_group = measurement_group.get("integrated")
+
+            hdf5_squeeze_dataset(hdf5_file, measurement_group["2Dimage"])
+
+            # Sometimes unit is A^-1, sometimes it's nm^-1, who even knows anymore
+            q_group = integrated_group["q"]
+            q_data = q_group[()]
+            if q_group.attrs["units"] == "A^-1":
+                del q_group
+                q_data = q_data * 10
+                q_group = integrate_group.create_dataset(
+                    "q", data=q_data, dtype="float"
+                )
+                q_group.attrs["units"] = "nm^-1"
+
+            energy = float(position_group["instrument/energy/data"][()])
+            tth_data = xrd_q_tth(q_data, energy)
+            tth_group = integrated_group.create_dataset(
+                "tth", (len(tth_data),), data=tth_data, dtype="float"
+            )
+            tth_group.attrs["units"] = "deg"
+
+            hdf5_squeeze_dataset(hdf5_file, integrated_group["intensity"])
+
+            total_counts = np.sum(measurement_group["2Dimage"][()])
+            counts_data = integrated_group["intensity"][()] * total_counts
+            counts_group = integrated_group.create_dataset(
+                "counts", data=counts_data, dtype="float"
+            )
+
+
+
     return None
+
 
 
 def write_xrd_results_to_hdf5(hdf5_path, results_folderpath, target_dataset):
@@ -279,7 +321,6 @@ def write_xrd_results_to_hdf5(hdf5_path, results_folderpath, target_dataset):
         target_group = target.get(target_dataset)
 
         for lst_filepath in safe_rglob(results_folderpath, pattern="*.lst"):
-            # print(lst_filepath)
             dia_filepath = lst_filepath.with_suffix(".dia")
             file_index = str(lst_filepath.stem).split("_")[-1]
             for name, group in target_group.items():
