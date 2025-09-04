@@ -141,66 +141,24 @@ class WidgetsHDF5:
                             dcc.Dropdown(
                                 className="long-item",
                                 id="hdf5_layer_dropdown",
-                                options=["Add layer"]
+                                options=["New Layer"]
                             ),
-                            html.Label("Layer element"),
+                            dcc.Dropdown(
+                                className="long-item",
+                                id="hdf5_layer_info_dropdown",
+                                options=[]
+                            ),
                             dcc.Input(
                                 className="long-item",
-                                id="hdf5_layer_element",
+                                id="hdf5_layer_info_input",
                                 type="text",
-                                placeholder="Layer element",
-                                debounce=True
+                                debounce=True,
                             ),
-                            html.Label("Sputtering time (s)"),
-                            dcc.Input(
-                                className="long-item",
-                                id="hdf5_layer_time",
-                                type="number",
-                                placeholder="Sputtering time (s)",
-                                debounce=True
-                            ),
-                    ],
-                ),
-                html.Div(
-                    className="subgrid-6",
-                    children=[
-                        html.Label("Sputtering power (W)"),
-                        dcc.Input(
-                            className="long-item",
-                            id="hdf5_layer_power",
-                            type="number",
-                            placeholder="Sputtering power (W)",
-                            debounce=True
-                        ),
-                        html.Label("Sputtering temperature (°C)"),
-                        dcc.Input(
-                            className="long-item",
-                            id="hdf5_layer_temperature",
-                            type="number",
-                            placeholder="Sputtering temperature (°C)",
-                            debounce=True,
-                        ),
-                    ]
-                ),
-                html.Div(
-                    className="subgrid-9",
-                    children=[
-                        html.Label("Sputtering distance (mm)"),
-                        dcc.Input(
-                            className="long-item",
-                            id="hdf5_layer_distance",
-                            type="number",
-                            placeholder="Sputtering distance (mm)",
-                            debounce=True
-                        ),
-                        html.Label("Sputtering offset (deg)"),
-                        dcc.Input(
-                            className="long-item",
-                            id="hdf5_layer_offset",
-                            type="number",
-                            placeholder="Sputtering offset (deg)",
-                            debounce=True
-                        )
+                            html.Button(
+                                id="hdf5_layer_save_button",
+                                children="Save",
+                                n_clicks=0
+                            )
                     ]
                 )
             ]
