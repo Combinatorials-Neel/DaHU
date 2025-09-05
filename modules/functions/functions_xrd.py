@@ -259,7 +259,7 @@ def xrd_plot_esrfimage_from_array(array, z_min, z_max):
 
 
 
-def export_xrd_position_to_files(position_group, export_path, save_metadata = True):
+def export_xrd_position_to_files(position_group, export_path, save_metadata = False):
     index = position_group.attrs["index"]
 
     image_path = (export_path / index).with_suffix(".img")
@@ -276,14 +276,15 @@ def export_xrd_position_to_files(position_group, export_path, save_metadata = Tr
     image_file.save(image_path)
 
     integrated_group = position_group.get("measurement/integrated")
-    intensity_array = integrated_group["intensity"][()]
+    counts_array = integrated_group["counts"][()]
     tth_array = integrated_group["tth"][()]
 
     with open(file_path, "w") as export_file:
         if save_metadata:
             for key, metadata in metadata_dict.items():
-                export_file.write(f"#{key}: {metadata}\n")
-        for x, y in zip(tth_array, intensity_array):
+                pass
+                # export_file.write(f"#{key}: {metadata}\n")
+        for x, y in zip(tth_array, counts_array):
             export_file.write(f"{x}\t{y}\n")
 
     return True
