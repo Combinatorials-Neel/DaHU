@@ -18,7 +18,7 @@ class WidgetsHDF5:
                     du.Upload(
                         id="hdf5_upload",
                         text="Drag and Drop or click to browse",
-                        filetypes=["zip", "h5", "hdf5", "HIS", "dat"],
+                        filetypes=["zip", "h5", "hdf5", "HIS", "dat", "jpg", "jpeg", "png"],
                         upload_id="temp",
                     ),
                 ]),
@@ -69,7 +69,8 @@ class WidgetsHDF5:
                                                 "Annealing",
                                                 "Magnetron",
                                                 "Triode",
-                                                "SQUID"
+                                                "SQUID",
+                                                "Picture"
                                             ],
                                            value=None)]
                 )

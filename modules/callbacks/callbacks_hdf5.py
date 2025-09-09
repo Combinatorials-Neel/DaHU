@@ -248,6 +248,7 @@ def callbacks_hdf5(app):
                     write_annealing_to_hdf5(hdf5_path, uploaded_file_path, anneal_dict, dataset_name=dataset_name)
                 else:
                     manual_annealing_to_hdf5(hdf5_path, anneal_dict, dataset_name=dataset_name)
+                return f'Added {measurement_type} data to {hdf5_path}.'
             if measurement_type == "SQUID":
                 # In squid mode:
                 # manual 1 = float(x_pos, mm)
@@ -262,7 +263,15 @@ def callbacks_hdf5(app):
                 if uploaded_folder_path is not None:
                     uploaded_file_path = uploaded_folder_path.with_suffix(".dat")
                     write_squid_to_hdf5(hdf5_path, uploaded_file_path, squid_dict, dataset_name=dataset_name)
-
+                return f'Added {measurement_type} data to {hdf5_path}.'
+            if measurement_type == "Picture":
+                # In picture mode:
+                #manual 1 = str(comment)
+                #manual 2 = NaN
+                #manual 3 = NaN
+                if uploaded_folder_path is not None:
+                    comment = manual_1
+                    write_image_to_hdf5(hdf5_path, uploaded_folder_path, comment, dataset_name=dataset_name)
                 return f'Added {measurement_type} data to {hdf5_path}.'
 
             return f'Failed to add measurement to {hdf5_path}.'
@@ -304,6 +313,231 @@ def callbacks_hdf5(app):
         elif uploaded_path.name.endswith('.dat'):
             return str(extract_dir), "SQUID", f"1 Squid file detected in {uploaded_folder_path}"
 
+        elif uploaded_path.name.lower().endswith(('.png', ".jpg", ".jpeg")):
+            return str(uploaded_path), "Picture", f"1 Picture file detected in {uploaded_folder_path}"
+
+
+
+    @app.callback(
+        Output("hdf5_text_box", "children", allow_duplicate=True),
+        Input("hdf5_export", "n_clicks"),
+        State("hdf5_path_store", "data"),
+        prevent_initial_call=True
+    )
+    def export_hdf5_results_to_csv(n_clicks, hdf5_path):
+        if n_clicks > 0:
+            hdf5_path = Path(hdf5_path)
+            general_df = None
+            with h5py.File(hdf5_path, "r") as hdf5_file:
+                for dataset_name, dataset_group in hdf5_file.items():
+                    if dataset_name == "sample":
+                        continue
+                    else:
+                        if dataset_group.attrs["HT_type"] == "edx":
+                            df = edx_make_results_dataframe_from_hdf5(dataset_group)
+                        if dataset_group.attrs["HT_type"] == "moke":
+                            df = moke_make_results_dataframe_from_hdf5(dataset_group)
+                        if dataset_group.attrs["HT_type"] in ["esrf","xrd"]:
+                            df = xrd_make_results_dataframe_from_hdf5(dataset_group)
+                        if dataset_group.attrs["HT_type"] == "profil":
+                            df = profil_make_results_dataframe_from_hdf5(dataset_group)
+
+                    df = df.drop('ignored', axis=1, errors='ignore')
+                    df = df.set_index(["x_pos (mm)", "y_pos (mm)"])
+                    df = df.add_suffix(f"[{dataset_name}]")
+                    if general_df is None:
+                        general_df = df
+                    else:
+                        general_df = general_df.join(df, how='outer')
+
+            general_df.to_csv(hdf5_path.with_suffix(".csv"), index=True)
+
+            return f"Successfully exported HDF5 to {hdf5_path.with_suffix(".csv")}"
+
+
+
+    @app.callback(
+        Output("hdf5_text_box", "children", allow_duplicate=True),
+        Input("hdf5_update", "n_clicks"),
+        State("hdf5_path_store", "data"),
+        prevent_initial_call=True
+    )
+    def update_hdf5_file(n_clicks, hdf5_path):
+        if n_clicks > 0:
+            hdf5_path = Path(hdf5_path)
+            checklist = []
+            with h5py.File(hdf5_path, "a") as hdf5_file:
+                for dataset_name, dataset_group in hdf5_file.items():
+                    if dataset_name == "sample":
+                        continue
+                    if dataset_group.attrs["HT_type"] == "edx":
+                        continue
+                    if dataset_group.attrs["HT_type"] == "moke":
+                        continue
+                    if dataset_group.attrs["HT_type"] in ["esrf", "xrd"]:
+                        continue
+                    if dataset_group.attrs["HT_type"] == "profil":
+                        update_dektak_hdf5(dataset_group)
+                        checklist.append(f"[PROFIL] {dataset_name}")
+            if not checklist:
+                return "All datasets are already up to date"
+            return f"Successfully updated datasets {checklist}"
+
+
+
+    @app.callback(
+        Output("hdf5_deposition_info", "children"),
+        Input("hdf5_path_store", "data"),
+    )
+    def update_deposition_info(hdf5_path):
+        if hdf5_path is None:
+            raise PreventUpdate
+
+        widget_title = widget_title_card("Deposition")
+
+        with h5py.File(hdf5_path, "r") as hdf5_file:
+            if "deposition" not in hdf5_file.keys():
+                return [
+                    widget_title,
+                    widget_measurement_missing()
+                ]
+            else:
+                return [
+                    widget_title,
+                    widget_measurement_found(number = 1)
+                ]
+
+
+    @app.callback(
+        Output("hdf5_annealing_info", "children"),
+        Input("hdf5_path_store", "data"),
+    )
+    def update_annealing_info(hdf5_path):
+        if hdf5_path is None:
+            raise PreventUpdate
+
+        widget_title = widget_title_card("Annealing")
+
+        with h5py.File(hdf5_path, "r") as hdf5_file:
+            annealing_groups = get_hdf5_datasets(hdf5_file, "annealing")
+            number = len(annealing_groups)
+            if number == 0:
+                return [
+                    widget_title,
+                    widget_measurement_missing()
+                ]
+
+            else:
+                if hdf5_file[annealing_groups[0]].attrs["data_source"] == "manual":
+                    return [
+                        widget_title,
+                        widget_manual_data(number)
+                    ]
+                else:
+                    return [
+                        widget_title,
+                        widget_measurement_found(number)
+                    ]
+
+    @app.callback(
+        Output("hdf5_edx_info", "children"),
+        Input("hdf5_path_store", "data"),
+    )
+    def update_edx_info(hdf5_path):
+        if hdf5_path is None:
+            raise PreventUpdate
+
+        widget_title = widget_title_card("EDX")
+
+        with h5py.File(hdf5_path, "r") as hdf5_file:
+            edx_groups = get_hdf5_datasets(hdf5_file, "edx")
+            number = len(edx_groups)
+            if number == 0:
+                return [
+                    widget_title,
+                    widget_measurement_missing()
+                ]
+
+            else:
+                return [
+                    widget_title,
+                    widget_measurement_found(number)
+                ]
+
+    @app.callback(
+        Output("hdf5_profil_info", "children"),
+        Input("hdf5_path_store", "data"),
+    )
+    def update_profil_info(hdf5_path):
+        if hdf5_path is None:
+            raise PreventUpdate
+
+        widget_title = widget_title_card("Profilometry")
+
+        with h5py.File(hdf5_path, "r") as hdf5_file:
+            profil_groups = get_hdf5_datasets(hdf5_file, "profil")
+            number = len(profil_groups)
+            if number == 0:
+                return [
+                    widget_title,
+                    widget_measurement_missing()
+                ]
+
+            else:
+                return [
+                    widget_title,
+                    widget_measurement_found(number)
+                ]
+
+    @app.callback(
+        Output("hdf5_moke_info", "children"),
+        Input("hdf5_path_store", "data"),
+    )
+    def update_moke_info(hdf5_path):
+        if hdf5_path is None:
+            raise PreventUpdate
+
+        widget_title = widget_title_card("Moke")
+
+        with h5py.File(hdf5_path, "r") as hdf5_file:
+            moke_groups = get_hdf5_datasets(hdf5_file, "moke")
+            number = len(moke_groups)
+            if number == 0:
+                return [
+                    widget_title,
+                    widget_measurement_missing()
+                ]
+
+            else:
+                return [
+                    widget_title,
+                    widget_measurement_found(number)
+                ]
+
+    @app.callback(
+        Output("hdf5_xrd_info", "children"),
+        Input("hdf5_path_store", "data"),
+    )
+    def update_xrd_info(hdf5_path):
+        if hdf5_path is None:
+            raise PreventUpdate
+
+        widget_title = widget_title_card("XRD")
+
+        with h5py.File(hdf5_path, "r") as hdf5_file:
+            xrd_groups = get_hdf5_datasets(hdf5_file, "xrd")
+            number = len(xrd_groups)
+            if number == 0:
+                return [
+                    widget_title,
+                    widget_measurement_missing()
+                ]
+
+            else:
+                return [
+                    widget_title,
+                    widget_measurement_found(number)
+                ]
 
 
     @app.callback(
@@ -437,229 +671,35 @@ def callbacks_hdf5(app):
                 ),
             ]
 
+        if measurement_type == "Picture":
+            new_children = [
+                html.Label("Dataset Name"),
+                dcc.Input(
+                    id="hdf5_dataset_name",
+                    className="long-item",
+                    type="text",
+                    placeholder="Dataset Name",
+                    value=None,
+                ),
+                dcc.Input(
+                    id="hdf5_manual_1",
+                    className="long-item",
+                    type="text",
+                    placeholder="comment"
+                ),
+                dcc.Input(
+                    id="hdf5_manual_2",
+                    className="long-item",
+                    style={'display': 'none'}
+                ),
+                dcc.Input(
+                    id="hdf5_manual_3",
+                    className="long-item",
+                    style={'display': 'none'}
+                )
+            ]
+
         return new_children, ""
-
-
-    @app.callback(
-        Output("hdf5_text_box", "children", allow_duplicate=True),
-        Input("hdf5_export", "n_clicks"),
-        State("hdf5_path_store", "data"),
-        prevent_initial_call=True
-    )
-    def export_hdf5_results_to_csv(n_clicks, hdf5_path):
-        if n_clicks > 0:
-            hdf5_path = Path(hdf5_path)
-            general_df = None
-            with h5py.File(hdf5_path, "r") as hdf5_file:
-                for dataset_name, dataset_group in hdf5_file.items():
-                    if dataset_name == "sample":
-                        continue
-                    else:
-                        if dataset_group.attrs["HT_type"] == "edx":
-                            df = edx_make_results_dataframe_from_hdf5(dataset_group)
-                        if dataset_group.attrs["HT_type"] == "moke":
-                            df = moke_make_results_dataframe_from_hdf5(dataset_group)
-                        if dataset_group.attrs["HT_type"] in ["esrf","xrd"]:
-                            df = xrd_make_results_dataframe_from_hdf5(dataset_group)
-                        if dataset_group.attrs["HT_type"] == "profil":
-                            df = profil_make_results_dataframe_from_hdf5(dataset_group)
-
-                    df = df.drop('ignored', axis=1, errors='ignore')
-                    df = df.set_index(["x_pos (mm)", "y_pos (mm)"])
-                    df = df.add_suffix(f"[{dataset_name}]")
-                    if general_df is None:
-                        general_df = df
-                    else:
-                        general_df = general_df.join(df, how='outer')
-
-            general_df.to_csv(hdf5_path.with_suffix(".csv"), index=True)
-
-            return f"Successfully exported HDF5 to {hdf5_path.with_suffix(".csv")}"
-
-
-
-    @app.callback(
-        Output("hdf5_text_box", "children", allow_duplicate=True),
-        Input("hdf5_update", "n_clicks"),
-        State("hdf5_path_store", "data"),
-        prevent_initial_call=True
-    )
-    def update_hdf5_file(n_clicks, hdf5_path):
-        if n_clicks > 0:
-            hdf5_path = Path(hdf5_path)
-            checklist = []
-            with h5py.File(hdf5_path, "a") as hdf5_file:
-                for dataset_name, dataset_group in hdf5_file.items():
-                    if dataset_name == "sample":
-                        continue
-                    if dataset_group.attrs["HT_type"] == "edx":
-                        continue
-                    if dataset_group.attrs["HT_type"] == "moke":
-                        continue
-                    if dataset_group.attrs["HT_type"] in ["esrf", "xrd"]:
-                        continue
-                    if dataset_group.attrs["HT_type"] == "profil":
-                        update_dektak_hdf5(dataset_group)
-                        checklist.append(f"[PROFIL] {dataset_name}")
-            if not checklist:
-                return "All datasets are already up to date"
-            return f"Successfully updated datasets {checklist}"
-
-
-
-    @app.callback(
-        Output("hdf5_deposition_info", "children"),
-        Input("hdf5_path_store", "data"),
-    )
-    def update_deposition_info(hdf5_path):
-        if hdf5_path is None:
-            raise PreventUpdate
-
-        widget_title = widget_title_card("Deposition")
-
-        with h5py.File(hdf5_path, "r") as hdf5_file:
-            if "deposition" not in hdf5_file.keys():
-                return [
-                    widget_title,
-                    widget_measurement_missing()
-                ]
-            else:
-                return [
-                    widget_title,
-                    widget_measurement_found(number = 1)
-                ]
-
-
-    @app.callback(
-        Output("hdf5_annealing_info", "children"),
-        Input("hdf5_path_store", "data"),
-    )
-    def update_annealing_info(hdf5_path):
-        if hdf5_path is None:
-            raise PreventUpdate
-
-        widget_title = widget_title_card("Annealing")
-
-        with h5py.File(hdf5_path, "r") as hdf5_file:
-            annealing_groups = get_hdf5_datasets(hdf5_file, "annealing")
-            number = len(annealing_groups)
-            if number == 0:
-                return [
-                    widget_title,
-                    widget_measurement_missing()
-                ]
-
-            else:
-                if hdf5_file[annealing_groups[0]].attrs["data_source"] == "manual":
-                    return [
-                        widget_title,
-                        widget_manual_data(number)
-                    ]
-                else:
-                    return [
-                        widget_title,
-                        widget_measurement_found(number)
-                    ]
-
-    @app.callback(
-        Output("hdf5_edx_info", "children"),
-        Input("hdf5_path_store", "data"),
-    )
-    def update_annealing_info(hdf5_path):
-        if hdf5_path is None:
-            raise PreventUpdate
-
-        widget_title = widget_title_card("EDX")
-
-        with h5py.File(hdf5_path, "r") as hdf5_file:
-            edx_groups = get_hdf5_datasets(hdf5_file, "edx")
-            number = len(edx_groups)
-            if number == 0:
-                return [
-                    widget_title,
-                    widget_measurement_missing()
-                ]
-
-            else:
-                return [
-                    widget_title,
-                    widget_measurement_found(number)
-                ]
-
-    @app.callback(
-        Output("hdf5_profil_info", "children"),
-        Input("hdf5_path_store", "data"),
-    )
-    def update_annealing_info(hdf5_path):
-        if hdf5_path is None:
-            raise PreventUpdate
-
-        widget_title = widget_title_card("Profilometry")
-
-        with h5py.File(hdf5_path, "r") as hdf5_file:
-            profil_groups = get_hdf5_datasets(hdf5_file, "profil")
-            number = len(profil_groups)
-            if number == 0:
-                return [
-                    widget_title,
-                    widget_measurement_missing()
-                ]
-
-            else:
-                return [
-                    widget_title,
-                    widget_measurement_found(number)
-                ]
-
-    @app.callback(
-        Output("hdf5_moke_info", "children"),
-        Input("hdf5_path_store", "data"),
-    )
-    def update_annealing_info(hdf5_path):
-        if hdf5_path is None:
-            raise PreventUpdate
-
-        widget_title = widget_title_card("Moke")
-
-        with h5py.File(hdf5_path, "r") as hdf5_file:
-            moke_groups = get_hdf5_datasets(hdf5_file, "moke")
-            number = len(moke_groups)
-            if number == 0:
-                return [
-                    widget_title,
-                    widget_measurement_missing()
-                ]
-
-            else:
-                return [
-                    widget_title,
-                    widget_measurement_found(number)
-                ]
-
-    @app.callback(
-        Output("hdf5_xrd_info", "children"),
-        Input("hdf5_path_store", "data"),
-    )
-    def update_annealing_info(hdf5_path):
-        if hdf5_path is None:
-            raise PreventUpdate
-
-        widget_title = widget_title_card("XRD")
-
-        with h5py.File(hdf5_path, "r") as hdf5_file:
-            xrd_groups = get_hdf5_datasets(hdf5_file, "xrd")
-            number = len(xrd_groups)
-            if number == 0:
-                return [
-                    widget_title,
-                    widget_measurement_missing()
-                ]
-
-            else:
-                return [
-                    widget_title,
-                    widget_measurement_found(number)
-                ]
 
 
 

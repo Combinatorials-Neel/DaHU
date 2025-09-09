@@ -1,8 +1,11 @@
 from pathlib import Path
 
 import h5py
+from PIL import Image
 
 from ..functions.functions_hdf5 import *
+
+IMAGE_WRITER_VERSION = 0.1
 
 
 def convertFloat(item):
@@ -133,3 +136,28 @@ def create_new_hdf5(hdf5_path):
         sample.attrs["HT_class"] = "sample"
 
         return True
+
+
+def write_image_to_hdf5(hdf5_path, source_path, comment, dataset_name):
+    if isinstance(hdf5_path, str):
+        hdf5_path = Path(hdf5_path)
+    if isinstance(source_path, str):
+        source_path = Path(source_path)
+
+    img = np.array(Image.open(source_path))
+
+    with h5py.File(hdf5_path, "a") as hdf5_file:
+        if "pictures" not in hdf5_file.keys():
+            pictures_group = hdf5_file.create_group("pictures")
+            pictures_group.attrs["HT_class"] = "picture"
+        else:
+            pictures_group = hdf5_file.get("pictures")
+
+        picture_group = pictures_group.create_group(dataset_name, pictures_group)
+        picture_group.create_dataset("picture", data=img, compression="gzip")
+        picture_group.create_dataset("comment", data=str(comment))
+
+    return None
+
+
+

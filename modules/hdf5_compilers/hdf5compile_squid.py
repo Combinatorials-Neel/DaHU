@@ -54,13 +54,13 @@ def write_squid_to_hdf5(hdf5_path, source_path, info_dict, dataset_name=None, mo
 
         # Instrument group for metadata
         instrument = dataset_group.create_group("instrument")
-        instrument.attrs["NX_class"] = "HTinstrument"
+        instrument.attrs["HT_class"] = "HTinstrument"
 
         dataframe_to_hdf5(instrument_df, instrument, auto_units=True)
 
         # Measurement group for data
         measurement_group = dataset_group.create_group("measurement")
-        measurement_group.attrs["NX_class"] = "HTmeasurement"
+        measurement_group.attrs["HT_class"] = "HTmeasurement"
 
         dataframe_to_hdf5(measurement_df, measurement_group, auto_units=True)
 

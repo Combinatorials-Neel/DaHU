@@ -172,7 +172,7 @@ def read_image_from_img(filepath):
     return img_header, img_data
 
 
-def write_smartlab_to_hdf5(hdf5_path, source_path, dataset_name, mode="a"):
+def write_smartlab_to_hdf5(hdf5_path, source_path, dataset_name):
     """
     Writes the contents of the XRD data file (.ras) to the given HDF5 file.
 
@@ -191,7 +191,7 @@ def write_smartlab_to_hdf5(hdf5_path, source_path, dataset_name, mode="a"):
     if dataset_name is None:
         dataset_name = source_path.stem
 
-    with h5py.File(hdf5_path, mode) as hdf5_file:
+    with h5py.File(hdf5_path, "a") as hdf5_file:
         xrd_group = hdf5_file.create_group(dataset_name)
         xrd_group.attrs["HT_type"] = "xrd"
         xrd_group.attrs["instrument"] = "Rigaku Smartlab"
