@@ -258,6 +258,29 @@ def xrd_plot_esrfimage_from_array(array, z_min, z_max):
     return fig
 
 
+def xrd_export_sum_spectrum(xrd_group, export_path):
+    counts_array = None
+    tth_array = None
+
+    for position, position_group in xrd_group.items():
+        if position == "alignment_scans":
+            continue
+        if tth_array is None:
+            tth_array = position_group["measurement/integrated/tth"][()]
+        if counts_array is None:
+            counts_array = position_group["measurement/integrated/counts"][()]
+        else:
+            counts_array = counts_array + position_group["measurement/integrated/counts"][()]
+
+    with open(export_path/"sum.xy", "w") as export_file:
+        for x, y in zip(tth_array, counts_array):
+            export_file.write(f"{x}\t{y}\n")
+
+    return True
+
+
+
+
 
 def export_xrd_position_to_files(position_group, export_path, save_metadata = False):
     index = position_group.attrs["index"]

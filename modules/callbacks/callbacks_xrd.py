@@ -245,6 +245,7 @@ def callbacks_xrd(app, children_xrd):
 
             with h5py.File(hdf5_path, "r") as hdf5_file:
                 xrd_group = hdf5_file[selected_dataset]
+                xrd_export_sum_spectrum(xrd_group, export_path)
                 for position, position_group in xrd_group.items():
                     if position == "alignment_scans":
                         continue
