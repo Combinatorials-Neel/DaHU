@@ -239,9 +239,11 @@ def callbacks_xrd(app, children_xrd):
     def xrd_export_all(n_clicks, hdf5_path, selected_dataset):
         if n_clicks > 0:
             hdf5_path = Path(hdf5_path)
-            export_path = hdf5_path.with_suffix("")
+            export_path = hdf5_path.parent / selected_dataset
             if not os.path.exists(export_path):
                 os.makedirs(export_path)
+            else:
+                raise NameError(f"{export_path} already exists, aborting to prevent overwrite")
 
             with h5py.File(hdf5_path, "r") as hdf5_file:
                 xrd_group = hdf5_file[selected_dataset]

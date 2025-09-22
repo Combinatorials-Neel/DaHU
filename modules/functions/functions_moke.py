@@ -696,12 +696,12 @@ def moke_plot_loop_map(hdf5_file, options_dict, normalize=False):
     if x_dim == 1:
         step_x = 1
     else:
-        step_x = (np.abs(x_max) + np.abs(x_min)) / (x_dim - 1)
+        step_x = (np.abs(x_max) + np.abs(x_min)) / (x_dim - 1) + ((np.abs(x_max) + np.abs(x_min)) % (x_dim - 1) > 0)
 
     if y_dim == 1:
         step_y = 1
     else:
-        step_y = (np.abs(y_max) + np.abs(y_min)) / (y_dim - 1)
+        step_y = (np.abs(y_max) + np.abs(y_min)) / (y_dim - 1) + ((np.abs(y_max) + np.abs(y_min)) % (y_dim - 1) > 0)
 
     fig = make_subplots(
         rows=y_dim, cols=x_dim, horizontal_spacing=0.001, vertical_spacing=0.001
