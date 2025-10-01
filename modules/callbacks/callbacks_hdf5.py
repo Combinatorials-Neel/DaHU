@@ -27,15 +27,16 @@ def callbacks_hdf5(app):
 
     @app.callback([Output('hdf5_text_box', 'children'),
                    Output("hdf5_path_store", "data")],
-                  Input('hdf5_new', 'n_clicks'),
+                  Input('hdf5_create_button', 'n_clicks'),
                   State('data_path_store', 'data'),
                   State('hdf5_sample_name', 'value'),
                   State('hdf5_sample_date', 'value'),
                   State('hdf5_sample_operator', 'value'),
                   State("hdf5_path_store", "data"),
+                  State("hdf5_create_type_dropdown", "value"),
                   )
 
-    def create_new_hdf5_file(n_clicks, data_path, sample_name, sample_date, sample_operator, current_hdf5_path):
+    def create_new_hdf5_file(n_clicks, data_path, sample_name, sample_date, sample_operator, current_hdf5_path, hdf5_type):
         if n_clicks > 0:
 
             sample_dict = {
@@ -49,7 +50,7 @@ def callbacks_hdf5(app):
 
             data_path = Path(data_path)
             hdf5_path = data_path / f'{sample_name}.hdf5'
-            check = create_new_hdf5(hdf5_path)
+            check = create_new_hdf5(hdf5_path, hdf5_type, sample_dict)
 
             if check:
                 return f'Created new HDF5 file at {hdf5_path}', str(hdf5_path)
@@ -187,6 +188,9 @@ def callbacks_hdf5(app):
 
         with h5py.File(hdf5_path, "r") as hdf5_file:
             sample_group = hdf5_file.get("sample")
+            if sample_group.keys() is None:
+                raise PreventUpdate
+
             for name in sample_group.keys():
                 if "Layer" in name:
                     output_list.append(name)
@@ -246,9 +250,10 @@ def callbacks_hdf5(app):
                 if uploaded_folder_path is not None:
                     uploaded_file_path = uploaded_folder_path.with_suffix(".HIS")
                     write_annealing_to_hdf5(hdf5_path, uploaded_file_path, anneal_dict, dataset_name=dataset_name)
+                    return f'Added {measurement_type} data to {hdf5_path}.'
                 else:
                     manual_annealing_to_hdf5(hdf5_path, anneal_dict, dataset_name=dataset_name)
-                return f'Added {measurement_type} data to {hdf5_path}.'
+                    return f'Added {measurement_type} data to {hdf5_path}.'
             if measurement_type == "SQUID":
                 # In squid mode:
                 # manual 1 = float(x_pos, mm)
@@ -263,16 +268,23 @@ def callbacks_hdf5(app):
                 if uploaded_folder_path is not None:
                     uploaded_file_path = uploaded_folder_path.with_suffix(".dat")
                     write_squid_to_hdf5(hdf5_path, uploaded_file_path, squid_dict, dataset_name=dataset_name)
-                return f'Added {measurement_type} data to {hdf5_path}.'
+                    return f'Added {measurement_type} data to {hdf5_path}.'
             if measurement_type == "Picture":
                 # In picture mode:
                 #manual 1 = str(comment)
                 #manual 2 = NaN
                 #manual 3 = NaN
                 if uploaded_folder_path is not None:
-                    comment = manual_1
-                    write_image_to_hdf5(hdf5_path, uploaded_folder_path, comment, dataset_name=dataset_name)
-                return f'Added {measurement_type} data to {hdf5_path}.'
+                    write_image_to_hdf5(hdf5_path, uploaded_folder_path, manual_1, dataset_name=dataset_name)
+                    return f'Added {measurement_type} data to {hdf5_path}.'
+            if measurement_type == "HT hdf5":
+                # In HT hdf5 mode:
+                # dataset_name = list(datasets to be copied)
+                # manual 1 = str(copy mode)
+                # manual 2 = NaN
+                # manual 3 = NaN
+                if uploaded_folder_path is not None:
+                    copy_datasets_to_hdf5(hdf5_path, uploaded_folder_path, dataset_name, manual_1)
 
             return f'Failed to add measurement to {hdf5_path}.'
 
@@ -315,6 +327,13 @@ def callbacks_hdf5(app):
 
         elif uploaded_path.name.lower().endswith(('.png', ".jpg", ".jpeg")):
             return str(uploaded_path), "Picture", f"1 Picture file detected in {uploaded_folder_path}"
+
+        elif uploaded_path.name.endswith(".hdf5"):
+            with h5py.File(uploaded_path, "r") as hdf5_file:
+                if hdf5_file.attrs["HT_class"] == "library":
+                    return str(uploaded_path), "HT hdf5", f"HT library file detected in {uploaded_folder_path}"
+                else:
+                    raise PreventUpdate
 
 
 
@@ -367,6 +386,9 @@ def callbacks_hdf5(app):
             hdf5_path = Path(hdf5_path)
             checklist = []
             with h5py.File(hdf5_path, "a") as hdf5_file:
+                if "HT_type" not in hdf5_file.attrs or hdf5_file.attrs["HT_type"] == "library":
+                    if update_library_hdf5(hdf5_file):
+                        checklist.append("[ROOT]")
                 for dataset_name, dataset_group in hdf5_file.items():
                     if dataset_name == "sample":
                         continue
@@ -377,8 +399,8 @@ def callbacks_hdf5(app):
                     if dataset_group.attrs["HT_type"] in ["esrf", "xrd"]:
                         continue
                     if dataset_group.attrs["HT_type"] == "profil":
-                        update_dektak_hdf5(dataset_group)
-                        checklist.append(f"[PROFIL] {dataset_name}")
+                        if update_dektak_hdf5(dataset_group):
+                            checklist.append(f"[PROFIL] {dataset_name}")
             if not checklist:
                 return "All datasets are already up to date"
             return f"Successfully updated datasets {checklist}"
@@ -699,8 +721,39 @@ def callbacks_hdf5(app):
                 )
             ]
 
-        return new_children, ""
+        if measurement_type == "HT hdf5":
+            with h5py.File(hdf5_path, "r") as hdf5_file:
+                datasets = get_hdf5_datasets(hdf5_file, "all")
+            if not datasets:
+                return new_children, "No datasets found in HDF5 file"
+            new_children = [
+                html.Label("Dataset Name"),
+                dcc.Dropdown(
+                    id="hdf5_dataset_name",
+                    className="long-item",
+                    options=datasets,
+                    value=datasets[0],
+                    multi=True
+                ),
+                dcc.Dropdown(
+                    id="hdf5_manual_1",
+                    className="long-item",
+                    options=["hard copy", "soft copy"],
+                    value="hard copy"
+                ),
+                dcc.Input(
+                    id="hdf5_manual_2",
+                    className="long-item",
+                    style={'display': 'none'}
+                ),
+                dcc.Input(
+                    id="hdf5_manual_3",
+                    className="long-item",
+                    style={'display': 'none'}
+                )
+            ]
 
+        return new_children, ""
 
 
 

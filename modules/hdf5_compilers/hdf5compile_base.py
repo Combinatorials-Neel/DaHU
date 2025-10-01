@@ -5,7 +5,9 @@ from PIL import Image
 
 from ..functions.functions_hdf5 import *
 
-IMAGE_WRITER_VERSION = 0.1
+LIBRARY_WRITER_VERSION = 0.1
+DATASET_WRITER_VERSION = 0.1
+PICTURE_WRITER_VERSION = 0.1
 
 
 def convertFloat(item):
@@ -119,21 +121,34 @@ def create_incremental_group(hdf5_file, base_name):
     return hdf5_file.create_group(group_name)
 
 
-def create_new_hdf5(hdf5_path):
+def create_new_hdf5(hdf5_path, hdf5_type, sample_dict):
     """
     Creates a new HDF5 file with the structure for an HT experiment.
 
     Args:
         hdf5_path (str or Path): The path to the HDF5 file to be created.
+        hdf5_type (str): The type of the HDF5 file to be created.
 
     Returns:
         None
     """
-    with h5py.File(hdf5_path, "x") as hdf5_file:
-        hdf5_file.attrs["HT_class"] = "HTroot"
+    hdf5_type = hdf5_type.lower()
 
-        sample = hdf5_file.create_group("sample")
-        sample.attrs["HT_class"] = "sample"
+    if hdf5_type not in ["library", "dataset"]:
+        raise ValueError("HDF5 type must be either 'Library' or 'Dataset'.")
+
+    with h5py.File(hdf5_path, "x") as hdf5_file:
+        if hdf5_type == "library":
+            hdf5_file.attrs["HT_type"] = "library"
+            hdf5_file.attrs["library_writer"] = LIBRARY_WRITER_VERSION
+
+            sample = hdf5_file.create_group("sample")
+            sample.attrs["HT_class"] = "sample"
+            save_dict_to_hdf5(hdf5_file, sample_dict)
+
+        if hdf5_type == "dataset":
+            hdf5_file.attrs["HT_type"] = "dataset"
+            hdf5_file.attrs["dataset_writer"] = DATASET_WRITER_VERSION
 
         return True
 
@@ -149,7 +164,8 @@ def write_image_to_hdf5(hdf5_path, source_path, comment, dataset_name):
     with h5py.File(hdf5_path, "a") as hdf5_file:
         if "pictures" not in hdf5_file.keys():
             pictures_group = hdf5_file.create_group("pictures")
-            pictures_group.attrs["HT_class"] = "picture"
+            pictures_group.attrs["HT_type"] = "picture"
+            pictures_group.attrs["picture_writer"] = PICTURE_WRITER_VERSION
         else:
             pictures_group = hdf5_file.get("pictures")
 
@@ -160,4 +176,45 @@ def write_image_to_hdf5(hdf5_path, source_path, comment, dataset_name):
     return None
 
 
+def copy_datasets_to_hdf5(hdf5_path, source_path, dataset_list, copy_type):
+    copy_type = copy_type.lower()
+
+    if copy_type is None:
+        copy_type = "hard copy"
+    if copy_type not in ["soft copy", "hard copy"]:
+        raise ValueError("Copy type must be either 'soft copy' or 'hard copy'.")
+
+    with h5py.File(hdf5_path, "r") as hdf5_file:
+        with h5py.File(source_path, "a") as source_file:
+            for dataset in dataset_list:
+                if copy_type == "hard copy":
+                    copied_group = source_file.copy(dataset, hdf5_file)
+                    copied_group.attrs["source"] = source_file.name
+                if copy_type == "soft copy":
+                    hdf5_file[dataset] = h5py.ExternalLink(source_file, dataset)
+                    hdf5_file[dataset].attrs["source"] = source_file.name
+
+
+
+def update_library_hdf5(hdf5_file):
+    try:
+        source_version = float(hdf5_file.attrs["library_writer"])
+    except KeyError:
+        source_version = 0
+
+    if source_version == LIBRARY_WRITER_VERSION:
+        return False
+
+    if source_version < 0.1:
+        # Version 0.1 added tags for library files
+        hdf5_file.attrs["HT_type"] = "library"
+
+        sample = hdf5_file.get("sample")
+        sample.attrs["HT_class"] = "sample"
+        # end of patch
+
+        # Update the version tag to the current version
+        hdf5_file.attrs["library_writer"] = LIBRARY_WRITER_VERSION
+
+    return True
 

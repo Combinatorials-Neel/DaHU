@@ -60,7 +60,7 @@ class WidgetsHDF5:
                     children=[dcc.Dropdown(className="long-item",
                                            id="hdf5_measurement_type",
                                            options=[
-                                               "EDX",
+                                                "EDX",
                                                 "PROFIL",
                                                 "MOKE",
                                                 "XRD",
@@ -70,8 +70,9 @@ class WidgetsHDF5:
                                                 "Magnetron",
                                                 "Triode",
                                                 "SQUID",
-                                                "Picture"
-                                            ],
+                                                "Picture",
+                                                "HT hdf5"
+                                           ],
                                            value=None)]
                 )
             ],
@@ -88,10 +89,6 @@ class WidgetsHDF5:
                 html.Div(
                     className="text-mid",
                     children=[html.Span(children="test", id="hdf5_text_box")],
-                ),
-                html.Div(
-                    className="text-7",
-                    children=[html.Button(id="hdf5_new", children="Create new HDF5", n_clicks=0)]
                 ),
                 html.Div(
                     className="text-8",
@@ -160,6 +157,22 @@ class WidgetsHDF5:
                                 children="Save",
                                 n_clicks=0
                             )
+                    ]
+                ),
+                html.Div(
+                    className="subgrid-4",
+                    children=[
+                        dcc.Dropdown(
+                            className="long-item",
+                            id="hdf5_create_type_dropdown",
+                            options=["Library", "Dataset"]
+                        )
+                    ]
+                ),
+                html.Div(
+                    className="subgrid-7",
+                    children=[
+                        html.Button(id="hdf5_create_button", children="Create new HDF5", n_clicks=0)
                     ]
                 )
             ]

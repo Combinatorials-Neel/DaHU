@@ -158,7 +158,7 @@ def xrd_make_results_dataframe_from_hdf5(xrd_group):
 
 
 def xrd_plot_integrated_from_dataframe(fig, df):
-    fig.update_xaxes(title_text="q (A-1)")
+    fig.update_xaxes(title_text="q (nm-1)")
     fig.update_yaxes(title_text="Counts")
 
     fig.add_trace(
