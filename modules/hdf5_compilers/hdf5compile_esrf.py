@@ -279,11 +279,8 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
             q_group = integrated_group["q"]
             q_data = q_group[()]
             if q_group.attrs["units"] == "A^-1":
-                del q_group
                 q_data = q_data * 10
-                q_group = integrate_group.create_dataset(
-                    "q", data=q_data, dtype="float"
-                )
+                q_group[()] = q_data
                 q_group.attrs["units"] = "nm^-1"
 
             energy = float(position_group["instrument/energy/data"][()])
@@ -301,10 +298,7 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                 "counts", data=counts_data, dtype="float"
             )
 
-
-
     return None
-
 
 
 def write_xrd_results_to_hdf5(hdf5_path, results_folderpath, target_dataset):

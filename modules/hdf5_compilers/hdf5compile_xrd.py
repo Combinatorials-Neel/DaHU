@@ -209,6 +209,7 @@ def write_smartlab_to_hdf5(hdf5_path, source_path, dataset_name):
                 if str(ras_path.stem) in str(img_name):
                     img_path = source_path / img_name
                     img_header, img_data = read_image_from_img(img_path)
+                    break
 
             position_group = xrd_group.create_group(f"({x_pos},{y_pos})")
             position_group.attrs["index"] = get_scan_numbers(str(ras_name))
@@ -241,7 +242,7 @@ def write_smartlab_to_hdf5(hdf5_path, source_path, dataset_name):
             measurement_group.attrs["NX_class"] = "HTmeasurement"
             tth_data = [convertFloat(elm[0][0]) for elm in data]
             counts_data = [convertFloat(elm[1][0]) for elm in data]
-            q_data = xrd_tth_q(tth_data, energy = 8.04)
+            q_data = xrd_tth_q(tth_data, energy=8.04)
             intensity_data = [i / np.sum(counts_data) for i in counts_data]
 
             tth_group = integrated_group.create_dataset(
@@ -261,7 +262,6 @@ def write_smartlab_to_hdf5(hdf5_path, source_path, dataset_name):
             q_group.attrs["units"] = "nm-1"
             counts_group.attrs["units"] = "a.u."
             intensity_group.attrs["units"] = "a.u."
-
 
             # Image group
             measurement_group.create_dataset("2Dimage", img_data.shape, data=img_data)

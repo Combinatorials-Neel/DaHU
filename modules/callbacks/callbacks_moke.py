@@ -138,10 +138,14 @@ def callbacks_moke(app, children_moke):
 
         with h5py.File(hdf5_path, "r") as hdf5_file:
             moke_group = hdf5_file[selected_dataset]
-            measurement_df = moke_get_measurement_from_hdf5(moke_group, target_x, target_y)
+            measurement_df = moke_get_measurement_from_hdf5(
+                moke_group, target_x, target_y
+            )
             results_dict = moke_get_results_from_hdf5(moke_group, target_x, target_y)
 
-        measurement_df = moke_treat_measurement_dataframe(measurement_df, treatment_dict)
+        measurement_df = moke_treat_measurement_dataframe(
+            measurement_df, treatment_dict
+        )
 
         title_tag = ""
         if plot_options == "oscilloscope":
@@ -153,16 +157,30 @@ def callbacks_moke(app, children_moke):
         elif plot_options == "stored_result":
             fig = moke_plot_loop_from_dataframe(fig, measurement_df)
             if heatmap_select == "coercivity_m0_(T)":
-                fig = moke_plot_vlines(fig, values=[results_dict["coercivity_m0"]["negative"],
-                                              results_dict["coercivity_m0"]["positive"]])
+                fig = moke_plot_vlines(
+                    fig,
+                    values=[
+                        results_dict["coercivity_m0"]["negative"],
+                        results_dict["coercivity_m0"]["positive"],
+                    ],
+                )
             if heatmap_select == "coercivity_dmdh_(T)":
-                fig = moke_plot_vlines(fig, values=[results_dict["coercivity_dmdh"]["negative"],
-                                              results_dict["coercivity_dmdh"]["positive"]])
+                fig = moke_plot_vlines(
+                    fig,
+                    values=[
+                        results_dict["coercivity_dmdh"]["negative"],
+                        results_dict["coercivity_dmdh"]["positive"],
+                    ],
+                )
             if heatmap_select == "intercept_field_(T)":
                 print(results_dict["intercept_field"])
-                fig = moke_plot_intercept(fig, intercept_dict=results_dict["intercept_field"])
+                fig = moke_plot_intercept(
+                    fig, intercept_dict=results_dict["intercept_field"]
+                )
 
-        fig.update_layout(plot_layout(title=f"{title_tag} <br>x = {target_x}, y = {target_y}"),)
+        fig.update_layout(
+            plot_layout(title=f"{title_tag} <br>x = {target_x}, y = {target_y}"),
+        )
 
         return fig
 
@@ -183,19 +201,21 @@ def callbacks_moke(app, children_moke):
                 moke_results_dict_to_hdf5(moke_group, results_dict, treatment_dict)
                 return "Great Success!"
 
-
-    @app.callback([Output('moke_data_treatment_store', 'data'),
-                   Output('moke_coil_factor', 'value'),
-                   Output('moke_smoothing_polyorder', 'value'),
-                   Output('moke_smoothing_range', 'value')],
-                  Input('moke_data_treatment_checklist', 'value'),
-                  Input('moke_coil_factor', 'value'),
-                  Input('moke_smoothing_polyorder', 'value'),
-                  Input('moke_smoothing_range', 'value'),
-                  )
-
-    def store_data_treatment(treatment_checklist, coil_factor, smoothing_polyorder,
-                             smoothing_range):
+    @app.callback(
+        [
+            Output("moke_data_treatment_store", "data"),
+            Output("moke_coil_factor", "value"),
+            Output("moke_smoothing_polyorder", "value"),
+            Output("moke_smoothing_range", "value"),
+        ],
+        Input("moke_data_treatment_checklist", "value"),
+        Input("moke_coil_factor", "value"),
+        Input("moke_smoothing_polyorder", "value"),
+        Input("moke_smoothing_range", "value"),
+    )
+    def store_data_treatment(
+        treatment_checklist, coil_factor, smoothing_polyorder, smoothing_range
+    ):
         default_coil_factor = 0.92667
         default_smoothing_polyorder = 1
         default_smoothing_range = 10
@@ -227,7 +247,7 @@ def callbacks_moke(app, children_moke):
         if "connect_loops" in treatment_checklist:
             treatment_dict.update({"connect_loops": True})
         if "shift_loops" in treatment_checklist:
-            treatment_dict.update({"shift_loops": False})
+            treatment_dict.update({"shift_loops": True})
 
         return treatment_dict, coil_factor, smoothing_polyorder, smoothing_range
 
