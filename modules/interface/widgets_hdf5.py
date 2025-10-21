@@ -91,6 +91,10 @@ class WidgetsHDF5:
                     children=[html.Span(children="test", id="hdf5_text_box")],
                 ),
                 html.Div(
+                    className="text-7",
+                    children=[html.Button(id="hdf5_browse", children="browse", n_clicks=0)]
+                ),
+                html.Div(
                     className="text-8",
                     children=[html.Button(id="hdf5_update", children="Update HDF5 structure", n_clicks=0)]
                 ),

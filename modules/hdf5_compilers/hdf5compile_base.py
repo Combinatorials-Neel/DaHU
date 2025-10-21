@@ -144,7 +144,7 @@ def create_new_hdf5(hdf5_path, hdf5_type, sample_dict):
 
             sample = hdf5_file.create_group("sample")
             sample.attrs["HT_class"] = "sample"
-            save_dict_to_hdf5(hdf5_file, sample_dict)
+            save_dict_to_hdf5(sample, sample_dict)
 
         if hdf5_type == "dataset":
             hdf5_file.attrs["HT_type"] = "dataset"

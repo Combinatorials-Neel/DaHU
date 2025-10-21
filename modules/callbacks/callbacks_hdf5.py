@@ -1,7 +1,6 @@
 import zipfile
-
-import numpy as np
 from dash import html, dcc, Input, Output, State
+from tkinter import Tk, filedialog
 
 from ..functions.functions_edx import edx_make_results_dataframe_from_hdf5
 from ..functions.functions_profil import profil_make_results_dataframe_from_hdf5
@@ -756,6 +755,19 @@ def callbacks_hdf5(app):
         return new_children, ""
 
 
+
+    @app.callback(
+        Output("hdf5_text_box", "children", allow_duplicate=True),
+        Input("hdf5_browse", "n_clicks"),
+        prevent_initial_call=True,
+    )
+    def open_browser(n_clicks):
+        if n_clicks>0:
+            root = Tk()
+            root.withdraw()
+            file_path = filedialog.askopenfilename()
+            root.destroy()
+            return file_path
 
 
 
