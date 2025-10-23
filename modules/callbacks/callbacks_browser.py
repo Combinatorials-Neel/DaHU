@@ -118,3 +118,18 @@ def callbacks_browser(app):
             return stored_folder_path, str(stored_folder_path)
         elif n_clicks > 0:
             return current_folder_path, str(current_folder_path)
+
+
+    #Test
+    @app.callback(
+        Output("browser_popup", "is_open"),
+        Input("test_button", "n_clicks"),
+        Input("return-btn", "n_clicks"),
+        Input("close-btn", "n_clicks"),
+        State("browser_popup", "is_open"),
+    )
+    def toggle_browser(open_click, return_click, close_click, is_open):
+        if open_click and not is_open:
+            return True
+        return is_open
+

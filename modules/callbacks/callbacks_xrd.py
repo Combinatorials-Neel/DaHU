@@ -4,7 +4,7 @@ from ..functions.functions_shared import *
 from ..functions.functions_xrd import *
 
 
-def callbacks_xrd(app, children_xrd):
+def callbacks_xrd(app):
 
     # Callback to update current position
     @app.callback(

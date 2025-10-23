@@ -754,21 +754,19 @@ def callbacks_hdf5(app):
 
         return new_children, ""
 
-
+        # Test
 
     @app.callback(
-        Output("hdf5_text_box", "children", allow_duplicate=True),
-        Input("hdf5_browse", "n_clicks"),
-        prevent_initial_call=True,
+        Output("browser_popup", "is_open"),
+        Input("test_button", "n_clicks"),
+        Input("return-btn", "n_clicks"),
+        Input("close-btn", "n_clicks"),
+        State("browser_popup", "is_open"),
     )
-    def open_browser(n_clicks):
-        if n_clicks>0:
-            root = Tk()
-            root.withdraw()
-            file_path = filedialog.askopenfilename()
-            root.destroy()
-            return file_path
-
+    def toggle_browser(open_click, return_click, close_click, is_open):
+        if open_click and not is_open:
+            return True
+        return is_open
 
 
 

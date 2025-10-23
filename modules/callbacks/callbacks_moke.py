@@ -5,7 +5,7 @@ from ..hdf5_compilers.hdf5compile_moke import *
 """Callbacks for MOKE tab"""
 
 
-def callbacks_moke(app, children_moke):
+def callbacks_moke(app):
 
     # Callback to update moke plot based on heatmap click position
     @app.callback(

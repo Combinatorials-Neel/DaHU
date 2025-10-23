@@ -1,4 +1,5 @@
 import dash_uploader
+import dash_bootstrap_components as dbc
 from dash import Dash, dcc, html
 
 from modules.callbacks import (
@@ -11,15 +12,18 @@ from modules.callbacks import (
     callbacks_freeplot,
 )
 from modules.functions.functions_shared import *
+
 from modules.interface import (
     widgets_browser,
-    widgets_profil,
-    widgets_edx,
-    widgets_moke,
     widgets_xrd,
-    widgets_hdf5,
     widgets_freeplot,
 )
+from modules.interface.widgets_base import widget_browser_modal
+from modules.interface.widgets_edx import make_edx_tab
+from modules.interface.widgets_hdf5 import make_hdf5_tab
+from modules.interface.widgets_moke import make_moke_tab
+from modules.interface.widgets_profil import make_profil_tab
+from modules.interface.widgets_xrd import make_xrd_tab
 
 pd.set_option('display.max_colwidth', None)
 pd.set_option('display.max_columns', None)
@@ -36,52 +40,48 @@ UPLOAD_FOLDER_ROOT = os.path.join(script_dir, "uploads")
 cleanup_directory(UPLOAD_FOLDER_ROOT)
 
 # %%
-app = Dash(suppress_callback_exceptions=True)
+app = Dash(suppress_callback_exceptions=True, external_stylesheets=[dbc.themes.FLATLY])
 
 dash_uploader.configure_upload(app, UPLOAD_FOLDER_ROOT)
 
 children_browser = widgets_browser.WidgetsBROWSER()
 browser_tab = children_browser.make_tab_from_widgets()
 
-children_hdf5 = widgets_hdf5.WidgetsHDF5(UPLOAD_FOLDER_ROOT)
-hdf5_tab = children_hdf5.make_tab_from_widgets()
-
-children_profil = widgets_profil.WidgetsPROFIL()
-profil_tab = children_profil.make_tab_from_widgets()
-
-children_edx = widgets_edx.WidgetsEDX()
-edx_tab = children_edx.make_tab_from_widgets()
-
-children_moke = widgets_moke.WidgetsMOKE(folderpath)
-moke_tab = children_moke.make_tab_from_widgets()
-
-children_xrd = widgets_xrd.WidgetsXRD(folderpath)
-xrd_tab = children_xrd.make_tab_from_widgets()
-
-children_freeplot = widgets_freeplot.WidgetsFREEPLOT()
-freeplot_tab = children_freeplot.make_tab_from_widgets()
+hdf5_tab = make_hdf5_tab(UPLOAD_FOLDER_ROOT)
+edx_tab = make_edx_tab(UPLOAD_FOLDER_ROOT)
+profil_tab = make_profil_tab(UPLOAD_FOLDER_ROOT)
+moke_tab = make_moke_tab(UPLOAD_FOLDER_ROOT)
+xrd_tab = make_xrd_tab(UPLOAD_FOLDER_ROOT)
 
 # Defining the main window layout
-app.layout = html.Div(
-    [
-        dcc.Tabs(
+app.layout = dbc.Container(
+    children=[
+        dbc.Tabs(
             id="tabs",
-            value="browser",
-            children=[browser_tab, hdf5_tab, profil_tab, edx_tab, moke_tab, xrd_tab],
+            active_tab="hdf5",
+            children=[hdf5_tab, edx_tab, profil_tab, moke_tab, xrd_tab],
 
-        )
+        ),
+        dbc.Modal(widget_browser_modal(),
+            id="browser_popup",
+            is_open=False,
+            centered=True,
+            size="xl"
+        ),
+        dcc.Store(id="hdf5_path_store", storage_type="local"),
+        dcc.Store(id="data_path_store", storage_type="local")
     ],
-    className="window_layout",
+    fluid=True,
 )
 
-
-callbacks_browser.callbacks_browser(app)
+#
+# callbacks_browser.callbacks_browser(app)
 callbacks_hdf5.callbacks_hdf5(app)
 callbacks_profil.callbacks_profil(app)
 callbacks_edx.callbacks_edx(app)
-callbacks_moke.callbacks_moke(app, children_moke)
-callbacks_xrd.callbacks_xrd(app, children_xrd)
-callbacks_freeplot.callbacks_freeplot(app)
+callbacks_moke.callbacks_moke(app)
+callbacks_xrd.callbacks_xrd(app)
+# callbacks_freeplot.callbacks_freeplot(app)
 
 if __name__ == "__main__":
     app.run(debug=True, port=8050)
