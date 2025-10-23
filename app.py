@@ -1,6 +1,6 @@
 import dash_uploader
 import dash_bootstrap_components as dbc
-from dash import Dash, dcc, html
+from dash import Dash, dcc
 
 from modules.callbacks import (
     callbacks_browser,
@@ -9,15 +9,9 @@ from modules.callbacks import (
     callbacks_moke,
     callbacks_xrd,
     callbacks_hdf5,
-    callbacks_freeplot,
 )
 from modules.functions.functions_shared import *
 
-from modules.interface import (
-    widgets_browser,
-    widgets_xrd,
-    widgets_freeplot,
-)
 from modules.interface.widgets_base import widget_browser_modal
 from modules.interface.widgets_edx import make_edx_tab
 from modules.interface.widgets_hdf5 import make_hdf5_tab
@@ -43,9 +37,6 @@ cleanup_directory(UPLOAD_FOLDER_ROOT)
 app = Dash(suppress_callback_exceptions=True, external_stylesheets=[dbc.themes.FLATLY])
 
 dash_uploader.configure_upload(app, UPLOAD_FOLDER_ROOT)
-
-children_browser = widgets_browser.WidgetsBROWSER()
-browser_tab = children_browser.make_tab_from_widgets()
 
 hdf5_tab = make_hdf5_tab(UPLOAD_FOLDER_ROOT)
 edx_tab = make_edx_tab(UPLOAD_FOLDER_ROOT)
@@ -74,8 +65,7 @@ app.layout = dbc.Container(
     fluid=True,
 )
 
-#
-# callbacks_browser.callbacks_browser(app)
+callbacks_browser.callbacks_browser(app)
 callbacks_hdf5.callbacks_hdf5(app)
 callbacks_profil.callbacks_profil(app)
 callbacks_edx.callbacks_edx(app)

@@ -754,20 +754,5 @@ def callbacks_hdf5(app):
 
         return new_children, ""
 
-        # Test
-
-    @app.callback(
-        Output("browser_popup", "is_open"),
-        Input("test_button", "n_clicks"),
-        Input("return-btn", "n_clicks"),
-        Input("close-btn", "n_clicks"),
-        State("browser_popup", "is_open"),
-    )
-    def toggle_browser(open_click, return_click, close_click, is_open):
-        if open_click and not is_open:
-            return True
-        return is_open
-
-
 
 

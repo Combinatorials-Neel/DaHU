@@ -56,7 +56,7 @@ def top_left_card():
 
 def top_middle_card():
     card = dbc.Card([
-        dbc.CardHeader(html.H5(id="hdf5_path_box", children="Current File:")),
+        dbc.CardHeader(html.H5(id="hdf5_path_box", children="Current File:", n_clicks=0)),
         dbc.CardBody([
             html.H5(id="hdf5_text_box")
         ]),

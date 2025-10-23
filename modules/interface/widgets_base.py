@@ -78,7 +78,7 @@ def widget_browser_modal():
                                     style={"height": 500, "overflow": "scroll"},
                                 )
                             ],
-                            width=8,
+                            width=12,
                             style={"position": "relative"},
                         ),
                     ]
@@ -86,8 +86,7 @@ def widget_browser_modal():
             )
         ]),
         dbc.ModalFooter([
-            dbc.Button("Return", id="return-btn", color="success"),
-            dbc.Button("Cancel", id="close-btn", color="secondary")
+            dbc.Button("Select", id="browser_select_button", color="success"),
         ])
     ]
     return widget
