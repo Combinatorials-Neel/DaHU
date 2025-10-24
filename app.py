@@ -12,7 +12,7 @@ from modules.callbacks import (
 )
 from modules.functions.functions_shared import *
 
-from modules.interface.widgets_base import widget_browser_modal
+from modules.interface.widgets_base import widget_browser_modal, widget_layer_modal
 from modules.interface.widgets_edx import make_edx_tab
 from modules.interface.widgets_hdf5 import make_hdf5_tab
 from modules.interface.widgets_moke import make_moke_tab
@@ -53,12 +53,8 @@ app.layout = dbc.Container(
             children=[hdf5_tab, edx_tab, profil_tab, moke_tab, xrd_tab],
 
         ),
-        dbc.Modal(widget_browser_modal(),
-            id="browser_popup",
-            is_open=False,
-            centered=True,
-            size="xl"
-        ),
+        widget_browser_modal(),
+        widget_layer_modal(),
         dcc.Store(id="hdf5_path_store", storage_type="local"),
         dcc.Store(id="data_path_store", storage_type="local")
     ],

@@ -1,6 +1,5 @@
 import zipfile
-from dash import html, dcc, Input, Output, State
-from tkinter import Tk, filedialog
+from dash import html, dcc, Input, Output, State, ctx
 
 from ..functions.functions_edx import edx_make_results_dataframe_from_hdf5
 from ..functions.functions_profil import profil_make_results_dataframe_from_hdf5
@@ -55,146 +54,6 @@ def callbacks_hdf5(app):
                 return f'Created new HDF5 file at {hdf5_path}', str(hdf5_path)
         else:
             raise PreventUpdate
-
-
-    # Callback to set new layer attributes
-    @app.callback(
-        [Output("hdf5_layer_info_dropdown", "value"),
-        Output("hdf5_layer_info_dropdown", "options")],
-        Input("hdf5_layer_info_input", "value"),
-        State("hdf5_layer_info_dropdown", "value"),
-        State("hdf5_layer_dropdown", "value"),
-        State("hdf5_layer_info_dropdown", "options"),
-        prevent_initial_call=True
-    )
-    def update_layer_attributes(info_input, info_type, current_layer, dropdown_options):
-        if current_layer is None or current_layer != "New Layer":
-            raise PreventUpdate
-
-        new_str = info_type
-
-        for idx, option in enumerate(dropdown_options):
-            if option == info_type:
-                pattern = r"^(\w+):(?:\s+(\w+))?(?:\s+\((\w+)\))?$"
-                match = re.match(pattern, option)
-                if match:
-                    name, value, unit = match.groups()
-                    new_str = f"{name}: {info_input} ({unit})"
-                    dropdown_options[idx] = new_str
-
-        return  new_str, dropdown_options
-
-
-    # Callback to save layer attributes to hdf5
-    @app.callback(
-        Output("hdf5_text_box", "children", allow_duplicate=True),
-        Input("hdf5_layer_save_button", "n_clicks"),
-        State("hdf5_layer_dropdown", "value"),
-        State("hdf5_layer_info_dropdown", "options"),
-        State("hdf5_path_store", "data"),
-        prevent_initial_call=True
-    )
-    def save_layer_to_hdf5(n_clicks, current_layer, dropdown_options, hdf5_path):
-        if current_layer is None:
-            raise PreventUpdate
-
-        if n_clicks > 0:
-
-            layer_dict = {}
-
-            if current_layer == "New Layer":
-                with h5py.File(hdf5_path, "a") as hdf5_file:
-                    sample_group = hdf5_file.get("sample")
-
-                    # Count how many layers are already in the file
-                    i=1
-                    for subgroup in sample_group.keys():
-                        if "Layer" in subgroup:
-                            i += 1
-
-                    layer_group = sample_group.create_group(f"Layer {i}")
-                    for option in dropdown_options:
-                        pattern = r"^(\w+):(?:\s+(\w+))?(?:\s+\((\w+)\))?$"
-                        match = re.match(pattern, option)
-                        if match:
-                            name, value, unit = match.groups()
-                            if value is None:
-                                value = np.nan
-                            parameter_group = layer_group.create_dataset(name, data=str(value))
-                            parameter_group.attrs["unit"] = str(unit)
-
-            else:
-                with h5py.File(hdf5_path, "a") as hdf5_file:
-                    sample_group = hdf5_file.get("sample")
-                    layer_group = sample_group.get(current_layer)
-
-                    for option in dropdown_options:
-                        pattern = r"^(\w+):(?:\s+(\w+))?(?:\s+\((\w+)\))?$"
-                        match = re.match(pattern, option)
-                        if match:
-                            name, value, unit = match.groups()
-                            layer_group[name] = value
-
-            return f"Successfully added layer {i}"
-
-
-    @app.callback(
-        Output("hdf5_layer_info_dropdown", "options", allow_duplicate=True),
-        Input("hdf5_layer_dropdown", "value"),
-        State("hdf5_path_store", "data"),
-        prevent_initial_call=True
-    )
-    def load_layer_properties(current_layer, hdf5_path):
-        if current_layer is None:
-            raise PreventUpdate
-        output_list = []
-
-        base_layer_options = {"element": {"value" : None, "unit" : None},
-                             "nominal_thickness": {"value" : None, "unit" : "nm"},
-                             "time": {"value" : None, "unit" : "s"},
-                             "temperature": {"value" : None, "unit" : "K"},
-                             "power": {"value" : None, "unit" : "W"},
-                             "distance": {"value" : None, "unit" : "mm"},
-                             "angle": {"value" : None, "unit" : "deg"},
-                             "argon_flow": {"value" : None, "unit" : "sccm"},
-                              }
-
-        if current_layer != "New Layer":
-            with h5py.File(hdf5_path, "r") as hdf5_file:
-                layer_group = hdf5_file.get(f"sample/{current_layer}")
-                for name, value in layer_group.items():
-                    base_layer_options[name]["value"] = value[()].decode()
-
-        for key, value in base_layer_options.items():
-            unit = value["unit"]
-            value = value["value"]
-            output_list.append(f"{key}: {value} ({unit})")
-
-        return output_list
-
-
-    @app.callback(
-        [Output("hdf5_layer_dropdown", "options", allow_duplicate=True),
-         Output("hdf5_layer_dropdown", "value")],
-        Input("hdf5_path_store", "data"),
-        prevent_initial_call=True
-    )
-    def populate_layer_dropdown(hdf5_path):
-        if hdf5_path is None:
-            raise PreventUpdate
-        output_list = ["New Layer"]
-
-
-        with h5py.File(hdf5_path, "r") as hdf5_file:
-            sample_group = hdf5_file.get("sample")
-            if sample_group.keys() is None:
-                raise PreventUpdate
-
-            for name in sample_group.keys():
-                if "Layer" in name:
-                    output_list.append(name)
-
-        return output_list, output_list[0]
 
 
     @app.callback(
@@ -753,6 +612,128 @@ def callbacks_hdf5(app):
             ]
 
         return new_children, ""
+
+
+    @app.callback(
+        [Output("browser_popup", "is_open", allow_duplicate=True),
+         Output("hdf5_path_store", "data", allow_duplicate=True)],
+        Input("hdf5_path_box", "n_clicks"),
+        Input("browser_select_button", "n_clicks"),
+        State("browser_popup", "is_open"),
+        State("hdf5_path_store", "data"),
+        State("stored_cwd", "data"),
+        prevent_initial_call=True,
+    )
+    def toggle_hdf5_browser(open_click, select_click, is_open, hdf5_path, stored_cwd):
+        if ctx.triggered_id == "hdf5_path_box" and open_click > 0 and not is_open:
+            return True, hdf5_path
+        if ctx.triggered_id == "browser_select_button" and select_click > 0 and is_open:
+            return False, stored_cwd
+
+        return is_open, hdf5_path
+
+
+    @app.callback(
+        [Output("layer_editor_popup", "is_open", allow_duplicate=True),
+         Output("layer_editor_index", "value")],
+        Input("layer_card_open_button", "n_clicks"),
+        State("layer_editor_popup", "is_open"),
+        prevent_initial_call=True
+    )
+    def toggle_layer_popup(open_click, is_open):
+        if not is_open and open_click > 0:
+            return True, 1
+        elif is_open:
+            raise PreventUpdate
+
+
+    @app.callback(
+        [Output("layer_editor_element", "value"),
+         Output("layer_editor_time", "value"),
+         Output("layer_editor_thickness", "value"),
+         Output("layer_editor_temperature", "value"),
+         Output("layer_editor_power", "value"),
+         Output("layer_editor_distance", "value"),
+         Output("layer_editor_angle", "value"),
+         Output("layer_editor_comment", "value")],
+        Input("layer_editor_index", "value"),
+        State("hdf5_path_store", "data"),
+        State("layer_editor_popup", "is_open"),
+        prevent_initial_call=True
+    )
+    def layer_editor_load_values(index, hdf5_path, is_open):
+        if not is_open:
+            raise PreventUpdate
+        with h5py.File(hdf5_path, "r") as hdf5_file:
+            layer_group = hdf5_file.get(f"sample/Layer {index}")
+            if layer_group is None:
+                return None, None, None, None, None, None, None, None
+            elif layer_group is not None:
+                element = layer_group.get("element")[()].decode()
+                time = layer_group.get("time")[()].decode()
+                thickness = layer_group.get("nominal_thickness")[()].decode()
+                temperature = layer_group.get("temperature")[()].decode()
+                power = layer_group.get("power")[()].decode()
+                distance = layer_group.get("distance")[()].decode()
+                angle = layer_group.get("angle")[()].decode()
+                # comment = layer_group.get("comment")[()].decode()
+                comment=None
+
+        return element, time, thickness, temperature, power, distance, angle, comment
+
+
+    @app.callback(
+        Output("hdf5_text_box", "children", allow_duplicate=True),
+        Input("layer_editor_save_button", "n_clicks"),
+        State("hdf5_path_store", "data"),
+        State("layer_editor_index", "value"),
+        State("layer_editor_element", "value"),
+        State("layer_editor_time", "value"),
+        State("layer_editor_thickness", "value"),
+        State("layer_editor_temperature", "value"),
+        State("layer_editor_power", "value"),
+        State("layer_editor_distance", "value"),
+        State("layer_editor_angle", "value"),
+        State("layer_editor_comment", "value"),
+        State("layer_editor_popup", "is_open"),
+        prevent_initial_call=True
+    )
+    def layer_editor_save_layer(save_click, hdf5_path, index, element, time, thickness,
+                                temperature, power, distance, angle, comment, is_open):
+        if not is_open:
+            raise PreventUpdate
+        if save_click > 0:
+            with h5py.File(hdf5_path, "r") as hdf5_file:
+                sample_group = hdf5_file.get("sample")
+                if f"layer_{index}" in sample_group:
+                    layer_group = sample_group[f"layer_{index}"]
+                else:
+                    layer_numbers = []
+                    for subgroup in sample_group.keys():
+                        match = re.match(r"^layer_(\d+)$", subgroup)
+                        if match:
+                            layer_numbers.append(int(match.group(1)))
+                    highest_index = max(layer_numbers) if layer_numbers else 0
+                    layer_group = sample_group.create_group(f"layer_{highest_index + 1}")
+
+                layer_group["element"] = element
+                layer_group["time"] = time
+                layer_group["thickness"] = thickness
+                layer_group["temperature"] = temperature
+                layer_group["power"] = power
+                layer_group["distance"] = distance
+                layer_group["angle"] = angle
+                layer_group["comment"] = comment
+
+                layer_group["time"].attrs["units"] = "s"
+                layer_group["thickness"].attrs["units"] = "nm"
+                layer_group["temperature"].attrs["units"] = "°C"
+                layer_group["power"].attrs["units"] = "W"
+                layer_group["distance"].attrs["units"] = "mm"
+                layer_group["angle"].attrs["units"] = "deg"
+
+        return "Layer saved"
+
 
 
 

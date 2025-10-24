@@ -96,31 +96,33 @@ def top_right_card():
                     placeholder="Sample name"
                 )
             ], width=6),
-            dbc.Col([
-                dbc.Select(
-                    id="hdf5_layer_dropdown",
-                    options=["New Layer"]
-                ),
-                dbc.Select(
-                    id="hdf5_layer_info_dropdown",
-                    options=[]
-                ),
-                dbc.Input(
-                    id="hdf5_layer_info_input",
-                    type="text",
-                    debounce=True,
-                ),
-                dbc.Button(
-                    id="hdf5_layer_save_button",
-                    children="Save",
-                    n_clicks=0
-                )
-            ])
         ])
     ], className="h-100")
 
     return card
 
+def layer_stack_card():
+    card = dbc.Card([
+        dbc.CardHeader([
+            html.H5(children="Wafer layer structure")
+        ]),
+        dbc.CardBody([
+
+        ]),
+        dbc.CardFooter([
+            dbc.Button(id="layer_card_open_button", children="Edit", color="primary", n_clicks=0),
+        ])
+    ])
+
+    return card
+
+def hdf5_stores():
+    stores = html.Div(
+        children=[
+                dcc.Store(id="hdf5_layer_count_store", data=None),
+        ]
+    )
+    return stores
 
 def make_hdf5_tab(upload_folder_root):
     hdf5_tab = dbc.Tab(
@@ -133,10 +135,13 @@ def make_hdf5_tab(upload_folder_root):
                 delay_show=500,
                 children=[
                     dbc.Row([
-                        dbc.Col(top_left_card(), width=4, className="h-100"),
-                        dbc.Col(top_middle_card(), width=4, className="h-100"),
-                        dbc.Col(top_right_card(), width=4, className="h-100"),
+                        dbc.Col(top_left_card(), width=4, className="d-flex flex-column"),
+                        dbc.Col(top_middle_card(), width=4, className="d-flex flex-column"),
+                        dbc.Col(top_right_card(), width=4, className="d-flex flex-column"),
                     ], className="align-items-stretch"),
+                    dbc.Row([
+                        dbc.Col(layer_stack_card(), width=4, className="ms-auto")
+                    ])
                 ]
             )
         ])]

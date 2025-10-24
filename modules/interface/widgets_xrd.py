@@ -57,7 +57,21 @@ def xrd_top_left_card():
 
 def xrd_top_middle_card():
     card = dbc.Card([
-        dbc.CardHeader(html.H5(id="xrd_path_box", children="Current File:")),
+        dbc.CardHeader(
+            dbc.Row([
+                dbc.Col([
+                    html.H5(id="xrd_path_box", children="No Valid File Selected")
+                ], width=10),
+                dbc.Col([
+                    dbc.Checkbox(
+                        id="xrd_isolate_toggle",
+                        label="isolate tab",
+                        value=False,
+                        className="form-check-reverse"
+                    )
+                ], width=2)
+            ])
+        ),
         dbc.CardBody([
             dbc.Row([
                 dbc.Select(
@@ -139,7 +153,7 @@ def xrd_stores():
     stores = html.Div(
         children=[
                 dcc.Store(id="xrd_position_store", data=None),
-                dcc.Store(id="xrd_database_path_store", data=None),
+                dcc.Store(id="xrd_path_store", data=None),
                 dcc.Store(id="xrd_heatmap_replot_tag", data=False),
                 dcc.Store(id="xrd_database_metadata_store", data=None),
             ]

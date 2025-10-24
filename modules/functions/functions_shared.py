@@ -22,9 +22,7 @@ def check_conditions(conditions_function, hdf5_path_index):
             if not conditions_function(hdf5_path, *args, **kwargs):
                 raise PreventUpdate
             return callback_function(*args, **kwargs)
-
         return wrapper
-
     return decorator
 
 

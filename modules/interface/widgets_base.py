@@ -49,7 +49,12 @@ def widget_measurement_found(number):
 
 
 def widget_browser_modal():
-    widget = [
+    widget = dbc.Modal(
+        id="browser_popup",
+        is_open=False,
+        centered=True,
+        size="xl",
+        children=[
         dbc.ModalHeader("Browser"),
         dbc.ModalBody([
             html.Div(
@@ -88,5 +93,97 @@ def widget_browser_modal():
         dbc.ModalFooter([
             dbc.Button("Select", id="browser_select_button", color="success"),
         ])
-    ]
+    ])
+    return widget
+
+def widget_layer_modal():
+    widget = dbc.Modal(
+        id="layer_editor_popup",
+        is_open=False,
+        centered=True,
+        size="m",
+        children=[
+        dbc.ModalHeader("Layer editor"),
+        dbc.ModalBody([
+            dbc.Row([
+                dbc.Col([
+                    dbc.Select(id="layer_editor_type", options=["buffer", "active", "capping"])
+                ], width=8),
+                dbc.Col([
+                    dbc.Row(children=[
+                        dbc.Col(html.Label("Position")),
+                        dbc.Col(dbc.Input(id="layer_editor_index", type="number", value=0, min=1, step=1))
+                    ], className="align-items-center mb-2")
+                ])
+            ]),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Row(children=[
+                        dbc.Col(html.Label("Element")),
+                        dbc.Col(dbc.Input(id="layer_editor_element", type="text", placeholder="Element"), width=6),
+                        dbc.Col(html.Label(""))
+                    ], className="align-items-center mb-2"),
+                    dbc.Row(children=[
+                        dbc.Col(html.Label("Time")),
+                        dbc.Col(dbc.Input(id="layer_editor_time", type="number", placeholder="Time (s)"), width=6),
+                        dbc.Col(html.Label("(s)"))
+                    ], className="align-items-center mb-2"),
+                    dbc.Row(children=[
+                        dbc.Col(html.Label("Thickness")),
+                        dbc.Col(dbc.Input(id="layer_editor_thickness", type="number", placeholder="Thickness (nm)"), width=6),
+                        dbc.Col(html.Label("(nm)"))
+                    ], className="align-items-center mb-2"),
+                    dbc.Row(children=[
+                        dbc.Col(html.Label("Temperature")),
+                        dbc.Col(dbc.Input(id="layer_editor_temperature", type="number", placeholder="Temperature (°C)"), width=6),
+                        dbc.Col(html.Label("°C"))
+                    ], className="align-items-center mb-2"),
+                    dbc.Row(children=[
+                        dbc.Col(html.Label("Power")),
+                        dbc.Col(dbc.Input(id="layer_editor_power", type="number", placeholder="Power (W)"), width=6),
+                        dbc.Col(html.Label("(W)"))
+                    ], className="align-items-center mb-2"),
+                    dbc.Row(children=[
+                        dbc.Col(html.Label("Distance")),
+                        dbc.Col(dbc.Input(id="layer_editor_distance", type="number", placeholder="Distance (mm)"), width=6),
+                        dbc.Col(html.Label("(mm)"))
+                    ], className="align-items-center mb-2"),
+                    dbc.Row(children=[
+                        dbc.Col(html.Label("Angle")),
+                        dbc.Col(dbc.Input(id="layer_editor_angle", type="number", placeholder="Angle (deg)"), width=6),
+                        dbc.Col(html.Label("(deg)"))
+                    ], className="align-items-center mb-2"),
+                    dbc.Row(children=[
+                        dbc.Col(html.Label("Comment")),
+                        dbc.Col(dbc.Input(id="layer_editor_comment", type="text", placeholder="User comment"), width=9),
+                    ], className="align-items-center mb-2"),
+                ])
+            ])
+        ]),
+        dbc.ModalFooter([
+            dbc.Row([
+                dbc.Col([
+                    dbc.Button(id="layer_editor_save_button", children="Save", color="success", n_clicks=0),
+                ], className="d-flex ms_auto")
+            ])
+        ])
+    ])
+
+    return widget
+
+
+
+
+def widget_layer_card():
+    widget = dbc.Card([
+        dbc.CardHeader(html.H5("Current layers")),
+        dbc.CardBody([
+
+        ]),
+        dbc.CardFooter([
+            dbc.Col([
+
+            ])
+        ])
+    ])
     return widget

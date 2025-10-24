@@ -85,7 +85,7 @@ def moke_top_right_card():
             dbc.Row([
                 dbc.Col([
                         html.Label("Coil Factor (T/100V)"),
-                        dcc.Input(
+                        dbc.Input(
                             className="long-item",
                             id="moke_coil_factor",
                             type="number",
