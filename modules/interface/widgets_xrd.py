@@ -11,11 +11,23 @@ def xrd_top_left_card():
             dbc.CardBody([
                 html.Label("Currently plotting:"),
                 html.Br(),
-                dbc.Select(
-                    id="xrd_heatmap_select",
-                    options=[],
-                    placeholder="Select property",
-                ),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.Select(
+                            id="xrd_heatmap_select",
+                            options=[],
+                            placeholder="Select property",
+                        ),
+                    ),
+                    dbc.Col(
+                        dbc.Checkbox(
+                            id="xrd_analysis_toggle",
+                            label="analysis mode",
+                            value=False,
+                            className="form-check-reverse"
+                        )
+                    )
+                ]),
                 dbc.Row([
                     html.Label("Colorbar bounds"),
                     dbc.Input(

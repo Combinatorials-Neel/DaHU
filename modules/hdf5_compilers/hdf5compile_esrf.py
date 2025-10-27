@@ -260,15 +260,16 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                         final_integrated_group = processed_source.copy(
                             target_integrated_group,
                             target_measurement_group,
-                            "integrated",
+                            name="integrated",
                         )
                         del target_integrated_group
 
-        # Formatting and renaming of datasets for consistency with SmartLab
+        # Iterate over newly created groups to then format them properly
         for position, position_group in esrf_group.items():
             if position == "alignment_scans":
                 continue
 
+            # Formatting and renaming of datasets for consistency with SmartLab
             measurement_group = position_group.get("measurement")
 
             integrated_group = measurement_group.get("integrated")

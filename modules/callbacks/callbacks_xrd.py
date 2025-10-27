@@ -36,13 +36,35 @@ def callbacks_xrd(app):
 
         return dataset_list, dataset_list[0]
 
+
+    @app.callback(
+        [Output("xrd_heatmap_select", "options"),
+         Output("xrd_heatmap_select", "value")],
+        Input("xrd_select_dataset", "value"),
+        Input("xrd_analysis_toggle", "value"),
+        State("hdf5_path_store", "data"),
+    )
+    @check_conditions(xrd_conditions, hdf5_path_index=2)
+    def xrd_populate_heatmap_select(selected_dataset, analysis_toggle, hdf5_path):
+        if analysis_toggle:
+            options = ["counts", "peaks"]
+        else:
+            with h5py.File(hdf5_path, "r") as hdf5_file:
+                xrd_group = hdf5_file.get(selected_dataset)
+                # First three columns are x_pos, y_pos and the ignored tag
+                options = list(xrd_make_results_dataframe_from_hdf5(xrd_group).columns[3:])
+
+        if not options:
+            return None, None
+
+        return options, options[0]
+
     # Callback for heatmap selection
     @app.callback(
         [
             Output("xrd_heatmap", "figure", allow_duplicate=True),
             Output("xrd_heatmap_min", "value"),
             Output("xrd_heatmap_max", "value"),
-            Output("xrd_heatmap_select", "options"),
         ],
         Input("xrd_heatmap_select", "value"),
         Input("xrd_heatmap_min", "value"),
@@ -66,6 +88,7 @@ def callbacks_xrd(app):
         with h5py.File(hdf5_path, "r") as hdf5_file:
             xrd_group = hdf5_file[selected_dataset]
 
+            # Reset colorbar bounds when needed
             if ctx.triggered_id in [
                 "xrd_heatmap_select",
                 "xrd_heatmap_edit",
@@ -78,15 +101,18 @@ def callbacks_xrd(app):
             if edit_toggle in ["edit", "unfiltered"]:
                 masking = False
 
-            xrd_df = xrd_make_results_dataframe_from_hdf5(xrd_group)
+            if heatmap_select == "counts":
+                xrd_df = xrd_make_counts_dataframe_from_hdf5(xrd_group)
+            elif heatmap_select == "peaks":
+                xrd_df = xrd_make_peaks_dataframe_from_hdf5(xrd_group, prominence=5)
+            else:
+                xrd_df = xrd_make_results_dataframe_from_hdf5(xrd_group)
 
             colorscale = "Plasma"
             scaling = 1
             if heatmap_select is not None and selected_dataset is not None:
                 name, unit = split_name_and_unit(heatmap_select)
 
-                if name.endswith("A") or name.endswith("B") or name.endswith("C"):
-                    colorscale = "Plasma"
                 if "phase_fraction" in name:
                     unit = "wt.%"
                     scaling = 100
@@ -113,11 +139,7 @@ def callbacks_xrd(app):
             z_min = np.round(fig.data[0].zmin, precision)
             z_max = np.round(fig.data[0].zmax, precision)
 
-            options = list(xrd_df.columns[3:])
-            if "default" in options:
-                options.remove("default")
-
-            return fig, z_min, z_max, options
+            return fig, z_min, z_max
 
     @app.callback(
         [
