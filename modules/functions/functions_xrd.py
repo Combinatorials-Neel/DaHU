@@ -309,7 +309,7 @@ def export_xrd_position_to_files(position_group, export_path, save_metadata = Fa
     return True
 
 
-def xrd_make_counts_dataframe_from_hdf5(xrd_group):
+def xrd_make_analysis_dataframe_from_hdf5(xrd_group):
     data_dict_list = []
     for position, position_group in xrd_group.items():
         if position == "alignment_scans":
@@ -318,36 +318,15 @@ def xrd_make_counts_dataframe_from_hdf5(xrd_group):
         measurement_group = position_group.get("measurement")
 
         counts = np.sum(measurement_group["2Dimage"][()])
+        integrated = measurement_group["integrated/counts"][()]
+        peaks, _ = find_peaks(integrated, prominence=5)
 
         data_dict = {
             "x_pos (mm)": instrument_group["x_pos"][()],
             "y_pos (mm)": instrument_group["y_pos"][()],
             "ignored": position_group.attrs["ignored"],
             "counts": counts,
-        }
-
-        data_dict_list.append(data_dict)
-    results_df = pd.DataFrame(data_dict_list)
-
-    return results_df
-
-
-def xrd_make_peaks_dataframe_from_hdf5(xrd_group, prominence=5):
-    data_dict_list = []
-    for position, position_group in xrd_group.items():
-        if position == "alignment_scans":
-            continue
-        instrument_group = position_group.get("instrument")
-        measurement_group = position_group.get("measurement")
-
-        integrated = measurement_group["integrated/counts"][()]
-        peaks, _  = find_peaks(integrated, prominence=prominence)
-
-        data_dict = {
-            "x_pos (mm)": instrument_group["x_pos"][()],
-            "y_pos (mm)": instrument_group["y_pos"][()],
-            "ignored": position_group.attrs["ignored"],
-            "peaks": peaks.shape,
+            "peaks": len(peaks)
         }
 
         data_dict_list.append(data_dict)

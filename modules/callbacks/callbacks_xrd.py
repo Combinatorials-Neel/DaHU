@@ -36,30 +36,37 @@ def callbacks_xrd(app):
 
         return dataset_list, dataset_list[0]
 
-
+    # Reads the given dataset into a DataFrame, then serialize it to json.
+    # Returns the json and the columns of the df as options for the plot selection
     @app.callback(
-        [Output("xrd_heatmap_select", "options"),
+        [Output("xrd_results_store", "data"),
+         Output("xrd_heatmap_select", "options"),
          Output("xrd_heatmap_select", "value")],
         Input("xrd_select_dataset", "value"),
         Input("xrd_analysis_toggle", "value"),
         State("hdf5_path_store", "data"),
     )
     @check_conditions(xrd_conditions, hdf5_path_index=2)
-    def xrd_populate_heatmap_select(selected_dataset, analysis_toggle, hdf5_path):
-        if analysis_toggle:
-            options = ["counts", "peaks"]
-        else:
-            with h5py.File(hdf5_path, "r") as hdf5_file:
-                xrd_group = hdf5_file.get(selected_dataset)
-                # First three columns are x_pos, y_pos and the ignored tag
-                options = list(xrd_make_results_dataframe_from_hdf5(xrd_group).columns[3:])
+    def xrd_read_dataset_into_store(selected_dataset, analysis_toggle, hdf5_path):
+        with h5py.File(hdf5_path, "r") as hdf5_file:
+            xrd_group = hdf5_file.get(selected_dataset)
+            if analysis_toggle:
+                xrd_df = xrd_make_analysis_dataframe_from_hdf5(xrd_group)
+            else:
+                xrd_df = xrd_make_results_dataframe_from_hdf5(xrd_group)
 
-        if not options:
-            return None, None
+            if xrd_df is None:
+                raise PreventUpdate
 
-        return options, options[0]
+            xrd_df_json = xrd_df.to_json(orient="split")
+            # First three columns are x_pos, y_pos and the ignored tag
+            options = list(xrd_df.columns[3:])
 
-    # Callback for heatmap selection
+        return xrd_df_json, options, None
+
+    # Reads from the serialized dataframe in store, and plots the heatmap
+    # Handles heatmap plotting options such as colorbar values and precision
+    # Returns a figure and the colorbar values
     @app.callback(
         [
             Output("xrd_heatmap", "figure", allow_duplicate=True),
@@ -71,75 +78,58 @@ def callbacks_xrd(app):
         Input("xrd_heatmap_max", "value"),
         Input("xrd_heatmap_precision", "value"),
         Input("xrd_heatmap_edit", "value"),
-        Input("hdf5_path_store", "data"),
-        Input("xrd_select_dataset", "value"),
+        State("hdf5_path_store", "data"),
+        State("xrd_results_store", "data"),
         prevent_initial_call=True,
     )
     @check_conditions(xrd_conditions, hdf5_path_index=5)
-    def xrd_update_heatmap(
-        heatmap_select,
-        z_min,
-        z_max,
-        precision,
-        edit_toggle,
-        hdf5_path,
-        selected_dataset,
-    ):
-        with h5py.File(hdf5_path, "r") as hdf5_file:
-            xrd_group = hdf5_file[selected_dataset]
+    def xrd_update_heatmap(heatmap_select,z_min,z_max,precision,edit_toggle,hdf5_path,xrd_df_json):
+        xrd_df = pd.read_json(StringIO(xrd_df_json), orient="split")
+        # Reset colorbar bounds when needed
+        if ctx.triggered_id in [
+            "xrd_heatmap_select",
+            "xrd_heatmap_edit",
+            "xrd_heatmap_precision",
+        ]:
+            z_min = None
+            z_max = None
 
-            # Reset colorbar bounds when needed
-            if ctx.triggered_id in [
-                "xrd_heatmap_select",
-                "xrd_heatmap_edit",
-                "xrd_heatmap_precision",
-            ]:
-                z_min = None
-                z_max = None
+        masking = True
+        if edit_toggle in ["edit", "unfiltered"]:
+            masking = False
 
-            masking = True
-            if edit_toggle in ["edit", "unfiltered"]:
-                masking = False
+        colorscale = "Plasma"
+        scaling = 1
+        if heatmap_select is not None:
+            name, unit = split_name_and_unit(heatmap_select)
 
-            if heatmap_select == "counts":
-                xrd_df = xrd_make_counts_dataframe_from_hdf5(xrd_group)
-            elif heatmap_select == "peaks":
-                xrd_df = xrd_make_peaks_dataframe_from_hdf5(xrd_group, prominence=5)
-            else:
-                xrd_df = xrd_make_results_dataframe_from_hdf5(xrd_group)
+            if "phase_fraction" in name:
+                unit = "wt.%"
+                scaling = 100
+            plot_title = f"{name} XRD map"
+            colorbar_title = f"{unit}"
 
-            colorscale = "Plasma"
-            scaling = 1
-            if heatmap_select is not None and selected_dataset is not None:
-                name, unit = split_name_and_unit(heatmap_select)
+        else:
+            plot_title = ""
+            colorbar_title = ""
 
-                if "phase_fraction" in name:
-                    unit = "wt.%"
-                    scaling = 100
-                plot_title = f"{name} XRD map <br>{selected_dataset}"
-                colorbar_title = f"{unit}"
+        fig = make_heatmap_from_dataframe(
+            xrd_df,
+            values=heatmap_select,
+            z_min=z_min,
+            z_max=z_max,
+            plot_title=plot_title,
+            colorbar_title=colorbar_title,
+            precision=precision,
+            masking=masking,
+            colorscale=colorscale,
+            scaling=scaling,
+        )
 
-            else:
-                plot_title = ""
-                colorbar_title = ""
+        z_min = np.round(fig.data[0].zmin, precision)
+        z_max = np.round(fig.data[0].zmax, precision)
 
-            fig = make_heatmap_from_dataframe(
-                xrd_df,
-                values=heatmap_select,
-                z_min=z_min,
-                z_max=z_max,
-                plot_title=plot_title,
-                colorbar_title=colorbar_title,
-                precision=precision,
-                masking=masking,
-                colorscale=colorscale,
-                scaling=scaling,
-            )
-
-            z_min = np.round(fig.data[0].zmin, precision)
-            z_max = np.round(fig.data[0].zmax, precision)
-
-            return fig, z_min, z_max
+        return fig, z_min, z_max
 
     @app.callback(
         [

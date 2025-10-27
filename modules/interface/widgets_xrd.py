@@ -164,11 +164,10 @@ def xrd_plot():
 def xrd_stores():
     stores = html.Div(
         children=[
-                dcc.Store(id="xrd_position_store", data=None),
-                dcc.Store(id="xrd_path_store", data=None),
-                dcc.Store(id="xrd_heatmap_replot_tag", data=False),
-                dcc.Store(id="xrd_database_metadata_store", data=None),
-            ]
+            dcc.Store(id="xrd_position_store", data=None),
+            dcc.Store(id="xrd_path_store", data=None),
+            dcc.Store(id="xrd_results_store", data=None),
+        ]
     )
     return stores
 

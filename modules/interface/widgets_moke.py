@@ -187,9 +187,8 @@ def moke_stores():
         children=[
             dcc.Store(id="moke_position_store", data=None),
             dcc.Store(id="moke_database_path_store", data=None),
-            dcc.Store(id="moke_database_metadata_store", data=None),
+            dcc.Store(id="moke_results_store", data=None),
             dcc.Store(id="moke_data_treatment_store", data=None),
-            dcc.Store(id="moke_initial_load_trigger", data="load"),
         ]
     )
     return stores

@@ -129,10 +129,8 @@ def profil_stores():
     stores = html.Div(
         children=[
             dcc.Store(id="profil_position_store", data=None),
-            dcc.Store(id="profil_database_path_store", data=None),
             dcc.Store(id="profil_file_path_store", data=None),
-            dcc.Store(id="profil_parameters_store", data=None),
-            dcc.Store(id="profil_database_metadata_store", data=None)
+            dcc.Store(id="profil_results_store", data=None),
         ])
     return stores
 

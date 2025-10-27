@@ -9,6 +9,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
 from scipy.stats import linregress
+from io import StringIO
 
 
 # Decorator function to check conditions before executing callbacks, preventing errors

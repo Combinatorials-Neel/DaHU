@@ -106,8 +106,9 @@ def edx_plot():
 def edx_stores():
     stores = html.Div(
         children=[
-            dcc.Store(id="edx_position_store"),
-            dcc.Store(id="edx_parameters_store"),
+            dcc.Store(id="edx_position_store", data=None),
+            dcc.Store(id="edx_parameters_store", data=None),
+            dcc.Store(id="edx_results_store", data=None)
         ])
     return stores
 
