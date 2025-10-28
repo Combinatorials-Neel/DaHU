@@ -23,38 +23,6 @@ def callbacks_hdf5(app):
     def display_current_hdf5_path(hdf5_path):
         return str(Path(hdf5_path))
 
-    @app.callback([Output('hdf5_text_box', 'children'),
-                   Output("hdf5_path_store", "data")],
-                  Input('hdf5_create_button', 'n_clicks'),
-                  State('data_path_store', 'data'),
-                  State('hdf5_sample_name', 'value'),
-                  State('hdf5_sample_date', 'value'),
-                  State('hdf5_sample_operator', 'value'),
-                  State("hdf5_path_store", "data"),
-                  State("hdf5_create_type_dropdown", "value"),
-                  )
-
-    def create_new_hdf5_file(n_clicks, data_path, sample_name, sample_date, sample_operator, current_hdf5_path, hdf5_type):
-        if n_clicks > 0:
-
-            sample_dict = {
-                'sample_name': sample_name,
-                'fabrication_date': sample_date,
-                'operator': sample_operator
-            }
-
-            if not all(sample_dict.values()):
-                return 'All data entries must be filled to create a new hdf5 file', current_hdf5_path
-
-            data_path = Path(data_path)
-            hdf5_path = data_path / f'{sample_name}.hdf5'
-            check = create_new_hdf5(hdf5_path, hdf5_type, sample_dict)
-
-            if check:
-                return f'Created new HDF5 file at {hdf5_path}', str(hdf5_path)
-        else:
-            raise PreventUpdate
-
 
     @app.callback(
         Output('hdf5_text_box', 'children', allow_duplicate=True),
@@ -646,9 +614,58 @@ def callbacks_hdf5(app):
         elif is_open:
             raise PreventUpdate
 
+    @app.callback(
+        Output("new_hdf5_popup", "is_open", allow_duplicate=True),
+        Input("hdf5_new_file_button", "n_clicks"),
+        State("new_hdf5_popup", "is_open"),
+        prevent_initial_call=True
+    )
+    def toggle_new_hdf5_popup(open_click, is_open):
+        if not is_open and open_click > 0:
+            return True
+        elif is_open:
+            raise PreventUpdate
+
 
     @app.callback(
-        [Output("layer_editor_element", "value"),
+        [Output('hdf5_text_box', 'children'),
+         Output("hdf5_path_store", "data"),
+         Output("new_hdf5_popup", "is_open", allow_duplicate=True)],
+        Input("new_hdf5_create_button", "n_clicks"),
+        State("new_hdf5_type", "value"),
+        State("new_hdf5_date", "value"),
+        State("new_hdf5_name", "value"),
+        State("new_hdf5_operator", "value"),
+        State("data_path_store", "data"),
+        State("hdf5_path_store", "data"),
+        prevent_initial_call=True
+    )
+
+    def create_new_hdf5_file(n_clicks, file_type, file_date, file_name, file_operator, data_path, current_hdf5_path):
+        if n_clicks > 0:
+
+            sample_dict = {
+                "file_type": file_type,
+                "sample_name": file_name,
+                "fabrication_date": file_date,
+                "operator": file_operator,
+            }
+
+            if not all(sample_dict.values()):
+                return 'All data entries must be filled to create a new hdf5 file', current_hdf5_path, True
+
+            data_path = Path(data_path)
+            hdf5_path = data_path / f'{file_name}.hdf5'
+            check = create_new_hdf5(hdf5_path, file_type, sample_dict)
+
+            if check:
+                return f'Created new HDF5 file at {hdf5_path}', str(hdf5_path), False
+        else:
+            raise PreventUpdate
+
+    @app.callback(
+        [Output("layer_editor_type", "value"),
+         Output("layer_editor_element", "value"),
          Output("layer_editor_time", "value"),
          Output("layer_editor_thickness", "value"),
          Output("layer_editor_temperature", "value"),
@@ -665,21 +682,21 @@ def callbacks_hdf5(app):
         if not is_open:
             raise PreventUpdate
         with h5py.File(hdf5_path, "r") as hdf5_file:
-            layer_group = hdf5_file.get(f"sample/Layer {index}")
+            layer_group = hdf5_file.get(f"sample/layer_{index}")
             if layer_group is None:
-                return None, None, None, None, None, None, None, None
+                return None, None, None, None, None, None, None, None, None
             elif layer_group is not None:
+                type = layer_group.get("type")[()].decode()
                 element = layer_group.get("element")[()].decode()
-                time = layer_group.get("time")[()].decode()
-                thickness = layer_group.get("nominal_thickness")[()].decode()
-                temperature = layer_group.get("temperature")[()].decode()
-                power = layer_group.get("power")[()].decode()
-                distance = layer_group.get("distance")[()].decode()
-                angle = layer_group.get("angle")[()].decode()
-                # comment = layer_group.get("comment")[()].decode()
-                comment=None
+                time = layer_group.get("time")[()]
+                thickness = layer_group.get("thickness")[()]
+                temperature = layer_group.get("temperature")[()]
+                power = layer_group.get("power")[()]
+                distance = layer_group.get("distance")[()]
+                angle = layer_group.get("angle")[()]
+                comment = layer_group.get("comment")[()].decode()
 
-        return element, time, thickness, temperature, power, distance, angle, comment
+        return type, element, time, thickness, temperature, power, distance, angle, comment
 
 
     @app.callback(
@@ -687,6 +704,7 @@ def callbacks_hdf5(app):
         Input("layer_editor_save_button", "n_clicks"),
         State("hdf5_path_store", "data"),
         State("layer_editor_index", "value"),
+        State("layer_editor_type", "value"),
         State("layer_editor_element", "value"),
         State("layer_editor_time", "value"),
         State("layer_editor_thickness", "value"),
@@ -698,15 +716,30 @@ def callbacks_hdf5(app):
         State("layer_editor_popup", "is_open"),
         prevent_initial_call=True
     )
-    def layer_editor_save_layer(save_click, hdf5_path, index, element, time, thickness,
+    def layer_editor_save_layer(save_click, hdf5_path, index, type, element, time, thickness,
                                 temperature, power, distance, angle, comment, is_open):
         if not is_open:
             raise PreventUpdate
         if save_click > 0:
-            with h5py.File(hdf5_path, "r") as hdf5_file:
+            #Set default value for comment to ensure the group is created regardless
+            if not comment:
+                comment = ""
+            with h5py.File(hdf5_path, "a") as hdf5_file:
                 sample_group = hdf5_file.get("sample")
+                #If layer group exists, overwrite the values
                 if f"layer_{index}" in sample_group:
                     layer_group = sample_group[f"layer_{index}"]
+                    layer_group["type"][()] = type
+                    layer_group["element"][()] = element
+                    layer_group["time"][()] = time
+                    layer_group["thickness"][()] = thickness
+                    layer_group["temperature"][()] = temperature
+                    layer_group["power"][()] = power
+                    layer_group["distance"][()] = distance
+                    layer_group["angle"][()] = angle
+                    layer_group["comment"][()] = comment
+                #If layer group doesn't exist, create an incrementally numbered group
+                #Create and write all datasets
                 else:
                     layer_numbers = []
                     for subgroup in sample_group.keys():
@@ -716,21 +749,22 @@ def callbacks_hdf5(app):
                     highest_index = max(layer_numbers) if layer_numbers else 0
                     layer_group = sample_group.create_group(f"layer_{highest_index + 1}")
 
-                layer_group["element"] = element
-                layer_group["time"] = time
-                layer_group["thickness"] = thickness
-                layer_group["temperature"] = temperature
-                layer_group["power"] = power
-                layer_group["distance"] = distance
-                layer_group["angle"] = angle
-                layer_group["comment"] = comment
+                    layer_group.create_dataset("type", data=type)
+                    layer_group.create_dataset("element", data=element)
+                    layer_group.create_dataset("time", data=time)
+                    layer_group.create_dataset("thickness", data=thickness)
+                    layer_group.create_dataset("temperature", data=temperature)
+                    layer_group.create_dataset("power", data=power)
+                    layer_group.create_dataset("distance", data=distance)
+                    layer_group.create_dataset("angle", data=angle)
+                    layer_group.create_dataset("comment", data=comment)
 
-                layer_group["time"].attrs["units"] = "s"
-                layer_group["thickness"].attrs["units"] = "nm"
-                layer_group["temperature"].attrs["units"] = "°C"
-                layer_group["power"].attrs["units"] = "W"
-                layer_group["distance"].attrs["units"] = "mm"
-                layer_group["angle"].attrs["units"] = "deg"
+                    layer_group["time"].attrs["units"] = "s"
+                    layer_group["thickness"].attrs["units"] = "nm"
+                    layer_group["temperature"].attrs["units"] = "°C"
+                    layer_group["power"].attrs["units"] = "W"
+                    layer_group["distance"].attrs["units"] = "mm"
+                    layer_group["angle"].attrs["units"] = "deg"
 
         return "Layer saved"
 

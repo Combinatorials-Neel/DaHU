@@ -319,7 +319,7 @@ def xrd_make_analysis_dataframe_from_hdf5(xrd_group):
 
         counts = np.sum(measurement_group["2Dimage"][()])
         integrated = measurement_group["integrated/counts"][()]
-        peaks, _ = find_peaks(integrated, prominence=5)
+        peaks, _ = find_peaks(integrated[:int(0.9*len(integrated))], prominence=3.5)
 
         data_dict = {
             "x_pos (mm)": instrument_group["x_pos"][()],

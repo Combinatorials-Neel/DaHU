@@ -1,6 +1,7 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 import os
+from datetime import datetime
 
 def widget_title_card(title):
     widget = html.Div(
@@ -171,7 +172,66 @@ def widget_layer_modal():
 
     return widget
 
-
+def widget_new_hdf5_modal():
+    widget = dbc.Modal(
+        id="new_hdf5_popup",
+        is_open=False,
+        centered=True,
+        size="s",
+        children=[
+            dbc.ModalHeader(["Create new HDF5"]),
+            dbc.ModalBody([
+                dbc.Row([
+                    dbc.Col(children=[
+                        dbc.Select(
+                            id="new_hdf5_type",
+                            options=["Library", "Dataset"]
+                        )
+                    ], width=8),
+                    dbc.Col(children=[
+                        dbc.Select(
+                            id="new_hdf5_instrument",
+                            options=["Magnetron", "Triode"]
+                        )
+                    ], width=4)
+                ]),
+                dbc.Row([
+                    dbc.Col([
+                        html.Label("Sample Name"),
+                        dbc.Input(
+                            id="new_hdf5_name",
+                            type="text",
+                            placeholder="Sample name"
+                        )
+                    ]),
+                ]),
+                dbc.Row([
+                    dbc.Col(children=[
+                        html.Label("Fabrication date dd/mm/yyyy"),
+                        dbc.Input(
+                            id="new_hdf5_date",
+                            type="text",
+                            placeholder="Fabrication date",
+                            value=datetime.now().strftime("%d/%m/%Y")
+                        ),
+                    ]),
+                    dbc.Col([
+                        html.Label("Operator"),
+                        dbc.Input(
+                            id="new_hdf5_operator",
+                            type="text",
+                            placeholder="Operator name",
+                            value="Batman"
+                        ),
+                    ])
+                ])
+            ]),
+            dbc.ModalFooter([
+                dbc.Button(id="new_hdf5_create_button", children="Create", color="success", n_clicks=0),
+            ])
+        ]
+    )
+    return widget
 
 
 def widget_layer_card():

@@ -64,7 +64,7 @@ def top_middle_card():
             dbc.ButtonGroup([
                 dbc.Button(id="hdf5_update", children="Update HDF5", n_clicks=0),
                 dbc.Button(id="hdf5_export", children="Export to CSV", n_clicks=0),
-                dbc.Button(id="test_button", children="Test", n_clicks=0),
+                dbc.Button(id="hdf5_new_file_button", children="Create new HDF5", n_clicks=0),
             ], className="w-100")
         ])
     ], className="h-100")
@@ -73,30 +73,7 @@ def top_middle_card():
 def top_right_card():
     card = dbc.Card([
         dbc.CardHeader(),
-        dbc.CardBody([
-            dbc.Col([
-                html.Label("Fabrication date dd/mm/yyyy"),
-                dbc.Input(
-                    id="hdf5_sample_date",
-                    type="text",
-                    placeholder="Fabrication date",
-                    value=datetime.now().strftime("%d/%m/%Y")
-                ),
-                html.Label("Operator Name"),
-                dbc.Input(
-                    id="hdf5_sample_operator",
-                    type="text",
-                    placeholder="Operator name",
-                    value="Batman"
-                ),
-                html.Label("Sample Name"),
-                dbc.Input(
-                    id="hdf5_sample_name",
-                    type="text",
-                    placeholder="Sample name"
-                )
-            ], width=6),
-        ])
+        dbc.CardBody([])
     ], className="h-100")
 
     return card

@@ -12,7 +12,7 @@ from modules.callbacks import (
 )
 from modules.functions.functions_shared import *
 
-from modules.interface.widgets_base import widget_browser_modal, widget_layer_modal
+from modules.interface.widgets_base import widget_browser_modal, widget_layer_modal, widget_new_hdf5_modal
 from modules.interface.widgets_edx import make_edx_tab
 from modules.interface.widgets_hdf5 import make_hdf5_tab
 from modules.interface.widgets_moke import make_moke_tab
@@ -27,7 +27,7 @@ folderpath = None
 script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_dir)
 
-PROGRAM_VERSION = '0.12 beta'
+PROGRAM_VERSION = "0.20"
 UPLOAD_FOLDER_ROOT = os.path.join(script_dir, "uploads")
 
 # Clean the upload folder
@@ -55,6 +55,7 @@ app.layout = dbc.Container(
         ),
         widget_browser_modal(),
         widget_layer_modal(),
+        widget_new_hdf5_modal(),
         dcc.Store(id="hdf5_path_store", storage_type="local"),
         dcc.Store(id="data_path_store", storage_type="local")
     ],
