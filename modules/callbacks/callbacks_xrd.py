@@ -146,10 +146,12 @@ def callbacks_xrd(app):
         Input("xrd_image_min", "value"),
         Input("xrd_image_max", "value"),
         Input("hdf5_path_store", "data"),
+        State("xrd_plot_append_toggle", "value"),
+        State("xrd_plot", "figure"),
     )
     @check_conditions(xrd_conditions, hdf5_path_index=6)
     def xrd_update_plot(
-        position, plot_select, selected_dataset, fits_select, z_min, z_max, hdf5_path
+        position, plot_select, selected_dataset, fits_select, z_min, z_max, hdf5_path, append_toggle, current_figure
     ):
         if position is None:
             raise PreventUpdate
@@ -159,24 +161,31 @@ def callbacks_xrd(app):
 
         options = []
 
-        fig = go.Figure()
+        if not append_toggle:
+            fig = go.Figure()
+        else:
+            fig = go.Figure(current_figure)
 
         if not plot_select == "image":
             z_min = None
             z_max = None
 
+        colors = cycle(px.colors.qualitative.Plotly)
         with h5py.File(hdf5_path, "r") as hdf5_file:
             xrd_group = hdf5_file[selected_dataset]
             if plot_select == "integrated":
                 measurement_df = xrd_get_integrated_from_hdf5(
                     xrd_group, target_x, target_y
                 )
-                fig = xrd_plot_integrated_from_dataframe(fig, measurement_df)
+                fig = xrd_plot_integrated_from_dataframe(fig, measurement_df, name=f"{int(round(target_x))}, {int(round(target_y))}")
                 fig.update_layout(
                     plot_layout(
                         title=f"Integrated spectrum <br>x = {int(round(target_x))}, y = {int(round(target_y))}"
                     ),
                 )
+                for i, trace in enumerate(fig.data):
+                    trace.line.color = next(colors)
+
 
             if plot_select == "fitted":
                 fits_df = xrd_get_fits_from_hdf5(xrd_group, target_x, target_y)

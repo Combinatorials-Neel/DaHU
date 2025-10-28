@@ -152,7 +152,18 @@ def xrd_heatmap():
 
 def xrd_plot():
     card = dbc.Card([
-        dbc.CardHeader(),
+        dbc.CardHeader(
+            dbc.Row([
+                dbc.Col(
+                    dbc.Checkbox(
+                        id="xrd_plot_append_toggle",
+                        label="append mode",
+                        value=False,
+                        className="form-check-reverse"
+                    )
+                )
+            ])
+        ),
         dbc.CardBody([
             dcc.Graph(id="xrd_plot")
         ]),
@@ -188,8 +199,8 @@ def make_xrd_tab(upload_folder_root):
                         dbc.Col(xrd_top_right_card(), width=4, className="d-flex flex-column"),
                     ], className="mb-4 d-flex align-items-stretch"),
                     dbc.Row([
-                        dbc.Col(xrd_heatmap(), width=4, className="d-flex flex-column"),
-                        dbc.Col(xrd_plot(), width=8, className="d-flex flex-column"),
+                        dbc.Col(xrd_heatmap(), width=5, className="d-flex flex-column"),
+                        dbc.Col(xrd_plot(), width=7, className="d-flex flex-column"),
                     ], className="mb-4 d-flex align-items-stretch")
                 ]
             )

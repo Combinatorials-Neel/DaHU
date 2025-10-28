@@ -156,7 +156,7 @@ def xrd_make_results_dataframe_from_hdf5(xrd_group):
     return result_dataframe
 
 
-def xrd_plot_integrated_from_dataframe(fig, df):
+def xrd_plot_integrated_from_dataframe(fig, df, name):
     fig.update_xaxes(title_text="q (nm-1)")
     fig.update_yaxes(title_text="Counts")
 
