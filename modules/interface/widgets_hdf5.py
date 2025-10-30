@@ -3,6 +3,7 @@ from dash import html, dcc
 import dash_bootstrap_components as dbc
 from datetime import datetime
 
+
 def top_left_card():
     card = dbc.Card([
             dbc.CardHeader("Add datasets"),
@@ -13,25 +14,30 @@ def top_left_card():
                     filetypes=["zip", "h5", "hdf5", "HIS", "dat", "jpg", "jpeg", "png"],
                     upload_id="temp",
                 ),
-                html.Label("Dataset Name"),
-                dbc.Input(
-                    id="hdf5_dataset_name",
-                    type="text",
-                    placeholder="Dataset Name",
-                    value=None
-                ),
-                dbc.Input(
-                    id="hdf5_manual_1",
-                    style={'display': 'none'}
-                ),
-                dbc.Input(
-                    id="hdf5_manual_2",
-                    style={'display': 'none'}
-                ),
-                dbc.Input(
-                    id="hdf5_manual_3",
-                    style={'display': 'none'}
-                ),
+                html.Div(
+                    id="hdf5_dataset_input",
+                    children=[
+                        html.Label("Dataset Name"),
+                        dbc.Input(
+                            id="hdf5_dataset_name",
+                            type="text",
+                            placeholder="Dataset Name",
+                            value=None
+                        ),
+                        dbc.Input(
+                            id="hdf5_manual_1",
+                            style={'display': 'none'}
+                        ),
+                        dbc.Input(
+                            id="hdf5_manual_2",
+                            style={'display': 'none'}
+                        ),
+                        dbc.Input(
+                            id="hdf5_manual_3",
+                            style={'display': 'none'}
+                        ),
+                    ]
+                )
             ]),
             dbc.CardFooter([
                 dbc.Container([
@@ -93,10 +99,12 @@ def layer_stack_card():
 
     return card
 
-def hdf5_stores():
+def hdf5_stores(upload_folder_root):
     stores = html.Div(
         children=[
-                dcc.Store(id="hdf5_layer_count_store", data=None),
+            dcc.Store(id="hdf5_upload_folder_path", data=None),
+            dcc.Store(id="hdf5_upload_folder_root", data=upload_folder_root),
+            dcc.Store(id="hdf5_layer_count_store", data=None),
         ]
     )
     return stores
@@ -118,7 +126,8 @@ def make_hdf5_tab(upload_folder_root):
                     ], className="align-items-stretch"),
                     dbc.Row([
                         dbc.Col(layer_stack_card(), width=4, className="ms-auto")
-                    ])
+                    ]),
+                    hdf5_stores(upload_folder_root)
                 ]
             )
         ])]

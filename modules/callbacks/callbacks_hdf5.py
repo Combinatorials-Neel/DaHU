@@ -741,13 +741,7 @@ def callbacks_hdf5(app):
                 #If layer group doesn't exist, create an incrementally numbered group
                 #Create and write all datasets
                 else:
-                    layer_numbers = []
-                    for subgroup in sample_group.keys():
-                        match = re.match(r"^layer_(\d+)$", subgroup)
-                        if match:
-                            layer_numbers.append(int(match.group(1)))
-                    highest_index = max(layer_numbers) if layer_numbers else 0
-                    layer_group = sample_group.create_group(f"layer_{highest_index + 1}")
+                    layer_group = create_incremental_group(sample_group, base_name="layer")
 
                     layer_group.create_dataset("type", data=type)
                     layer_group.create_dataset("element", data=element)

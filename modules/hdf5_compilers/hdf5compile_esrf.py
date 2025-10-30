@@ -41,13 +41,13 @@ def return_cdte_source_path(dataset_group):
 
 def esrf_check_if_alignment(hdf5_group):
     """
-    Return the source path of a virtual dataset (such as Cdte images in NeXuS h5 files)
+    Check if a given group is an alignment scan or not
 
     @param:
     dataset_group (h5py.Group): dataset group
 
     @return:
-    Bool: True if the file is an alignment scan, False otherwise
+    Bool: True if the group is an alignment scan, False otherwise
     str: The type of alignment scan, th or tsz. If False, returns None
     """
     title = str(hdf5_group["title"][()])
@@ -194,16 +194,10 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                 raw_source.copy(
                     source_instrument_group, target_position_group, expand_soft=True
                 )
-                rename_group(
-                    target_position_group,
-                    "instrument/positioners/xsamp",
-                    "instrument/x_pos",
-                )
-                rename_group(
-                    target_position_group,
-                    "instrument/positioners/ysamp",
-                    "instrument/y_pos",
-                )
+
+                target_instrument_group = target_position_group.get("instrument")
+                target_instrument_group.create_dataset(name = "x_pos", data = x_pos)
+                target_instrument_group.create_dataset(name = "y_pos", data = y_pos)
 
                 # Put some basic order in the measurement group
                 target_measurement_group = target_position_group.create_group(
@@ -271,10 +265,11 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
 
             # Formatting and renaming of datasets for consistency with SmartLab
             measurement_group = position_group.get("measurement")
-
             integrated_group = measurement_group.get("integrated")
 
+            # Squeeze datasets that have weird shapes
             hdf5_squeeze_dataset(hdf5_file, measurement_group["2Dimage"])
+            hdf5_squeeze_dataset(hdf5_file, measurement_group["falconx/falconx_det0"])
 
             # Sometimes unit is A^-1, sometimes it's nm^-1, who even knows anymore
             q_group = integrated_group["q"]

@@ -178,6 +178,7 @@ def xrd_stores():
             dcc.Store(id="xrd_position_store", data=None),
             dcc.Store(id="xrd_path_store", data=None),
             dcc.Store(id="xrd_results_store", data=None),
+            dcc.Store(id="xrd_nexus_mode_store", data=False)
         ]
     )
     return stores

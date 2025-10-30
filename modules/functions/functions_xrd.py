@@ -12,6 +12,7 @@ from scipy.signal import find_peaks
 from ..functions.functions_shared import *
 from ..functions.functions_hdf5 import *
 
+
 def xrd_conditions(hdf5_path, *args, **kwargs):
     if hdf5_path is None:
         return False
@@ -53,8 +54,13 @@ def xrd_get_integrated_from_hdf5(xrd_group, target_x, target_y):
     integrated_group = measurement_group.get("integrated")
     q_array = integrated_group["q"][()]
     intensity_array = integrated_group["intensity"][()]
+    counts_array = integrated_group["counts"][()]
 
-    measurement_dataframe = pd.DataFrame({"q": q_array, "intensity": intensity_array})
+    measurement_dataframe = pd.DataFrame({
+        "q": q_array,
+        "intensity": intensity_array,
+        "counts": counts_array
+    })
 
     return measurement_dataframe
 
@@ -64,7 +70,6 @@ def xrd_get_image_from_hdf5(xrd_group, target_x, target_y):
     measurement_group = position_group.get("measurement")
 
     image_array = measurement_group["2Dimage"][()]
-
     return image_array
 
 
@@ -163,7 +168,7 @@ def xrd_plot_integrated_from_dataframe(fig, df, name):
     fig.add_trace(
         go.Scatter(
             x=df["q"],
-            y=df["intensity"],
+            y=df["counts"],
             mode="lines",
             line=dict(color="SlateBlue", width=2),
         )
@@ -229,7 +234,6 @@ def xrd_plot_esrfimage_from_array(array, z_min, z_max):
     if z_min is None:
         z_min = np.nanmin(array)
     if z_max is None:
-
         z_max = np.nanmax(array)
 
     fig = go.Figure(
@@ -333,3 +337,85 @@ def xrd_make_analysis_dataframe_from_hdf5(xrd_group):
     results_df = pd.DataFrame(data_dict_list)
 
     return results_df
+
+
+def esrf_check_if_alignment(hdf5_group):
+    """
+    Check if a given group is an alignment scan or not
+
+    @param:
+    dataset_group (h5py.Group): dataset group
+
+    @return:
+    Bool: True if the group is an alignment scan, False otherwise
+    str: The type of alignment scan, th or tsz. If False, returns None
+    """
+    title = str(hdf5_group["title"][()])
+
+    if "ascan" in title:
+        if "th" in title:
+            return True, "th"
+        if "tsz" in title:
+            return True, "tsz"
+
+    return False, None
+
+
+def xrd_get_position_group_from_nexus(hdf5_file, target_x, target_y):
+    for position, position_group in hdf5_file.items():
+        test = esrf_check_if_alignment(position_group)
+        if not test:
+            positioners_group = position_group.get("instrument/positioners")
+            if (
+                positioners_group["xsamp"][()] == target_x
+                and positioners_group["ysamp"][()] == target_y
+            ):
+                return position_group
+    return None
+
+def xrd_get_image_from_nexus(xrd_group, target_x, target_y):
+    position_group = xrd_get_position_group_from_nexus(xrd_group, target_x, target_y)
+    measurement_group = position_group.get("measurement")
+    image_array = measurement_group["CdTe"][0]
+    return image_array
+
+def xrd_get_integrated_from_nexus(xrd_group, target_x, target_y):
+    position_group = xrd_get_position_group_from_nexus(xrd_group, target_x, target_y)
+    integrated_group = position_group.get("CdTe_integrate/integrated")
+
+    q_array = integrated_group["q"][()]
+    intensity_array = integrated_group["intensity"][()]
+
+    measurement_dataframe = pd.DataFrame({
+        "q": q_array,
+        "intensity": intensity_array,
+    })
+
+    return measurement_dataframe
+
+def xrd_make_analysis_dataframe_from_nexus(xrd_group):
+    data_dict_list = []
+    for position, position_group in xrd_group.items():
+        if esrf_check_if_alignment(position_group):
+            continue
+        positioners_group = position_group.get("instrument/positioners")
+        measurement_group = position_group.get("measurement")
+        integrated_group = position_group.get("CdTe_integrate/integrated")
+
+        counts = np.sum(measurement_group["CdTe"][0])
+        integrated = integrated_group["intensity"][()]
+        peaks, _ = find_peaks(integrated[:int(0.9*len(integrated))], prominence=3.5)
+
+        data_dict = {
+            "x_pos (mm)": positioners_group["xsamp"][()],
+            "y_pos (mm)": positioners_group["ysamp"][()],
+            "ignored": position_group.attrs["ignored"],
+            "counts": counts,
+            "peaks": len(peaks)
+        }
+
+        data_dict_list.append(data_dict)
+    results_df = pd.DataFrame(data_dict_list)
+
+    return results_df
+

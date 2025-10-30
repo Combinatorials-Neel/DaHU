@@ -351,14 +351,15 @@ def pairwise(list):
     return zip(a, a)
 
 
-def get_target_position_group(measurement_group, target_x, target_y):
-    for position, position_group in measurement_group.items():
+def get_target_position_group(dataset_group, target_x, target_y):
+    for position, position_group in dataset_group.items():
         instrument_group = position_group.get("instrument")
         if (
             instrument_group["x_pos"][()] == target_x
             and instrument_group["y_pos"][()] == target_y
         ):
             return position_group
+    raise KeyError(f"Failed to find position {(target_x, target_y)} in {dataset_group}")
 
 
 def abs_mean(value_list):

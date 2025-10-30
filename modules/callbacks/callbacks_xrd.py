@@ -28,12 +28,16 @@ def callbacks_xrd(app):
             Output("xrd_select_dataset", "value"),
         ],
         Input("hdf5_path_store", "data"),
+        State("xrd_nexus_mode_store", "data"),
     )
     @check_conditions(xrd_conditions, hdf5_path_index=0)
-    def xrd_scan_hdf5_for_datasets(hdf5_path):
-        with h5py.File(hdf5_path, "r") as hdf5_file:
-            dataset_list = get_hdf5_datasets(hdf5_file, dataset_type="xrd")
-
+    def xrd_scan_hdf5_for_datasets(hdf5_path, nexus_mode):
+        if nexus_mode:
+            # No datasets in esrf mode, return the root group
+            dataset_list = ["/"]
+        else:
+            with h5py.File(hdf5_path, "r") as hdf5_file:
+                dataset_list = get_hdf5_datasets(hdf5_file, dataset_type="xrd")
         return dataset_list, dataset_list[0]
 
     # Reads the given dataset into a DataFrame, then serialize it to json.
@@ -45,13 +49,17 @@ def callbacks_xrd(app):
         Input("xrd_select_dataset", "value"),
         Input("xrd_analysis_toggle", "value"),
         State("hdf5_path_store", "data"),
+        State("xrd_nexus_mode_store", "data"),
     )
     @check_conditions(xrd_conditions, hdf5_path_index=2)
-    def xrd_read_dataset_into_store(selected_dataset, analysis_toggle, hdf5_path):
+    def xrd_read_dataset_into_store(selected_dataset, analysis_toggle, hdf5_path, nexus_mode):
         with h5py.File(hdf5_path, "r") as hdf5_file:
             xrd_group = hdf5_file.get(selected_dataset)
             if analysis_toggle:
-                xrd_df = xrd_make_analysis_dataframe_from_hdf5(xrd_group)
+                if nexus_mode:
+                    xrd_make_analysis_dataframe_from_nexus(xrd_group)
+                else:
+                    xrd_df = xrd_make_analysis_dataframe_from_hdf5(xrd_group)
             else:
                 xrd_df = xrd_make_results_dataframe_from_hdf5(xrd_group)
 
@@ -148,10 +156,20 @@ def callbacks_xrd(app):
         Input("hdf5_path_store", "data"),
         State("xrd_plot_append_toggle", "value"),
         State("xrd_plot", "figure"),
+        State("xrd_nexus_mode_store", "data"),
     )
     @check_conditions(xrd_conditions, hdf5_path_index=6)
     def xrd_update_plot(
-        position, plot_select, selected_dataset, fits_select, z_min, z_max, hdf5_path, append_toggle, current_figure
+            position,
+            plot_select,
+            selected_dataset,
+            fits_select,
+            z_min,
+            z_max,
+            hdf5_path,
+            append_toggle,
+            current_figure,
+            nexus_mode,
     ):
         if position is None:
             raise PreventUpdate
@@ -174,9 +192,11 @@ def callbacks_xrd(app):
         with h5py.File(hdf5_path, "r") as hdf5_file:
             xrd_group = hdf5_file[selected_dataset]
             if plot_select == "integrated":
-                measurement_df = xrd_get_integrated_from_hdf5(
-                    xrd_group, target_x, target_y
-                )
+                if nexus_mode:
+                    measurement_df = xrd_get_integrated_from_nexus(xrd_group, target_x, target_y)
+                else:
+                    measurement_df = xrd_get_integrated_from_hdf5(xrd_group, target_x, target_y)
+
                 fig = xrd_plot_integrated_from_dataframe(fig, measurement_df, name=f"{int(round(target_x))}, {int(round(target_y))}")
                 fig.update_layout(
                     plot_layout(
@@ -188,6 +208,8 @@ def callbacks_xrd(app):
 
 
             if plot_select == "fitted":
+                if nexus_mode:
+                    raise PreventUpdate
                 fits_df = xrd_get_fits_from_hdf5(xrd_group, target_x, target_y)
                 options = fits_df.columns[1:]
                 fig = xrd_plot_fits_from_dataframe(fig, fits_df, fits_select)
@@ -199,11 +221,15 @@ def callbacks_xrd(app):
                 )
 
             if plot_select == "image":
-                image_array = xrd_get_image_from_hdf5(xrd_group, target_x, target_y)
-                if xrd_group.attrs["instrument"] == "bm02 esrf":
+                if nexus_mode:
+                    image_array = xrd_get_image_from_nexus(xrd_group, target_x, target_y)
                     fig = xrd_plot_esrfimage_from_array(image_array, z_min, z_max)
                 else:
-                    fig = xrd_plot_xrdimage_from_array(image_array, z_min, z_max)
+                    image_array = xrd_get_image_from_hdf5(xrd_group, target_x, target_y)
+                    if xrd_group.attrs["instrument"] == "bm02 esrf":
+                        fig = xrd_plot_esrfimage_from_array(image_array, z_min, z_max)
+                    else:
+                        fig = xrd_plot_xrdimage_from_array(image_array, z_min, z_max)
 
                 z_min = np.round(fig.data[0].zmin, 0)
                 z_max = np.round(fig.data[0].zmax, 0)
@@ -226,11 +252,12 @@ def callbacks_xrd(app):
         State("xrd_heatmap_edit", "value"),
         State("hdf5_path_store", "data"),
         State("xrd_select_dataset", "value"),
+        State("xrd_nexus_mode_store", "data"),
         prevent_initial_call=True,
     )
     @check_conditions(xrd_conditions, hdf5_path_index=2)
-    def heatmap_edit_mode(heatmap_click, edit_toggle, hdf5_path, selected_dataset):
-        if edit_toggle != "edit":
+    def heatmap_edit_mode(heatmap_click, edit_toggle, hdf5_path, selected_dataset, nexus_mode):
+        if edit_toggle != "edit" or nexus_mode:
             raise PreventUpdate
 
         target_x = heatmap_click["points"][0]["x"]
@@ -247,17 +274,16 @@ def callbacks_xrd(app):
                 return f"{target_x}, {target_y} ignore set to False"
 
 
-
-
     @app.callback(
         Output("xrd_text_box", "children", allow_duplicate=True),
         Input("xrd_export_button", "n_clicks"),
         State("hdf5_path_store", "data"),
         State("xrd_select_dataset", "value"),
+        State("xrd_nexus_mode_store", "data"),
         prevent_initial_call=True,
     )
     @check_conditions(xrd_conditions, hdf5_path_index=1)
-    def xrd_export_all(n_clicks, hdf5_path, selected_dataset):
+    def xrd_export_all(n_clicks, hdf5_path, selected_dataset, nexus_mode):
         if n_clicks > 0:
             hdf5_path = Path(hdf5_path)
             export_path = hdf5_path.parent / selected_dataset
@@ -275,3 +301,38 @@ def callbacks_xrd(app):
                     export_xrd_position_to_files(position_group, export_path)
 
             return f"Successfully exported to {export_path}"
+
+    @app.callback(
+        Output("xrd_nexus_mode_store", "data"),
+        Input("xrd_path_store", "data"),
+        State("xrd_isolate_toggle", "value"),
+    )
+    def xrd_set_nexus_mode(xrd_path, isolate_toggle):
+        if not isolate_toggle:
+            raise PreventUpdate
+        if xrd_path.endswith(".h5"):
+            return True
+        else:
+            return False
+
+    @app.callback(
+        [Output("browser_popup", "is_open", allow_duplicate=True),
+         Output("xrd_path_store", "data", allow_duplicate=True)],
+        Input("xrd_path_box", "n_clicks"),
+        Input("browser_select_button", "n_clicks"),
+        State("browser_popup", "is_open"),
+        State("xrd_path_store", "data"),
+        State("stored_cwd", "data"),
+        State("xrd_isolate_toggle", "value"),
+        prevent_initial_call=True,
+    )
+    def toggle_xrd_browser(open_click, select_click, is_open, xrd_path, stored_cwd, isolate_toggle):
+        if not isolate_toggle:
+            raise PreventUpdate
+        if ctx.triggered_id == "xrd_path_box" and open_click > 0 and not is_open:
+            return True, xrd_path
+        if ctx.triggered_id == "browser_select_button" and select_click > 0 and is_open:
+            return False, stored_cwd
+
+        return is_open, xrd_path
+
