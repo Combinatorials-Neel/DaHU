@@ -60,6 +60,24 @@ def esrf_check_if_alignment(hdf5_group):
 
     return False, None
 
+def esrf_check_if_measurement(hdf5_group):
+    """
+    Check if a given group is an alignment scan or not
+
+    @param:
+    dataset_group (h5py.Group): dataset group
+
+    @return:
+    Bool: True if the group is an alignment scan, False otherwise
+    """
+    title = str(hdf5_group["title"][()])
+
+    if "ct" in title:
+        return True
+
+    return False
+
+
 
 def get_results_from_refinement(filepath):
     """
@@ -182,10 +200,14 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                     if "CdTe" in source_measurement_group.keys():
                         del source_measurement_group["CdTe"]
 
-                else:
+                elif esrf_check_if_measurement(group):
                     target_position_group = esrf_group.create_group(
                         f"({x_pos},{y_pos})"
                     )
+
+                else:
+                    print(f"Couldn't identify measurement {name}. Skipping")
+                    continue
 
                 target_position_group.attrs["index"] = name
                 target_position_group.attrs["ignored"] = False
@@ -262,37 +284,39 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
         for position, position_group in esrf_group.items():
             if position == "alignment_scans":
                 continue
+            try:
+                # Formatting and renaming of datasets for consistency with SmartLab
+                measurement_group = position_group.get("measurement")
+                integrated_group = measurement_group.get("integrated")
 
-            # Formatting and renaming of datasets for consistency with SmartLab
-            measurement_group = position_group.get("measurement")
-            integrated_group = measurement_group.get("integrated")
+                # Squeeze datasets that have weird shapes
+                hdf5_squeeze_dataset(hdf5_file, measurement_group["2Dimage"])
+                hdf5_squeeze_dataset(hdf5_file, measurement_group["falconx/falconx_det0"])
 
-            # Squeeze datasets that have weird shapes
-            hdf5_squeeze_dataset(hdf5_file, measurement_group["2Dimage"])
-            hdf5_squeeze_dataset(hdf5_file, measurement_group["falconx/falconx_det0"])
+                # Sometimes unit is A^-1, sometimes it's nm^-1, who even knows anymore
+                q_group = integrated_group["q"]
+                q_data = q_group[()]
+                if q_group.attrs["units"] == "A^-1":
+                    q_data = q_data * 10
+                    q_group[()] = q_data
+                    q_group.attrs["units"] = "nm^-1"
 
-            # Sometimes unit is A^-1, sometimes it's nm^-1, who even knows anymore
-            q_group = integrated_group["q"]
-            q_data = q_group[()]
-            if q_group.attrs["units"] == "A^-1":
-                q_data = q_data * 10
-                q_group[()] = q_data
-                q_group.attrs["units"] = "nm^-1"
+                energy = float(position_group["instrument/energy/data"][()])
+                tth_data = xrd_q_tth(q_data, energy)
+                tth_group = integrated_group.create_dataset(
+                    "tth", (len(tth_data),), data=tth_data, dtype="float"
+                )
+                tth_group.attrs["units"] = "deg"
 
-            energy = float(position_group["instrument/energy/data"][()])
-            tth_data = xrd_q_tth(q_data, energy)
-            tth_group = integrated_group.create_dataset(
-                "tth", (len(tth_data),), data=tth_data, dtype="float"
-            )
-            tth_group.attrs["units"] = "deg"
+                hdf5_squeeze_dataset(hdf5_file, integrated_group["intensity"])
 
-            hdf5_squeeze_dataset(hdf5_file, integrated_group["intensity"])
-
-            total_counts = np.sum(measurement_group["2Dimage"][()])
-            counts_data = integrated_group["intensity"][()] * total_counts
-            counts_group = integrated_group.create_dataset(
-                "counts", data=counts_data, dtype="float"
-            )
+                total_counts = np.sum(measurement_group["2Dimage"][()])
+                counts_data = integrated_group["intensity"][()] * total_counts
+                counts_group = integrated_group.create_dataset(
+                    "counts", data=counts_data, dtype="float"
+                )
+            except KeyError as e:
+                raise KeyError(f"Position {position} encountered error {e}")
 
     return None
 

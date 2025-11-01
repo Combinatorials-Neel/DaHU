@@ -171,6 +171,7 @@ def xrd_plot_integrated_from_dataframe(fig, df, name):
             y=df["counts"],
             mode="lines",
             line=dict(color="SlateBlue", width=2),
+            name=name
         )
     )
 

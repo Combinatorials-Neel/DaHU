@@ -200,7 +200,8 @@ def callbacks_xrd(app):
                 fig = xrd_plot_integrated_from_dataframe(fig, measurement_df, name=f"{int(round(target_x))}, {int(round(target_y))}")
                 fig.update_layout(
                     plot_layout(
-                        title=f"Integrated spectrum <br>x = {int(round(target_x))}, y = {int(round(target_y))}"
+                        title=f"Integrated spectrum <br>x = {int(round(target_x))}, y = {int(round(target_y))}",
+                        showlegend=True
                     ),
                 )
                 for i, trace in enumerate(fig.data):
@@ -308,7 +309,7 @@ def callbacks_xrd(app):
         State("xrd_isolate_toggle", "value"),
     )
     def xrd_set_nexus_mode(xrd_path, isolate_toggle):
-        if not isolate_toggle:
+        if not isolate_toggle and not xrd_path:
             raise PreventUpdate
         if xrd_path.endswith(".h5"):
             return True
