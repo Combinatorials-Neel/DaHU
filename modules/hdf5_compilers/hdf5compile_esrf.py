@@ -183,8 +183,8 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                 source_instrument_group = group.get("instrument")
                 source_measurement_group = group.get("measurement")
 
-                x_pos = np.round(source_instrument_group["positioners/xsamp"][()])
-                y_pos = np.round(source_instrument_group["positioners/ysamp"][()])
+                x_pos = np.round(source_instrument_group["positioners/xsamp"][()], 3)
+                y_pos = np.round(source_instrument_group["positioners/ysamp"][()], 3)
 
                 if alignment_test:
                     target_position_group = create_incremental_group(

@@ -172,6 +172,8 @@ def callbacks_hdf5(app):
                 and is_open and browser_source_id == "hdf5_select"):
             return stored_cwd, f"Chosen path: {stored_cwd}", False, None
 
+        return is_open, previous_path, "Click here to select file", browser_source_id
+
 
     @app.callback(
         [Output('hdf5_measurement_type', 'value'),
@@ -623,6 +625,8 @@ def callbacks_hdf5(app):
         if (ctx.triggered_id == "browser_select_button" and select_click > 0
                 and is_open and browser_source_id == "hdf5_path_box"):
             return False, stored_cwd, None
+
+        return is_open, hdf5_path, browser_source_id
 
 
     @app.callback(
