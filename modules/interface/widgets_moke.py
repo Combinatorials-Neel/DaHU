@@ -182,6 +182,27 @@ def moke_plot():
 
     return card
 
+def moke_loop_map():
+    card = dbc.Card([
+        dbc.CardHeader(),
+        dbc.CardBody([
+            dcc.Graph(id="moke_loop_map")
+        ]),
+        dbc.CardFooter([])
+    ], className="h-100 w-100")
+
+    return card
+
+def moke_loop_map_options():
+    card = dbc.Card([
+        dbc.CardHeader(),
+        dbc.CardBody([
+        ]),
+        dbc.CardFooter([])
+    ])
+
+    return card
+
 def moke_stores():
     stores = html.Div(
         children=[
@@ -197,25 +218,63 @@ def make_moke_tab(upload_folder_root):
     moke_tab = dbc.Tab(
         id="moke",
         label="MOKE",
-        children=[html.Div(children=[
-            dcc.Loading(
-                id="loading-moke",
-                type="default",
-                delay_show=500,
+        children=[
+            moke_stores(),
+            html.Div(
                 children=[
-                    moke_stores(),
-                    dbc.Row([
-                        dbc.Col(moke_top_left_card(), width=4, className="d-flex flex-column"),
-                        dbc.Col(moke_top_middle_card(), width=4, className="d-flex flex-column"),
-                        dbc.Col(moke_top_right_card(), width=4, className="d-flex flex-column"),
-                    ], className="mb-4 d-flex align-items-stretch"),
-                    dbc.Row([
-                        dbc.Col(moke_heatmap(), width=4, className="d-flex flex-column"),
-                        dbc.Col(moke_plot(), width=8, className="d-flex flex-column"),
-                    ], className="mb-4 d-flex align-items-stretch")
+                    dbc.Tabs(
+                        id="moke_subtabs",
+                        active_tab="moke_main",
+                        children=[
+                            dbc.Tab(
+                                id="moke_main",
+                                label="Main",
+                                children=[
+                                    dcc.Loading(
+                                        id="loading_main_moke",
+                                        type="default",
+                                        delay_show=500,
+                                        children=[
+                                            dbc.Row([
+                                                dbc.Col(moke_top_left_card(), width=4, className="d-flex flex-column"),
+                                                dbc.Col(moke_top_middle_card(), width=4,
+                                                        className="d-flex flex-column"),
+                                                dbc.Col(moke_top_right_card(), width=4, className="d-flex flex-column"),
+                                            ], className="mb-4 d-flex align-items-stretch"),
+                                            dbc.Row([
+                                                dbc.Col(moke_heatmap(), width=4, className="d-flex flex-column"),
+                                                dbc.Col(moke_plot(), width=8, className="d-flex flex-column"),
+                                            ], className="mb-4 d-flex align-items-stretch")
+                                        ]
+                                    )
+                                ]
+                            ),
+                            dbc.Tab(
+                                id="moke_loop",
+                                label="Loop map",
+                                children=[
+                                    dcc.Loading(
+                                        id="loading_loop_moke",
+                                        type="default",
+                                        delay_show=500,
+                                        children=[
+                                            html.Div(
+                                                children=[
+                                                    dbc.Row([
+                                                        dbc.Col(moke_loop_map(), width=8, className="d-flex flex-column"),
+                                                        dbc.Col(moke_loop_map_options(), width=4, className="d-flex flex-column"),
+                                                    ])
+                                                ]
+                                            )
+                                        ]
+                                    )
+                                ]
+                            )
+                        ]
+                    )
                 ]
             )
-        ])]
+        ]
     )
 
     return moke_tab

@@ -1,18 +1,48 @@
 import dash_uploader as du
 from dash import html, dcc
 import dash_bootstrap_components as dbc
+import dash_daq as daq
 from datetime import datetime
 
 
 def top_left_card():
     card = dbc.Card([
-            dbc.CardHeader("Add datasets"),
+            dbc.CardHeader(
+                dbc.Row([
+                    dbc.Col("Add datasets"),
+                    dbc.Col([
+                        daq.BooleanSwitch(
+                            id = "hdf5_upload_mode_toggle",
+                            on = False,
+                            label="Upload mode",
+                            persistence=False
+                        ),
+                    ])
+                ]),
+            ),
             dbc.CardBody([
-                du.Upload(
-                    id="hdf5_upload",
-                    text="Drag and Drop or click to browse",
-                    filetypes=["zip", "h5", "hdf5", "HIS", "dat", "jpg", "jpeg", "png"],
-                    upload_id="temp",
+                html.Div(
+                    id="hdf5_upload_div",
+                    children=[
+                        du.Upload(
+                            id="hdf5_upload",
+                            text="Drag and Drop or click to browse",
+                            filetypes=["zip", "h5", "hdf5", "HIS", "dat", "jpg", "jpeg", "png"],
+                            upload_id="temp",
+                        ),
+                    ],
+                    style={"display": "none"}
+                ),
+                html.Div(
+                    id="hdf5_select_div",
+                    children=[
+                        html.H5(
+                            id="hdf5_select",
+                            children="Click here to select file",
+                            n_clicks=0
+                        )
+                    ],
+                    style={"display": "none"}
                 ),
                 html.Div(
                     id="hdf5_dataset_input",

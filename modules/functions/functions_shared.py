@@ -18,7 +18,14 @@ def check_conditions(conditions_function, hdf5_path_index):
         @functools.wraps(callback_function)
         def wrapper(*args, **kwargs):
             args = list(args)
-            args[hdf5_path_index] = Path(args[hdf5_path_index])
+            try:
+                args[hdf5_path_index] = Path(args[hdf5_path_index])
+            # Catch the error if hdf5_path is None, else raise the error
+            except TypeError as e:
+                if "NoneType" in str(e):
+                    raise PreventUpdate
+                else:
+                    raise e
             hdf5_path = args[hdf5_path_index]
             if not conditions_function(hdf5_path, *args, **kwargs):
                 raise PreventUpdate
@@ -104,17 +111,15 @@ def detect_measurement(filename_list: list):
         "XRD results": ["lst"],
         "Annealing": ["HIS"],
         "Magnetron": ["prp"],
-        "SQUID": ["dat"]
+        "SQUID": ["dat"],
+        "Picture": ["png, jpg, jpeg"],
+        "HT_hdf5": ["hdf5"],
     }
 
     for measurement_type, file_type in measurement_dict.items():
         for filename in filename_list:
-            if filename.startswith("."):  # Skip hidden files
-                continue
-            if (
-                filename.split(".")[-1] in file_type
-            ):  # Check extensions for correspondence to the dictionary spec
-                depth = filename.count("/")
+            if str(filename).split(".")[-1] in file_type: # Check extensions for correspondence to the dictionary spec
+                depth = str(filename).count("/")
                 return measurement_type, depth
     return None
 

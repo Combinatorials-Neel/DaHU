@@ -353,7 +353,7 @@ def esrf_check_if_alignment(hdf5_group):
     """
     title = str(hdf5_group["title"][()])
 
-    if "ascan" in title:
+    if "ascan" in title or "fscan" in title:
         if "th" in title:
             return True, "th"
         if "tsz" in title:
@@ -397,7 +397,8 @@ def xrd_get_integrated_from_nexus(xrd_group, target_x, target_y):
 def xrd_make_analysis_dataframe_from_nexus(xrd_group):
     data_dict_list = []
     for position, position_group in xrd_group.items():
-        if esrf_check_if_alignment(position_group):
+        test, _ = esrf_check_if_alignment(position_group)
+        if test:
             continue
         positioners_group = position_group.get("instrument/positioners")
         measurement_group = position_group.get("measurement")

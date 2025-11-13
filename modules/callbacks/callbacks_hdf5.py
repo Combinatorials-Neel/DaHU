@@ -116,51 +116,74 @@ def callbacks_hdf5(app):
 
 
     @app.callback(
-        [Output('hdf5_upload_folder_path', 'data'),
-         Output('hdf5_measurement_type', 'value'),
-         Output('hdf5_text_box', 'children', allow_duplicate=True)],
+        Output('hdf5_upload_folder_path', 'data', allow_duplicate=True),
         Input('hdf5_upload', 'isCompleted'),
         State('hdf5_upload', 'fileNames'),
         State('hdf5_upload', 'upload_id'),
         State('hdf5_upload_folder_root', 'data'),
+        State("hdf5_upload_mode_toggle", "on"),
         prevent_initial_call=True
     )
-    def unpack_uploaded_measurements(is_completed, uploaded_folder_path, upload_id, upload_folder_root):
+    def unpack_uploaded_measurements(is_completed, uploaded_folder_path, upload_id, upload_folder_root, upload_mode_toggle):
+        if not upload_mode_toggle:
+            raise PreventUpdate
+
         if not is_completed or not uploaded_folder_path:
-            return None, None, "No file uploaded"
+            return "No file uploaded"
 
         uploaded_path = Path(upload_folder_root, upload_id, uploaded_folder_path[0])
         extract_dir = uploaded_path.parent / uploaded_path.stem
+        print(extract_dir)
 
         if uploaded_path.name.endswith('.zip'):
+            print("ok")
             with zipfile.ZipFile(uploaded_path, 'r') as zip_file:
-                filenames_list = zip_file.namelist()
-                measurement_type, depth = detect_measurement(filenames_list)
+                zip_file.extractall(extract_dir)
+                print("ok2")
+                return str(extract_dir)
 
-                if not measurement_type:
-                    output_message = f'Unable to detect measurement within {uploaded_folder_path}'
-                    return None, measurement_type, output_message
-                else:
-                    output_message = f'{len(filenames_list)} {measurement_type} files detected in {uploaded_folder_path}'
-                    zip_file.extractall(extract_dir)
-                    return str(extract_dir), measurement_type, output_message
+    @app.callback(
+        [Output("hdf5_upload_div", "style"),
+         Output("hdf5_select_div", "style")],
+        Input("hdf5_upload_mode_toggle", "on"),
+    )
+    def toggle_upload_mode(toggle_state):
+        if toggle_state:
+            return {}, {"display": "none"}
+        else:
+            return {"display": "none"}, {}
 
-        elif uploaded_path.name.endswith('.HIS'):
-            return str(extract_dir), "Annealing", f"1 Annealing file detected in {uploaded_folder_path}"
 
-        elif uploaded_path.name.endswith('.dat'):
-            return str(extract_dir), "SQUID", f"1 Squid file detected in {uploaded_folder_path}"
+    @app.callback(
+        [Output('hdf5_upload_folder_path', 'data', allow_duplicate=True),
+         Output('hdf5_select', 'children', allow_duplicate=True),
+         Output("browser_popup", "is_open", allow_duplicate=True)],
+        Input("hdf5_select", "n_clicks"),
+        Input("browser_select_button", "n_clicks"),
+        State("browser_popup", "is_open"),
+        State("hdf5_upload_folder_path", "data"),
+        State("stored_cwd", "data"),
+        prevent_initial_call=True
+    )
+    def browse_for_data_file(open_click, select_click, is_open, previous_path, stored_cwd):
+        if ctx.triggered_id == "hdf5_select" and open_click > 0 and not is_open:
+            return previous_path, "Click here to select file", True
+        if ctx.triggered_id == "browser_select_button" and select_click > 0 and is_open:
+            return stored_cwd, f"Chosen path: {stored_cwd}", False
 
-        elif uploaded_path.name.lower().endswith(('.png', ".jpg", ".jpeg")):
-            return str(uploaded_path), "Picture", f"1 Picture file detected in {uploaded_folder_path}"
 
-        elif uploaded_path.name.endswith(".hdf5"):
-            with h5py.File(uploaded_path, "r") as hdf5_file:
-                if hdf5_file.attrs["HT_class"] == "library":
-                    return str(uploaded_path), "HT hdf5", f"HT library file detected in {uploaded_folder_path}"
-                else:
-                    raise PreventUpdate
-
+    @app.callback(
+        [Output('hdf5_measurement_type', 'value'),
+         Output('hdf5_text_box', 'children', allow_duplicate=True)],
+        Input('hdf5_upload_folder_path', 'data'),
+        prevent_initial_call=True
+    )
+    def detect_measurement_type(upload_path):
+        if upload_path is None:
+            raise PreventUpdate
+        files = safe_rglob(Path(upload_path))
+        measurement_type, depth = detect_measurement(files)
+        return measurement_type, f'{len(files)} {measurement_type} files detected in {upload_path}'
 
 
     @app.callback(
@@ -198,7 +221,6 @@ def callbacks_hdf5(app):
             general_df.to_csv(hdf5_path.with_suffix(".csv"), index=True)
 
             return f"Successfully exported HDF5 to {hdf5_path.with_suffix(".csv")}"
-
 
 
     @app.callback(

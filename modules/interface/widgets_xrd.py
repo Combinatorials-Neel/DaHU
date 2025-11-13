@@ -72,7 +72,7 @@ def xrd_top_middle_card():
         dbc.CardHeader(
             dbc.Row([
                 dbc.Col([
-                    html.H5(id="xrd_path_box", children="No Valid File Selected")
+                    html.H5(id="xrd_path_box", children="Initializing")
                 ], width=10),
                 dbc.Col([
                     dbc.Checkbox(
@@ -177,6 +177,7 @@ def xrd_stores():
         children=[
             dcc.Store(id="xrd_position_store", data=None),
             dcc.Store(id="xrd_path_store", data=None),
+            dcc.Store(id="xrd_current_path_store", data=None),
             dcc.Store(id="xrd_results_store", data=None),
             dcc.Store(id="xrd_nexus_mode_store", data=False)
         ]

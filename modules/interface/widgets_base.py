@@ -2,6 +2,7 @@ from dash import html, dcc
 import dash_bootstrap_components as dbc
 import os
 from datetime import datetime
+import dash_uploader as du
 
 def widget_title_card(title):
     widget = html.Div(

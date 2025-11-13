@@ -82,7 +82,6 @@ def rename_group(group, old_name, new_name):
     group.copy(old_name, new_name)
     del group[old_name]
 
-
 def safe_create_new_subgroup(group, new_subgroup_name):
     """
         If subgroup doesn't exist, create a new subgroup. Returns subgroup.

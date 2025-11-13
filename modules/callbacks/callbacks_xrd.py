@@ -27,7 +27,7 @@ def callbacks_xrd(app):
             Output("xrd_select_dataset", "options"),
             Output("xrd_select_dataset", "value"),
         ],
-        Input("hdf5_path_store", "data"),
+        Input("xrd_current_path_store", "data"),
         State("xrd_nexus_mode_store", "data"),
     )
     @check_conditions(xrd_conditions, hdf5_path_index=0)
@@ -48,7 +48,7 @@ def callbacks_xrd(app):
          Output("xrd_heatmap_select", "value")],
         Input("xrd_select_dataset", "value"),
         Input("xrd_analysis_toggle", "value"),
-        State("hdf5_path_store", "data"),
+        State("xrd_current_path_store", "data"),
         State("xrd_nexus_mode_store", "data"),
     )
     @check_conditions(xrd_conditions, hdf5_path_index=2)
@@ -86,7 +86,7 @@ def callbacks_xrd(app):
         Input("xrd_heatmap_max", "value"),
         Input("xrd_heatmap_precision", "value"),
         Input("xrd_heatmap_edit", "value"),
-        State("hdf5_path_store", "data"),
+        State("xrd_current_path_store", "data"),
         State("xrd_results_store", "data"),
         prevent_initial_call=True,
     )
@@ -153,7 +153,7 @@ def callbacks_xrd(app):
         Input("xrd_fits_select", "value"),
         Input("xrd_image_min", "value"),
         Input("xrd_image_max", "value"),
-        Input("hdf5_path_store", "data"),
+        Input("xrd_current_path_store", "data"),
         State("xrd_plot_append_toggle", "value"),
         State("xrd_plot", "figure"),
         State("xrd_nexus_mode_store", "data"),
@@ -251,7 +251,7 @@ def callbacks_xrd(app):
         Output("xrd_text_box", "children", allow_duplicate=True),
         Input("xrd_heatmap", "clickData"),
         State("xrd_heatmap_edit", "value"),
-        State("hdf5_path_store", "data"),
+        State("xrd_current_path_store", "data"),
         State("xrd_select_dataset", "value"),
         State("xrd_nexus_mode_store", "data"),
         prevent_initial_call=True,
@@ -278,13 +278,15 @@ def callbacks_xrd(app):
     @app.callback(
         Output("xrd_text_box", "children", allow_duplicate=True),
         Input("xrd_export_button", "n_clicks"),
-        State("hdf5_path_store", "data"),
+        State("xrd_current_path_store", "data"),
         State("xrd_select_dataset", "value"),
         State("xrd_nexus_mode_store", "data"),
         prevent_initial_call=True,
     )
     @check_conditions(xrd_conditions, hdf5_path_index=1)
     def xrd_export_all(n_clicks, hdf5_path, selected_dataset, nexus_mode):
+        if nexus_mode:
+            raise PreventUpdate
         if n_clicks > 0:
             hdf5_path = Path(hdf5_path)
             export_path = hdf5_path.parent / selected_dataset
@@ -336,4 +338,21 @@ def callbacks_xrd(app):
             return False, stored_cwd
 
         return is_open, xrd_path
+
+    @app.callback(
+        [Output("xrd_path_box", "children", allow_duplicate=True),
+         Output("xrd_current_path_store", "data", allow_duplicate=True)],
+        Input("xrd_path_store", "data"),
+        Input("hdf5_path_store", "data"),
+        Input("xrd_isolate_toggle", "value"),
+        prevent_initial_call=True,
+    )
+    def xrd_update_path_box(xrd_path, hdf5_path, isolate_toggle):
+        if isolate_toggle:
+            if xrd_path is not None:
+                return str(xrd_path), xrd_path
+            else:
+                return "No valid file selected", None
+        else:
+            return str(hdf5_path), hdf5_path
 
