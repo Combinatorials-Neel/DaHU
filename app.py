@@ -57,7 +57,8 @@ app.layout = dbc.Container(
         widget_layer_modal(),
         widget_new_hdf5_modal(),
         dcc.Store(id="hdf5_path_store", storage_type="local"),
-        dcc.Store(id="data_path_store", storage_type="local")
+        dcc.Store(id="data_path_store", storage_type="local"),
+        dcc.Store(id="browser_source_id"),
     ],
     fluid=True,
 )

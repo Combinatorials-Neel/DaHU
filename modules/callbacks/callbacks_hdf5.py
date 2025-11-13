@@ -136,10 +136,8 @@ def callbacks_hdf5(app):
         print(extract_dir)
 
         if uploaded_path.name.endswith('.zip'):
-            print("ok")
             with zipfile.ZipFile(uploaded_path, 'r') as zip_file:
                 zip_file.extractall(extract_dir)
-                print("ok2")
                 return str(extract_dir)
 
     @app.callback(
@@ -157,19 +155,22 @@ def callbacks_hdf5(app):
     @app.callback(
         [Output('hdf5_upload_folder_path', 'data', allow_duplicate=True),
          Output('hdf5_select', 'children', allow_duplicate=True),
-         Output("browser_popup", "is_open", allow_duplicate=True)],
+         Output("browser_popup", "is_open", allow_duplicate=True),
+         Output("browser_source_id", "data", allow_duplicate=True)],
         Input("hdf5_select", "n_clicks"),
         Input("browser_select_button", "n_clicks"),
         State("browser_popup", "is_open"),
         State("hdf5_upload_folder_path", "data"),
         State("stored_cwd", "data"),
+        State("browser_source_id", "data"),
         prevent_initial_call=True
     )
-    def browse_for_data_file(open_click, select_click, is_open, previous_path, stored_cwd):
+    def browse_for_data_file(open_click, select_click, is_open, previous_path, stored_cwd, browser_source_id):
         if ctx.triggered_id == "hdf5_select" and open_click > 0 and not is_open:
-            return previous_path, "Click here to select file", True
-        if ctx.triggered_id == "browser_select_button" and select_click > 0 and is_open:
-            return stored_cwd, f"Chosen path: {stored_cwd}", False
+            return previous_path, "Click here to select file", True, "hdf5_select"
+        if (ctx.triggered_id == "browser_select_button" and select_click > 0
+                and is_open and browser_source_id == "hdf5_select"):
+            return stored_cwd, f"Chosen path: {stored_cwd}", False, None
 
 
     @app.callback(
@@ -606,21 +607,22 @@ def callbacks_hdf5(app):
 
     @app.callback(
         [Output("browser_popup", "is_open", allow_duplicate=True),
-         Output("hdf5_path_store", "data", allow_duplicate=True)],
+         Output("hdf5_path_store", "data", allow_duplicate=True),
+         Output("browser_source_id", 'data', allow_duplicate=True)],
         Input("hdf5_path_box", "n_clicks"),
         Input("browser_select_button", "n_clicks"),
         State("browser_popup", "is_open"),
         State("hdf5_path_store", "data"),
         State("stored_cwd", "data"),
+        State("browser_source_id", "data"),
         prevent_initial_call=True,
     )
-    def toggle_hdf5_browser(open_click, select_click, is_open, hdf5_path, stored_cwd):
+    def toggle_hdf5_browser(open_click, select_click, is_open, hdf5_path, stored_cwd, browser_source_id):
         if ctx.triggered_id == "hdf5_path_box" and open_click > 0 and not is_open:
-            return True, hdf5_path
-        if ctx.triggered_id == "browser_select_button" and select_click > 0 and is_open:
-            return False, stored_cwd
-
-        return is_open, hdf5_path
+            return True, hdf5_path, "hdf5_path_box"
+        if (ctx.triggered_id == "browser_select_button" and select_click > 0
+                and is_open and browser_source_id == "hdf5_path_box"):
+            return False, stored_cwd, None
 
 
     @app.callback(

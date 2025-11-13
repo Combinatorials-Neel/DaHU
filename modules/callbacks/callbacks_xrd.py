@@ -320,24 +320,25 @@ def callbacks_xrd(app):
 
     @app.callback(
         [Output("browser_popup", "is_open", allow_duplicate=True),
-         Output("xrd_path_store", "data", allow_duplicate=True)],
+         Output("xrd_path_store", "data", allow_duplicate=True),
+         Output("browser_source_id", 'data', allow_duplicate=True)],
         Input("xrd_path_box", "n_clicks"),
         Input("browser_select_button", "n_clicks"),
         State("browser_popup", "is_open"),
         State("xrd_path_store", "data"),
         State("stored_cwd", "data"),
         State("xrd_isolate_toggle", "value"),
+        State("browser_source_id", "data"),
         prevent_initial_call=True,
     )
-    def toggle_xrd_browser(open_click, select_click, is_open, xrd_path, stored_cwd, isolate_toggle):
+    def toggle_xrd_browser(open_click, select_click, is_open, xrd_path, stored_cwd, isolate_toggle, browser_source_id):
         if not isolate_toggle:
             raise PreventUpdate
         if ctx.triggered_id == "xrd_path_box" and open_click > 0 and not is_open:
-            return True, xrd_path
-        if ctx.triggered_id == "browser_select_button" and select_click > 0 and is_open:
-            return False, stored_cwd
-
-        return is_open, xrd_path
+            return True, xrd_path, "xrd_path_box"
+        if (ctx.triggered_id == "browser_select_button" and select_click > 0
+                and is_open and browser_source_id == "xrd_path_box"):
+            return False, stored_cwd, None
 
     @app.callback(
         [Output("xrd_path_box", "children", allow_duplicate=True),
