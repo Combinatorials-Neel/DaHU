@@ -52,7 +52,7 @@ def esrf_check_if_alignment(hdf5_group):
     """
     title = str(hdf5_group["title"][()])
 
-    if "ascan" or "fscan" in title:
+    if "ascan" in title or "fscan" in title:
         if "kth" in title:
             return True, "kth"
         if "th" in title:
