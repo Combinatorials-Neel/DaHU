@@ -8,7 +8,7 @@ from collections import defaultdict
 from ..functions.functions_moke import *
 from ..hdf5_compilers.hdf5compile_base import *
 
-MOKE_WRITER_VERSION = '0.1 beta'
+MOKE_WRITER_VERSION = '0.2'
 
 def moke_info_from_filename(file_path):
     """
@@ -116,30 +116,20 @@ def read_data_from_moke(file_path_list):
     tuple
         A tuple containing three lists: magnetization data, pulse data, and sum data. Each list contains the data of the corresponding file.
     """
-    mag_data, pul_data, sum_data = [], [], []
-
     for file_path in file_path_list:
         file_path = str(file_path)
         if 'magnetization' in file_path:
-            with open(file_path, 'r') as file:
-                mag_file = file.readlines()
-        elif 'pulse' in file_path:
-            with open(file_path, 'r') as file:
-                pul_file = file.readlines()
-        elif 'sum' in file_path:
-            with open(file_path, 'r') as file:
-                sum_file = file.readlines()
-
-    # Open the 3 datafiles at the same time and write everything in lists
-
-    for mag, pul, sum in zip(mag_file[2:], pul_file[2:], sum_file[2:]):
-        mag = mag.strip().split()
-        pul = pul.strip().split()
-        sum = sum.strip().split()
-
-        mag_data.append([float(elm) for elm in mag])
-        pul_data.append([float(elm) for elm in pul])
-        sum_data.append([float(elm) for elm in sum])
+            mag = pd.read_table(file_path)
+            mag = mag.iloc[:, :-1]
+            mag_data = mag.values
+        if 'pulse' in file_path:
+            pul = pd.read_table(file_path)
+            pul = pul.iloc[:, :-1]
+            pul_data = pul.values
+        if 'sum' in file_path:
+            sum = pd.read_table(file_path)
+            sum = sum.iloc[:, :-1]
+            sum_data = sum.values
 
     return mag_data, pul_data, sum_data
 
@@ -251,9 +241,9 @@ def write_moke_to_hdf5(hdf5_path, source_path, dataset_name = None, mode="a"):
         # For every position, write measurement to HDF5
         for scan_number in grouped_dict.keys():
             info_dict = moke_info_from_filename(grouped_dict[scan_number][0])
-            mag_dict, pul_dict, sum_dict = read_data_from_moke(grouped_dict[scan_number])
-            time_dict = get_time_from_moke(len(mag_dict))
-            nb_acquisitions = len(mag_dict[0])
+            mag_array, pul_array, sum_array = read_data_from_moke(grouped_dict[scan_number])
+            time_dict = get_time_from_moke(len(mag_array))
+            nb_acquisitions = len(mag_array[0])
 
             x_pos = info_dict['x_pos']
             y_pos = info_dict['y_pos']
@@ -286,25 +276,24 @@ def write_moke_to_hdf5(hdf5_path, source_path, dataset_name = None, mode="a"):
             # Create shot groups in HDF5
             for i in range(nb_acquisitions):
                 shot_group = data.create_group(f"shot_{i+1}")
-                mag = [convertFloat(t[i]) for t in mag_dict]
+                mag = mag_array[:,i]
                 mag_node = shot_group.create_dataset(
                     f"magnetization_{i+1}", data=mag, dtype="float"
                 )
                 mag_arrays.append(mag)
 
-                pul = [convertFloat(t[i]) for t in pul_dict]
+                pul = pul_array[:,i]
                 pul_node = shot_group.create_dataset(
                     f"pulse_{i+1}", data=pul, dtype="float"
                 )
                 pulse_arrays.append(pul)
-
                 integrated_pulse = moke_integrate_pulse_array(pul)
                 integrated_pulse_node = shot_group.create_dataset(
                     f"integrated_pulse_{i+1}", data=integrated_pulse, dtype="float"
                 )
                 integrated_pulse_arrays.append(integrated_pulse)
 
-                sum = [convertFloat(t[i]) for t in sum_dict]
+                sum = sum_array[:,i]
                 sum_node = shot_group.create_dataset(
                     f"reflectivity_{i+1}", data=sum, dtype="float"
                 )

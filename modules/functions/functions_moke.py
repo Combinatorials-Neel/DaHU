@@ -1,5 +1,5 @@
 """ """
-
+import numpy as np
 from scipy.signal import savgol_filter
 from plotly.subplots import make_subplots
 
@@ -90,10 +90,19 @@ def moke_get_instrument_dict_from_hdf5(moke_group):
 
 
 def moke_integrate_pulse_array(pulse_array):
-    field_array = np.zeros_like(np.array(pulse_array))
+    pulse_array = pulse_array.copy()
 
-    field_array[350:660] = np.cumsum(pulse_array[350:660])
-    field_array[1350:1660] = np.cumsum(pulse_array[1350:1660])
+    pulse_array[(np.abs(pulse_array) >= 0.0016666) & (np.abs(pulse_array) <= 0.0016668)] = 0
+    pulse_array[(np.abs(pulse_array) >= 0.0045) & (np.abs(pulse_array) <= 0.0055)] = 0
+    pulse_array[pulse_array == 0] = np.nan
+
+    isnan = np.isnan(pulse_array)
+
+    # cumulative sum treating NaNs as 0
+    field_array = np.cumsum(np.where(isnan, 0, pulse_array))
+
+    # put NaNs back where they originally were
+    field_array[isnan] = np.nan
 
     return field_array
 
@@ -200,25 +209,6 @@ def moke_treat_measurement_dataframe(measurement_df, options_dict):
     return measurement_df
 
 
-def extract_loop_section(data: pd.DataFrame):
-    """
-    From a dataframe, select only the parts where the field is defined, resulting in a section containing only the loop
-
-    Parameters:
-        data(pd.Dataframe) : source dataframe with a 'field' column
-    Returns:
-        pd.Dataframe
-    """
-    # Keep only the points where field is defined, removing points outside of pulse
-    try:
-        non_nan = data[data["field"].notna()].index.values
-        loop_section = data.loc[non_nan, :]
-        loop_section.reset_index(drop=True, inplace=True)
-        return loop_section
-    except NameError:
-        raise NameError("field column not defined")
-
-
 def moke_calc_max_kerr_rotation(data: pd.DataFrame):
     """
     From a dataframe, return the value for the saturation Kerr rotation
@@ -290,6 +280,7 @@ def moke_calc_mzero_coercivity(data: pd.DataFrame, threshold=8.0e-3):
 
     Returns:
         float, float
+        @param threshold:
     """
 
     if (

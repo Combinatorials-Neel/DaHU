@@ -4,6 +4,7 @@ Class containing all Dash items and layout information for the MOKE tab
 
 from dash import html, dcc
 import dash_bootstrap_components as dbc
+import dash_daq as daq
 
 def moke_top_left_card():
     card = dbc.Card([
@@ -186,7 +187,7 @@ def moke_loop_map():
     card = dbc.Card([
         dbc.CardHeader(),
         dbc.CardBody([
-            dcc.Graph(id="moke_loop_map")
+            dcc.Graph(id="moke_loops_figure")
         ]),
         dbc.CardFooter([])
     ], className="h-100 w-100")
@@ -197,6 +198,24 @@ def moke_loop_map_options():
     card = dbc.Card([
         dbc.CardHeader(),
         dbc.CardBody([
+            dbc.Row([
+                dbc.Col([
+                    dbc.Button(
+                        id="moke_loops_make_button",
+                        children="Make loop map!",
+                        n_clicks=0,
+                        color="success"
+                    )
+                ], width=10),
+                dbc.Col([
+                    daq.BooleanSwitch(
+                        id="moke_loops_normalize",
+                        on=False,
+                        label="Normalize",
+                        persistence=False
+                    )
+                ], width=2)
+            ])
         ]),
         dbc.CardFooter([])
     ])

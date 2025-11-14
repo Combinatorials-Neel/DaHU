@@ -181,7 +181,6 @@ def callbacks_moke(app):
                     ],
                 )
             if heatmap_select == "intercept_field_(T)":
-                print(results_dict["intercept_field"])
                 fig = moke_plot_intercept(
                     fig, intercept_dict=results_dict["intercept_field"]
                 )
@@ -260,20 +259,16 @@ def callbacks_moke(app):
         return treatment_dict, coil_factor, smoothing_polyorder, smoothing_range
 
     @app.callback(
-        Output("moke_loop_map_figure", "figure"),
-        Input("moke_loop_map_button", "n_clicks"),
+        Output("moke_loops_figure", "figure"),
+        Input("moke_loops_make_button", "n_clicks"),
         State("hdf5_path_store", "data"),
         State("moke_data_treatment_store", "data"),
-        State("moke_loop_map_checklist", "value"),
+        State("moke_loops_normalize", "on"),
         State("moke_select_dataset", "value"),
         prevent_initial_call=True,
     )
     @check_conditions(moke_conditions, hdf5_path_index=1)
-    def make_loop_map(n_clicks, hdf5_path, options_dict, checklist, dataset_select):
-        normalize = False
-        if "normalize" in checklist:
-            normalize = True
-
+    def make_loop_map(n_clicks, hdf5_path, options_dict, normalize, dataset_select):
         if n_clicks > 0:
             with h5py.File(hdf5_path, "a") as hdf5_file:
                 moke_group = hdf5_file[dataset_select]
