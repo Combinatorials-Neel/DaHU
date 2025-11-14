@@ -7,8 +7,10 @@ from itertools import cycle
 
 import plotly.express as px
 from fabio import dtrekimage
+import pyFAI
 from scipy.signal import find_peaks
 
+from ..build.lib.hdf5_compilers.hdf5compile_base import rename_group
 from ..functions.functions_shared import *
 from ..functions.functions_hdf5 import *
 
@@ -420,4 +422,69 @@ def xrd_make_analysis_dataframe_from_nexus(xrd_group):
     results_df = pd.DataFrame(data_dict_list)
 
     return results_df
+
+
+def xrd_pyfai_medfilt1d(poni, image, points, percentile=(0, 99.9)):
+    integrated_dict = {}
+
+    reintegrated = poni.medfilt1d_ng(image, points, method="no_csr_cython", percentile=percentile, unit='q_nm^-1')
+    q = reintegrated[0]
+    tth = xrd_q_tth(q, energy=25)
+
+    I = reintegrated[1]
+
+    I = I/np.sum(I)
+    counts = I * np.sum(image)
+
+    config = {
+            "function": "medfilt1d_ng",
+            "npt": str(points),
+            "method": "no_csr_cython",
+            "percentile": str(percentile),
+            "detector": str(poni.detector.__class__.__name__),
+            "distance": str(poni.dist),
+            "wavelength": str(poni.wavelength),
+            "poni1": str(poni._poni1),
+            "poni2": str(poni._poni2),
+            "rot1": str(poni._rot1),
+            "rot2": str(poni._rot2),
+            "rot3": str(poni._rot3)
+        }
+
+    integrated_dict["q"] = q
+    integrated_dict["tth"] = tth
+    integrated_dict["I"] = I
+    integrated_dict["counts"] = counts
+    integrated_dict["config"] = config
+    integrated_dict["version"] = pyFAI.version
+
+    return integrated_dict
+
+
+def xrd_write_integrated_to_hdf5(position_group, reintegrated_dict, overwrite=True):
+    if overwrite:
+        del position_group["measurement/integrated"]
+    else:
+        rename_group(position_group["measurement/integrated"], "integrated", "old_integrated")
+
+    integrated_group = position_group["measurement"].create_group("integrated")
+
+    integrated_group.create_dataset("intensity", data=reintegrated_dict["I"])
+    integrated_group.create_dataset("counts", data=reintegrated_dict["counts"])
+    integrated_group.create_dataset("q", data=reintegrated_dict["q"])
+    integrated_group.create_dataset("tth", data=reintegrated_dict["tth"])
+
+    instrument_group = position_group["instrument"].create_group("integrated")
+
+    config_group = instrument_group.create_group("configuration")
+    config_group.create_dataset("data", data=json.dumps(reintegrated_dict["config"]))
+    config_group.create_dataset("type", data="DaHU reintegrated")
+
+    integrated_group.create_dataset("program", data="pyFAI")
+    integrated_group.create_dataset("version", data=reintegrated_dict["version"])
+
+
+
+
+
 

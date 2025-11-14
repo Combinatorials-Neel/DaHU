@@ -96,7 +96,10 @@ def xrd_top_middle_card():
                 html.H5(id="xrd_text_box")
             ])
         ]),
-        dbc.CardFooter([dbc.Button(id="xrd_export_button", children="Export for fitting", n_clicks=0)])
+        dbc.CardFooter([
+            dbc.Button(id="xrd_export_button", children="Export for fitting", n_clicks=0),
+            dbc.Button(id="xrd_pyfai_button", children="Re-integrate", n_clicks=0),
+        ])
     ], className="h-100 w-100")
 
     return card
@@ -184,6 +187,49 @@ def xrd_stores():
     )
     return stores
 
+def widget_xrd_integrate_modal():
+    widget = dbc.Modal(
+        id="pyfai_popup",
+        is_open=False,
+        centered=True,
+        size="s",
+        children=[
+            dbc.ModalHeader(["Re-integrate with PyFAI"]),
+            dbc.ModalBody([
+                dbc.Row([
+                    dbc.Col(children=[
+                        dbc.Select(
+                            id="pyfai_poni_select",
+                            options=["esrf1", "esrf2", "esrf3"]
+                        )
+                    ], width=8)
+                ]),
+                dbc.Row([
+                    dbc.Col([
+                        html.Label("Function"),
+                        dbc.Select(
+                            id="pyfai_function_select",
+                            options=["integrate1d", "medfilt1d"]
+                        )
+                    ]),
+                ]),
+                dbc.Row([
+                    dbc.Col(children=[
+                        html.Label("Number of points"),
+                        dbc.Input(
+                            id="pyfai_points",
+                            type="number"
+                        ),
+                    ])
+                ])
+            ]),
+            dbc.ModalFooter([
+                dbc.Button(id="pyfai_integrate_button", children="Integrate", color="success", n_clicks=0),
+            ])
+        ]
+    )
+    return widget
+
 def make_xrd_tab(upload_folder_root):
     xrd_tab = dbc.Tab(
         id="xrd",
@@ -195,6 +241,7 @@ def make_xrd_tab(upload_folder_root):
                 delay_show=500,
                 children=[
                     xrd_stores(),
+                    widget_xrd_integrate_modal(),
                     dbc.Row([
                         dbc.Col(xrd_top_left_card(), width=4, className="d-flex flex-column"),
                         dbc.Col(xrd_top_middle_card(), width=4, className="d-flex flex-column"),

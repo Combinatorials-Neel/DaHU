@@ -1,3 +1,5 @@
+import os
+
 from dash import html, dcc, Input, Output, State, ctx
 
 from ..functions.functions_shared import *
@@ -356,4 +358,57 @@ def callbacks_xrd(app):
                 return "No valid file selected", None
         else:
             return str(hdf5_path), hdf5_path
+
+    @app.callback(
+        Output("pyfai_popup", "is_open", allow_duplicate=True),
+        Input("xrd_pyfai_button", "n_clicks"),
+        State("pyfai_popup", "is_open"),
+        prevent_initial_call=True,
+    )
+    def xrd_toggle_pyfai_popup(open_click, is_open):
+        if not is_open and open_click > 0:
+            return True
+        elif is_open:
+            raise PreventUpdate
+
+
+    @app.callback(
+        [Output("xrd_text_box", "children", allow_duplicate=True),
+         Output("pyfai_popup", "is_open", allow_duplicate=True)],
+        Input("pyfai_integrate_button", "n_clicks"),
+        State("hdf5_path_store", "data"),
+        State("xrd_select_dataset", "value"),
+        State("pyfai_poni_select", "value"),
+        State("pyfai_function_select", "value"),
+        State("pyfai_points", "value"),
+        prevent_initial_call=True,
+    )
+    def xrd_reintegrate_dataset(n_clicks, hdf5_file, selected_dataset, poni_select, function_select, points):
+        if n_clicks > 0:
+            poni_path = Path(os.getcwd() + "/calibrations/esrf_poni/" + poni_select).with_suffix(".poni")
+            poni = pyFAI.load(str(poni_path))
+
+            with h5py.File(hdf5_file, "a") as file:
+                dataset = file[selected_dataset]
+                for position, position_group in dataset.items():
+                    if position == "alignment_scans":
+                        continue
+                    image = position_group["measurement/2Dimage"][()]
+
+                    if function_select == "integrate1d":
+                        raise TypeError("Integrate1d not supported yet")
+
+                    elif function_select == "medfilt1d":
+                        reintegrated_dict = xrd_pyfai_medfilt1d(poni, image, points)
+
+                    xrd_write_integrated_to_hdf5(position_group, reintegrated_dict, overwrite=True)
+
+                file.flush()
+
+            return "Integration successful", False
+
+
+
+
+
 
