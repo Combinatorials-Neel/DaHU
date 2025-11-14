@@ -90,6 +90,8 @@ def moke_get_instrument_dict_from_hdf5(moke_group):
 
 
 def moke_integrate_pulse_array(pulse_array):
+    pulse_array = pulse_array.copy()
+
     pulse_array[(np.abs(pulse_array) >= 0.0016666) & (np.abs(pulse_array) <= 0.0016668)] = 0
     pulse_array[(np.abs(pulse_array) >= 0.0045) & (np.abs(pulse_array) <= 0.0055)] = 0
     pulse_array[pulse_array == 0] = np.nan
@@ -318,7 +320,7 @@ def moke_fit_intercept(data: pd.DataFrame, treatment_dict: dict):
     pulse_voltage = float(treatment_dict["pulse_voltage"])
     max_field = coil_factor / 100 * pulse_voltage
 
-    sat_field = 1  # Should be a data treatment variable, WIP
+    sat_field = 1.75  # Should be a data treatment variable, WIP
 
     Hmin = 0.1
     Hmax = sat_field - 0.25
@@ -413,6 +415,7 @@ def moke_batch_fit(moke_group, treatment_dict):
         reflectivity = moke_calc_reflectivity(measurement_dataframe)
         coercivity_m0 = list(moke_calc_mzero_coercivity(measurement_dataframe))
         coercivity_dmdh = list(moke_calc_derivative_coercivity(measurement_dataframe))
+        print(position)
         intercepts = list(moke_fit_intercept(measurement_dataframe, treatment_dict))
 
         results_dict[f"{position}"] = {

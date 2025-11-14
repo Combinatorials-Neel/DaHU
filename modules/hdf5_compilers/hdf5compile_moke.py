@@ -287,8 +287,9 @@ def write_moke_to_hdf5(hdf5_path, source_path, dataset_name = None, mode="a"):
                     f"pulse_{i+1}", data=pul, dtype="float"
                 )
                 pulse_arrays.append(pul)
-
+                print(pul)
                 integrated_pulse = moke_integrate_pulse_array(pul)
+                print(pul)
                 integrated_pulse_node = shot_group.create_dataset(
                     f"integrated_pulse_{i+1}", data=integrated_pulse, dtype="float"
                 )
