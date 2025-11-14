@@ -181,7 +181,6 @@ def callbacks_moke(app):
                     ],
                 )
             if heatmap_select == "intercept_field_(T)":
-                print(results_dict["intercept_field"])
                 fig = moke_plot_intercept(
                     fig, intercept_dict=results_dict["intercept_field"]
                 )

@@ -415,7 +415,6 @@ def moke_batch_fit(moke_group, treatment_dict):
         reflectivity = moke_calc_reflectivity(measurement_dataframe)
         coercivity_m0 = list(moke_calc_mzero_coercivity(measurement_dataframe))
         coercivity_dmdh = list(moke_calc_derivative_coercivity(measurement_dataframe))
-        print(position)
         intercepts = list(moke_fit_intercept(measurement_dataframe, treatment_dict))
 
         results_dict[f"{position}"] = {
