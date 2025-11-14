@@ -2,150 +2,162 @@
 Class containing all Dash items and layout information for the profil tab
 """
 from dash import html, dcc
+import dash_bootstrap_components as dbc
 
 
-class WidgetsPROFIL:
-    def __init__(self):
-
-        # Widget for the text box
-        self.profil_center = (html.Div(
-            className="textbox top-center",
-            children=[
-                html.Div(
-                    className="text-top",
-                    children=[dcc.Dropdown(
-                        id="profil_select_dataset",
-                        className="long-item",
-                        options=[],
-                        value=None,
-                    )
-                    ],
-                ),
-
-                html.Div(className="text-mid", children=[
-                    html.Span(children="test", id="profil_text_box")
-                ])
-            ]))
-
-        # Heatmap plot options
-        self.profil_left = html.Div(className="subgrid top-left", children=[
-            html.Div(className="subgrid-2", children=[
+def profil_top_left_card():
+    card = dbc.Card([
+            dbc.CardHeader("Heatmap Options"),
+            dbc.CardBody([
                 html.Label("Currently plotting:"),
                 html.Br(),
-                dcc.Dropdown(id="profil_heatmap_select", className="long-item", options=[])
-            ]),
-            html.Div(className="subgrid-7", children=[
-                html.Label("Colorbar bounds"),
-                dcc.Input(id="profil_heatmap_max", className="long-item", type="number", placeholder="maximum value",
-                          value=None),
-                dcc.Input(id="profil_heatmap_min", className="long-item", type="number", placeholder="minimum value",
-                          value=None)
-            ]),
-            html.Div(
-                className="subgrid-8",
-                children=[
+                dbc.Select(
+                    id="profil_heatmap_select",
+                    options=[],
+                    placeholder="Select property",
+                ),
+                dbc.Row([
+                    html.Label("Colorbar bounds"),
+                    dbc.Input(
+                        id="profil_heatmap_max",
+                        type="number",
+                        placeholder="maximum value",
+                        value=None,
+                    ),
+                    dbc.Input(
+                        id="profil_heatmap_min",
+                        type="number",
+                        placeholder="minimum value",
+                        value=None,
+                    ),
                     html.Label("Colorbar precision"),
-                    dcc.Input(
+                    dbc.Input(
                         id="profil_heatmap_precision",
-                        className="long-item",
                         type="number",
                         placeholder="Colorbar precision",
-                        value=1,
+                        value=2,
                     ),
-                ]
-            ),
-            html.Div(className="subgrid-9", children=[
-                html.Label(""),
-                html.Br(),
-                dcc.RadioItems(
-                    id="profil_heatmap_edit",
-                    options=[{"label": "Unfiltered", "value": "unfiltered"},
-                             {"label": "Filtered", "value": "filter"},
-                             {"label": "Edit mode", "value": "edit"}],
-                    value="filter",
-                    style={"display": "inline-block"}
-                ),
+                    html.Label(""),
+                    html.Br(),
+                    dcc.RadioItems(
+                        id="profil_heatmap_edit",
+                        options=[
+                            {"label": "Unfiltered", "value": "unfiltered"},
+                            {"label": "Filtered", "value": "filter"},
+                            {"label": "Edit mode", "value": "edit"},
+                        ],
+                        value="filter",
+                        style={"display": "inline-block"},
+                    ),
+                ]),
+            ]),
+            dbc.CardFooter([])
+    ], className="h-100 w-100")
+    return card
+
+def profil_top_middle_card():
+    card = dbc.Card([
+        dbc.CardHeader(html.H5(id="profil_path_box", children="Current File:")),
+        dbc.CardBody([
+            dbc.Row([
+                dbc.Select(
+                    id="profil_select_dataset",
+                    options=[],
+                    value=None,
+                )
+            ]),
+            dbc.Row([
+                html.H5(id="profil_text_box")
             ])
-        ])
+        ]),
+        dbc.CardFooter([])
+    ], className="h-100 w-100")
 
-        # Widget for fitting parameters and buttons
-        self.profil_right = html.Div(className="subgrid top-right", children=[
-            html.Div(className="subgrid-1", children=[
-                html.Label("Select mode"),
-                dcc.Dropdown(id="profil_select_fit_mode", className="long-item",
-                             options=["Spot fitting", "Batch fitting", "Manual"], value="Spot fitting")
+    return card
+
+def profil_top_right_card():
+    card = dbc.Card([
+        dbc.CardHeader("Plot options"),
+        dbc.CardBody([
+            dbc.Row([
+                dbc.Col([html.Label("Select mode"),
+                        dbc.Select(id="profil_select_fit_mode", options=["Spot fitting", "Batch fitting", "Manual"],
+                                   value="Spot fitting"),]),
+                dbc.Col(id="profil_fit_inputs", children=[]),
+                dbc.Col([dbc.Button(children="Go", id="profil_fit_button", className="long-item", n_clicks=0)]),
             ]),
-
-            html.Div(className="subgrid-2", id="profil_fit_inputs", children=[
-
-            ]),
-
-            html.Div(
-                className="subgrid-3", children=[
-                    html.Button(children="Go", id="profil_fit_button", className="long-item", n_clicks=0)
-                ]
-            ),
-
-            html.Div(className="subgrid-9", children=[
+            dbc.Row([
                 html.Label("Plot Options"),
                 html.Br(),
-                dcc.Checklist(
+                dbc.Checklist(
                     id="profil_plot_select",
                     options=[{"label": "Adjusting Slope", "value": "adjusting_slope"},
                              {"label": "Profile Fits", "value": "fit_parameters"}],
                     value=["adjusting_slope", "profile_fits"],
                     style={"display": "inline-block"}
-                ),
-            ])
-        ])
-
-        # EDX spectra graph that will be modified by user interaction
-        self.profil_plot = html.Div(
-            [dcc.Graph(id="profil_plot")], className="plot-right"
-        )
-
-        # EDX heatmap
-        self.profil_heatmap = html.Div(
-            [dcc.Graph(id="profil_heatmap")], className="plot-left"
-        )
-
-        # Stored variables
-        self.profil_stores = html.Div(children=[
-            dcc.Store(id="profil_position_store", data=None),
-            dcc.Store(id="profil_database_path_store", data=None),
-            dcc.Store(id="profil_file_path_store", data=None),
-            dcc.Store(id="profil_parameters_store", data=None),
-            dcc.Store(id="profil_database_metadata_store", data=None)
-        ])
-
-
-
-    def make_tab_from_widgets(self):
-        profil_tab = dcc.Tab(
-            id="profil",
-            label="PROFIL",
-            value="profil",
-            children=[html.Div(children=[
-                dcc.Loading(
-                    id="loading-profil",
-                    type="default",
-                    delay_show=500,
-                    children=[
-                        html.Div(
-                            [
-                                self.profil_left,
-                                self.profil_center,
-                                self.profil_right,
-                                self.profil_heatmap,
-                                self.profil_plot,
-                                self.profil_stores
-                            ],
-                            className="grid-container",
-                        )
-                    ]
                 )
-            ])]
-        )
+            ])
+        ]),
+        dbc.CardFooter([])
+    ], className="h-100 w-100"),
 
-        return profil_tab
+    return card
+
+def profil_heatmap():
+    card = dbc.Card([
+        dbc.CardHeader(),
+        dbc.CardBody([
+            dcc.Graph(id="profil_heatmap")
+        ]),
+        dbc.CardFooter([])
+    ], className="h-100 w-100")
+
+    return card
+
+def profil_plot():
+    card = dbc.Card([
+        dbc.CardHeader(),
+        dbc.CardBody([
+            dcc.Graph(id="profil_plot")
+        ]),
+        dbc.CardFooter([])
+    ], className="h-100 w-100")
+
+    return card
+
+def profil_stores():
+    stores = html.Div(
+        children=[
+            dcc.Store(id="profil_position_store", data=None),
+            dcc.Store(id="profil_file_path_store", data=None),
+            dcc.Store(id="profil_results_store", data=None),
+        ])
+    return stores
+
+def make_profil_tab(upload_folder_root):
+    profil_tab = dbc.Tab(
+        id="profil",
+        label="PROFIL",
+        children=[html.Div(children=[
+            dcc.Loading(
+                id="loading-profil",
+                type="default",
+                delay_show=500,
+                children=[
+                    profil_stores(),
+                    dbc.Row([
+                        dbc.Col(profil_top_left_card(), width=4, className="d-flex flex-column"),
+                        dbc.Col(profil_top_middle_card(), width=4, className="d-flex flex-column"),
+                        dbc.Col(profil_top_right_card(), width=4, className="d-flex flex-column"),
+                    ], className="mb-4 d-flex align-items-stretch"),
+                    dbc.Row([
+                        dbc.Col(profil_heatmap(), width=4, className="d-flex flex-column"),
+                        dbc.Col(profil_plot(), width=8, className="d-flex flex-column"),
+                    ], className="mb-4 d-flex align-items-stretch")
+                ]
+            )
+        ])]
+    )
+
+    return profil_tab
 

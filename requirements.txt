@@ -17,3 +17,8 @@ h5py~=3.12.1
 scikit-learn~=1.6.1
 stringcase~=1.2.0
 dash-uploader
+
+dash_uploader~=0.6.1
+pillow~=11.1.0
+pyFAI~=2025.3.0
+dash_daq~=0.6.0

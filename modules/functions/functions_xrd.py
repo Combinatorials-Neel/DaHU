@@ -7,9 +7,12 @@ from itertools import cycle
 
 import plotly.express as px
 from fabio import dtrekimage
+import pyFAI
+from scipy.signal import find_peaks
 
-from ..functions.functions_hdf5 import *
+from ..build.lib.hdf5_compilers.hdf5compile_base import rename_group
 from ..functions.functions_shared import *
+from ..functions.functions_hdf5 import *
 
 
 def xrd_conditions(hdf5_path, *args, **kwargs):
@@ -35,7 +38,6 @@ def xrd_q_tth(q_list, energy):
 
     return tth_list
 
-
 def xrd_tth_q(tth_list, energy):
     constant = 1.2363  # hc/e in keV.nm
     wavelength = constant / energy  # in nm
@@ -54,8 +56,13 @@ def xrd_get_integrated_from_hdf5(xrd_group, target_x, target_y):
     integrated_group = measurement_group.get("integrated")
     q_array = integrated_group["q"][()]
     intensity_array = integrated_group["intensity"][()]
+    counts_array = integrated_group["counts"][()]
 
-    measurement_dataframe = pd.DataFrame({"q": q_array, "intensity": intensity_array})
+    measurement_dataframe = pd.DataFrame({
+        "q": q_array,
+        "intensity": intensity_array,
+        "counts": counts_array
+    })
 
     return measurement_dataframe
 
@@ -65,7 +72,6 @@ def xrd_get_image_from_hdf5(xrd_group, target_x, target_y):
     measurement_group = position_group.get("measurement")
 
     image_array = measurement_group["2Dimage"][()]
-
     return image_array
 
 
@@ -157,16 +163,17 @@ def xrd_make_results_dataframe_from_hdf5(xrd_group):
     return result_dataframe
 
 
-def xrd_plot_integrated_from_dataframe(fig, df):
-    fig.update_xaxes(title_text="q (A-1)")
+def xrd_plot_integrated_from_dataframe(fig, df, name):
+    fig.update_xaxes(title_text="q (nm-1)")
     fig.update_yaxes(title_text="Counts")
 
     fig.add_trace(
         go.Scatter(
             x=df["q"],
-            y=df["intensity"],
+            y=df["counts"],
             mode="lines",
             line=dict(color="SlateBlue", width=2),
+            name=name
         )
     )
 
@@ -230,7 +237,6 @@ def xrd_plot_esrfimage_from_array(array, z_min, z_max):
     if z_min is None:
         z_min = np.nanmin(array)
     if z_max is None:
-
         z_max = np.nanmax(array)
 
     fig = go.Figure(
@@ -279,9 +285,6 @@ def xrd_export_sum_spectrum(xrd_group, export_path):
     return True
 
 
-
-
-
 def export_xrd_position_to_files(position_group, export_path, save_metadata = False):
     index = position_group.attrs["index"]
 
@@ -311,3 +314,177 @@ def export_xrd_position_to_files(position_group, export_path, save_metadata = Fa
             export_file.write(f"{x}\t{y}\n")
 
     return True
+
+
+def xrd_make_analysis_dataframe_from_hdf5(xrd_group):
+    data_dict_list = []
+    for position, position_group in xrd_group.items():
+        if position == "alignment_scans":
+            continue
+        instrument_group = position_group.get("instrument")
+        measurement_group = position_group.get("measurement")
+
+        counts = np.sum(measurement_group["2Dimage"][()])
+        integrated = measurement_group["integrated/counts"][()]
+        peaks, _ = find_peaks(integrated[:int(0.9*len(integrated))], prominence=3.5)
+
+        data_dict = {
+            "x_pos (mm)": instrument_group["x_pos"][()],
+            "y_pos (mm)": instrument_group["y_pos"][()],
+            "ignored": position_group.attrs["ignored"],
+            "counts": counts,
+            "peaks": len(peaks)
+        }
+
+        data_dict_list.append(data_dict)
+    results_df = pd.DataFrame(data_dict_list)
+
+    return results_df
+
+
+def esrf_check_if_alignment(hdf5_group):
+    """
+    Check if a given group is an alignment scan or not
+
+    @param:
+    dataset_group (h5py.Group): dataset group
+
+    @return:
+    Bool: True if the group is an alignment scan, False otherwise
+    str: The type of alignment scan, th or tsz. If False, returns None
+    """
+    title = str(hdf5_group["title"][()])
+
+    if "ascan" in title or "fscan" in title:
+        if "th" in title:
+            return True, "th"
+        if "tsz" in title:
+            return True, "tsz"
+
+    return False, None
+
+
+def xrd_get_position_group_from_nexus(hdf5_file, target_x, target_y):
+    for position, position_group in hdf5_file.items():
+        test = esrf_check_if_alignment(position_group)
+        if not test:
+            positioners_group = position_group.get("instrument/positioners")
+            if (
+                positioners_group["xsamp"][()] == target_x
+                and positioners_group["ysamp"][()] == target_y
+            ):
+                return position_group
+    return None
+
+def xrd_get_image_from_nexus(xrd_group, target_x, target_y):
+    position_group = xrd_get_position_group_from_nexus(xrd_group, target_x, target_y)
+    measurement_group = position_group.get("measurement")
+    image_array = measurement_group["CdTe"][0]
+    return image_array
+
+def xrd_get_integrated_from_nexus(xrd_group, target_x, target_y):
+    position_group = xrd_get_position_group_from_nexus(xrd_group, target_x, target_y)
+    integrated_group = position_group.get("CdTe_integrate/integrated")
+
+    q_array = integrated_group["q"][()]
+    intensity_array = integrated_group["intensity"][()]
+
+    measurement_dataframe = pd.DataFrame({
+        "q": q_array,
+        "intensity": intensity_array,
+    })
+
+    return measurement_dataframe
+
+def xrd_make_analysis_dataframe_from_nexus(xrd_group):
+    data_dict_list = []
+    for position, position_group in xrd_group.items():
+        test, _ = esrf_check_if_alignment(position_group)
+        if test:
+            continue
+        positioners_group = position_group.get("instrument/positioners")
+        measurement_group = position_group.get("measurement")
+        integrated_group = position_group.get("CdTe_integrate/integrated")
+
+        counts = np.sum(measurement_group["CdTe"][0])
+        integrated = integrated_group["intensity"][()]
+        peaks, _ = find_peaks(integrated[:int(0.9*len(integrated))], prominence=3.5)
+
+        data_dict = {
+            "x_pos (mm)": positioners_group["xsamp"][()],
+            "y_pos (mm)": positioners_group["ysamp"][()],
+            "ignored": position_group.attrs["ignored"],
+            "counts": counts,
+            "peaks": len(peaks)
+        }
+
+        data_dict_list.append(data_dict)
+    results_df = pd.DataFrame(data_dict_list)
+
+    return results_df
+
+
+def xrd_pyfai_medfilt1d(poni, image, points, percentile=(0, 99.9)):
+    integrated_dict = {}
+
+    reintegrated = poni.medfilt1d_ng(image, points, method="no_csr_cython", percentile=percentile, unit='q_nm^-1')
+    q = reintegrated[0]
+    tth = xrd_q_tth(q, energy=25)
+
+    I = reintegrated[1]
+
+    I = I/np.sum(I)
+    counts = I * np.sum(image)
+
+    config = {
+            "function": "medfilt1d_ng",
+            "npt": str(points),
+            "method": "no_csr_cython",
+            "percentile": str(percentile),
+            "detector": str(poni.detector.__class__.__name__),
+            "distance": str(poni.dist),
+            "wavelength": str(poni.wavelength),
+            "poni1": str(poni._poni1),
+            "poni2": str(poni._poni2),
+            "rot1": str(poni._rot1),
+            "rot2": str(poni._rot2),
+            "rot3": str(poni._rot3)
+        }
+
+    integrated_dict["q"] = q
+    integrated_dict["tth"] = tth
+    integrated_dict["I"] = I
+    integrated_dict["counts"] = counts
+    integrated_dict["config"] = config
+    integrated_dict["version"] = pyFAI.version
+
+    return integrated_dict
+
+
+def xrd_write_integrated_to_hdf5(position_group, reintegrated_dict, overwrite=True):
+    if overwrite:
+        del position_group["measurement/integrated"]
+    else:
+        rename_group(position_group["measurement/integrated"], "integrated", "old_integrated")
+
+    integrated_group = position_group["measurement"].create_group("integrated")
+
+    integrated_group.create_dataset("intensity", data=reintegrated_dict["I"])
+    integrated_group.create_dataset("counts", data=reintegrated_dict["counts"])
+    integrated_group.create_dataset("q", data=reintegrated_dict["q"])
+    integrated_group.create_dataset("tth", data=reintegrated_dict["tth"])
+
+    instrument_group = position_group["instrument"].create_group("integrated")
+
+    config_group = instrument_group.create_group("configuration")
+    config_group.create_dataset("data", data=json.dumps(reintegrated_dict["config"]))
+    config_group.create_dataset("type", data="DaHU reintegrated")
+
+    integrated_group.create_dataset("program", data="pyFAI")
+    integrated_group.create_dataset("version", data=reintegrated_dict["version"])
+
+
+
+
+
+

@@ -1,10 +1,12 @@
+import os
+
 from dash import html, dcc, Input, Output, State, ctx
 
 from ..functions.functions_shared import *
 from ..functions.functions_xrd import *
 
 
-def callbacks_xrd(app, children_xrd):
+def callbacks_xrd(app):
 
     # Callback to update current position
     @app.callback(
@@ -27,97 +29,117 @@ def callbacks_xrd(app, children_xrd):
             Output("xrd_select_dataset", "options"),
             Output("xrd_select_dataset", "value"),
         ],
-        Input("hdf5_path_store", "data"),
+        Input("xrd_current_path_store", "data"),
+        State("xrd_nexus_mode_store", "data"),
     )
     @check_conditions(xrd_conditions, hdf5_path_index=0)
-    def xrd_scan_hdf5_for_datasets(hdf5_path):
-        with h5py.File(hdf5_path, "r") as hdf5_file:
-            dataset_list = get_hdf5_datasets(hdf5_file, dataset_type="xrd")
-
+    def xrd_scan_hdf5_for_datasets(hdf5_path, nexus_mode):
+        if nexus_mode:
+            # No datasets in esrf mode, return the root group
+            dataset_list = ["/"]
+        else:
+            with h5py.File(hdf5_path, "r") as hdf5_file:
+                dataset_list = get_hdf5_datasets(hdf5_file, dataset_type="xrd")
         return dataset_list, dataset_list[0]
 
-    # Callback for heatmap selection
+    # Reads the given dataset into a DataFrame, then serialize it to json.
+    # Returns the json and the columns of the df as options for the plot selection
+    @app.callback(
+        [Output("xrd_results_store", "data"),
+         Output("xrd_heatmap_select", "options"),
+         Output("xrd_heatmap_select", "value")],
+        Input("xrd_select_dataset", "value"),
+        Input("xrd_analysis_toggle", "value"),
+        State("xrd_current_path_store", "data"),
+        State("xrd_nexus_mode_store", "data"),
+    )
+    @check_conditions(xrd_conditions, hdf5_path_index=2)
+    def xrd_read_dataset_into_store(selected_dataset, analysis_toggle, hdf5_path, nexus_mode):
+        with h5py.File(hdf5_path, "r") as hdf5_file:
+            xrd_group = hdf5_file.get(selected_dataset)
+            if analysis_toggle:
+                if nexus_mode:
+                    xrd_make_analysis_dataframe_from_nexus(xrd_group)
+                else:
+                    xrd_df = xrd_make_analysis_dataframe_from_hdf5(xrd_group)
+            else:
+                xrd_df = xrd_make_results_dataframe_from_hdf5(xrd_group)
+
+            if xrd_df is None:
+                raise PreventUpdate
+
+            xrd_df_json = xrd_df.to_json(orient="split")
+            # First three columns are x_pos, y_pos and the ignored tag
+            options = list(xrd_df.columns[3:])
+
+        return xrd_df_json, options, None
+
+    # Reads from the serialized dataframe in store, and plots the heatmap
+    # Handles heatmap plotting options such as colorbar values and precision
+    # Returns a figure and the colorbar values
     @app.callback(
         [
             Output("xrd_heatmap", "figure", allow_duplicate=True),
             Output("xrd_heatmap_min", "value"),
             Output("xrd_heatmap_max", "value"),
-            Output("xrd_heatmap_select", "options"),
         ],
         Input("xrd_heatmap_select", "value"),
         Input("xrd_heatmap_min", "value"),
         Input("xrd_heatmap_max", "value"),
         Input("xrd_heatmap_precision", "value"),
         Input("xrd_heatmap_edit", "value"),
-        Input("hdf5_path_store", "data"),
-        Input("xrd_select_dataset", "value"),
+        State("xrd_current_path_store", "data"),
+        State("xrd_results_store", "data"),
         prevent_initial_call=True,
     )
     @check_conditions(xrd_conditions, hdf5_path_index=5)
-    def xrd_update_heatmap(
-        heatmap_select,
-        z_min,
-        z_max,
-        precision,
-        edit_toggle,
-        hdf5_path,
-        selected_dataset,
-    ):
-        with h5py.File(hdf5_path, "r") as hdf5_file:
-            xrd_group = hdf5_file[selected_dataset]
+    def xrd_update_heatmap(heatmap_select,z_min,z_max,precision,edit_toggle,hdf5_path,xrd_df_json):
+        xrd_df = pd.read_json(StringIO(xrd_df_json), orient="split")
+        # Reset colorbar bounds when needed
+        if ctx.triggered_id in [
+            "xrd_heatmap_select",
+            "xrd_heatmap_edit",
+            "xrd_heatmap_precision",
+        ]:
+            z_min = None
+            z_max = None
 
-            if ctx.triggered_id in [
-                "xrd_heatmap_select",
-                "xrd_heatmap_edit",
-                "xrd_heatmap_precision",
-            ]:
-                z_min = None
-                z_max = None
+        masking = True
+        if edit_toggle in ["edit", "unfiltered"]:
+            masking = False
 
-            masking = True
-            if edit_toggle in ["edit", "unfiltered"]:
-                masking = False
+        colorscale = "Plasma"
+        scaling = 1
+        if heatmap_select is not None:
+            name, unit = split_name_and_unit(heatmap_select)
 
-            xrd_df = xrd_make_results_dataframe_from_hdf5(xrd_group)
+            if "phase_fraction" in name:
+                unit = "wt.%"
+                scaling = 100
+            plot_title = f"{name} XRD map"
+            colorbar_title = f"{unit}"
 
-            colorscale = "Plasma"
-            scaling = 1
-            if heatmap_select is not None and selected_dataset is not None:
-                name, unit = split_name_and_unit(heatmap_select)
+        else:
+            plot_title = ""
+            colorbar_title = ""
 
-                if name.endswith("A") or name.endswith("B") or name.endswith("C"):
-                    colorscale = "Plasma"
-                if "phase_fraction" in name:
-                    unit = "wt.%"
-                    scaling = 100
-                plot_title = f"{name} XRD map <br>{selected_dataset}"
-                colorbar_title = f"{unit}"
+        fig = make_heatmap_from_dataframe(
+            xrd_df,
+            values=heatmap_select,
+            z_min=z_min,
+            z_max=z_max,
+            plot_title=plot_title,
+            colorbar_title=colorbar_title,
+            precision=precision,
+            masking=masking,
+            colorscale=colorscale,
+            scaling=scaling,
+        )
 
-            else:
-                plot_title = ""
-                colorbar_title = ""
+        z_min = np.round(fig.data[0].zmin, precision)
+        z_max = np.round(fig.data[0].zmax, precision)
 
-            fig = make_heatmap_from_dataframe(
-                xrd_df,
-                values=heatmap_select,
-                z_min=z_min,
-                z_max=z_max,
-                plot_title=plot_title,
-                colorbar_title=colorbar_title,
-                precision=precision,
-                masking=masking,
-                colorscale=colorscale,
-                scaling=scaling,
-            )
-
-            z_min = np.round(fig.data[0].zmin, precision)
-            z_max = np.round(fig.data[0].zmax, precision)
-
-            options = list(xrd_df.columns[3:])
-            if "default" in options:
-                options.remove("default")
-
-            return fig, z_min, z_max, options
+        return fig, z_min, z_max
 
     @app.callback(
         [
@@ -133,11 +155,23 @@ def callbacks_xrd(app, children_xrd):
         Input("xrd_fits_select", "value"),
         Input("xrd_image_min", "value"),
         Input("xrd_image_max", "value"),
-        Input("hdf5_path_store", "data"),
+        Input("xrd_current_path_store", "data"),
+        State("xrd_plot_append_toggle", "value"),
+        State("xrd_plot", "figure"),
+        State("xrd_nexus_mode_store", "data"),
     )
     @check_conditions(xrd_conditions, hdf5_path_index=6)
     def xrd_update_plot(
-        position, plot_select, selected_dataset, fits_select, z_min, z_max, hdf5_path
+            position,
+            plot_select,
+            selected_dataset,
+            fits_select,
+            z_min,
+            z_max,
+            hdf5_path,
+            append_toggle,
+            current_figure,
+            nexus_mode,
     ):
         if position is None:
             raise PreventUpdate
@@ -147,26 +181,38 @@ def callbacks_xrd(app, children_xrd):
 
         options = []
 
-        fig = go.Figure()
+        if not append_toggle:
+            fig = go.Figure()
+        else:
+            fig = go.Figure(current_figure)
 
         if not plot_select == "image":
             z_min = None
             z_max = None
 
+        colors = cycle(px.colors.qualitative.Plotly)
         with h5py.File(hdf5_path, "r") as hdf5_file:
             xrd_group = hdf5_file[selected_dataset]
             if plot_select == "integrated":
-                measurement_df = xrd_get_integrated_from_hdf5(
-                    xrd_group, target_x, target_y
-                )
-                fig = xrd_plot_integrated_from_dataframe(fig, measurement_df)
+                if nexus_mode:
+                    measurement_df = xrd_get_integrated_from_nexus(xrd_group, target_x, target_y)
+                else:
+                    measurement_df = xrd_get_integrated_from_hdf5(xrd_group, target_x, target_y)
+
+                fig = xrd_plot_integrated_from_dataframe(fig, measurement_df, name=f"{int(round(target_x))}, {int(round(target_y))}")
                 fig.update_layout(
                     plot_layout(
-                        title=f"Integrated spectrum <br>x = {int(round(target_x))}, y = {int(round(target_y))}"
+                        title=f"Integrated spectrum <br>x = {int(round(target_x))}, y = {int(round(target_y))}",
+                        showlegend=True
                     ),
                 )
+                for i, trace in enumerate(fig.data):
+                    trace.line.color = next(colors)
+
 
             if plot_select == "fitted":
+                if nexus_mode:
+                    raise PreventUpdate
                 fits_df = xrd_get_fits_from_hdf5(xrd_group, target_x, target_y)
                 options = fits_df.columns[1:]
                 fig = xrd_plot_fits_from_dataframe(fig, fits_df, fits_select)
@@ -178,11 +224,15 @@ def callbacks_xrd(app, children_xrd):
                 )
 
             if plot_select == "image":
-                image_array = xrd_get_image_from_hdf5(xrd_group, target_x, target_y)
-                if xrd_group.attrs["instrument"] == "bm02 esrf":
+                if nexus_mode:
+                    image_array = xrd_get_image_from_nexus(xrd_group, target_x, target_y)
                     fig = xrd_plot_esrfimage_from_array(image_array, z_min, z_max)
                 else:
-                    fig = xrd_plot_xrdimage_from_array(image_array, z_min, z_max)
+                    image_array = xrd_get_image_from_hdf5(xrd_group, target_x, target_y)
+                    if xrd_group.attrs["instrument"] == "bm02 esrf":
+                        fig = xrd_plot_esrfimage_from_array(image_array, z_min, z_max)
+                    else:
+                        fig = xrd_plot_xrdimage_from_array(image_array, z_min, z_max)
 
                 z_min = np.round(fig.data[0].zmin, 0)
                 z_max = np.round(fig.data[0].zmax, 0)
@@ -203,13 +253,14 @@ def callbacks_xrd(app, children_xrd):
         Output("xrd_text_box", "children", allow_duplicate=True),
         Input("xrd_heatmap", "clickData"),
         State("xrd_heatmap_edit", "value"),
-        State("hdf5_path_store", "data"),
+        State("xrd_current_path_store", "data"),
         State("xrd_select_dataset", "value"),
+        State("xrd_nexus_mode_store", "data"),
         prevent_initial_call=True,
     )
     @check_conditions(xrd_conditions, hdf5_path_index=2)
-    def heatmap_edit_mode(heatmap_click, edit_toggle, hdf5_path, selected_dataset):
-        if edit_toggle != "edit":
+    def heatmap_edit_mode(heatmap_click, edit_toggle, hdf5_path, selected_dataset, nexus_mode):
+        if edit_toggle != "edit" or nexus_mode:
             raise PreventUpdate
 
         target_x = heatmap_click["points"][0]["x"]
@@ -226,17 +277,18 @@ def callbacks_xrd(app, children_xrd):
                 return f"{target_x}, {target_y} ignore set to False"
 
 
-
-
     @app.callback(
         Output("xrd_text_box", "children", allow_duplicate=True),
         Input("xrd_export_button", "n_clicks"),
-        State("hdf5_path_store", "data"),
+        State("xrd_current_path_store", "data"),
         State("xrd_select_dataset", "value"),
+        State("xrd_nexus_mode_store", "data"),
         prevent_initial_call=True,
     )
     @check_conditions(xrd_conditions, hdf5_path_index=1)
-    def xrd_export_all(n_clicks, hdf5_path, selected_dataset):
+    def xrd_export_all(n_clicks, hdf5_path, selected_dataset, nexus_mode):
+        if nexus_mode:
+            raise PreventUpdate
         if n_clicks > 0:
             hdf5_path = Path(hdf5_path)
             export_path = hdf5_path.parent / selected_dataset
@@ -254,3 +306,109 @@ def callbacks_xrd(app, children_xrd):
                     export_xrd_position_to_files(position_group, export_path)
 
             return f"Successfully exported to {export_path}"
+
+    @app.callback(
+        Output("xrd_nexus_mode_store", "data"),
+        Input("xrd_path_store", "data"),
+        State("xrd_isolate_toggle", "value"),
+    )
+    def xrd_set_nexus_mode(xrd_path, isolate_toggle):
+        if not isolate_toggle and not xrd_path:
+            raise PreventUpdate
+        if xrd_path.endswith(".h5"):
+            return True
+        else:
+            return False
+
+    @app.callback(
+        [Output("browser_popup", "is_open", allow_duplicate=True),
+         Output("xrd_path_store", "data", allow_duplicate=True),
+         Output("browser_source_id", 'data', allow_duplicate=True)],
+        Input("xrd_path_box", "n_clicks"),
+        Input("browser_select_button", "n_clicks"),
+        State("browser_popup", "is_open"),
+        State("xrd_path_store", "data"),
+        State("stored_cwd", "data"),
+        State("xrd_isolate_toggle", "value"),
+        State("browser_source_id", "data"),
+        prevent_initial_call=True,
+    )
+    def toggle_xrd_browser(open_click, select_click, is_open, xrd_path, stored_cwd, isolate_toggle, browser_source_id):
+        if not isolate_toggle:
+            raise PreventUpdate
+        if ctx.triggered_id == "xrd_path_box" and open_click > 0 and not is_open:
+            return True, xrd_path, "xrd_path_box"
+        if (ctx.triggered_id == "browser_select_button" and select_click > 0
+                and is_open and browser_source_id == "xrd_path_box"):
+            return False, stored_cwd, None
+
+    @app.callback(
+        [Output("xrd_path_box", "children", allow_duplicate=True),
+         Output("xrd_current_path_store", "data", allow_duplicate=True)],
+        Input("xrd_path_store", "data"),
+        Input("hdf5_path_store", "data"),
+        Input("xrd_isolate_toggle", "value"),
+        prevent_initial_call=True,
+    )
+    def xrd_update_path_box(xrd_path, hdf5_path, isolate_toggle):
+        if isolate_toggle:
+            if xrd_path is not None:
+                return str(xrd_path), xrd_path
+            else:
+                return "No valid file selected", None
+        else:
+            return str(hdf5_path), hdf5_path
+
+    @app.callback(
+        Output("pyfai_popup", "is_open", allow_duplicate=True),
+        Input("xrd_pyfai_button", "n_clicks"),
+        State("pyfai_popup", "is_open"),
+        prevent_initial_call=True,
+    )
+    def xrd_toggle_pyfai_popup(open_click, is_open):
+        if not is_open and open_click > 0:
+            return True
+        elif is_open:
+            raise PreventUpdate
+
+
+    @app.callback(
+        [Output("xrd_text_box", "children", allow_duplicate=True),
+         Output("pyfai_popup", "is_open", allow_duplicate=True)],
+        Input("pyfai_integrate_button", "n_clicks"),
+        State("hdf5_path_store", "data"),
+        State("xrd_select_dataset", "value"),
+        State("pyfai_poni_select", "value"),
+        State("pyfai_function_select", "value"),
+        State("pyfai_points", "value"),
+        prevent_initial_call=True,
+    )
+    def xrd_reintegrate_dataset(n_clicks, hdf5_file, selected_dataset, poni_select, function_select, points):
+        if n_clicks > 0:
+            poni_path = Path(os.getcwd() + "/calibrations/esrf_poni/" + poni_select).with_suffix(".poni")
+            poni = pyFAI.load(str(poni_path))
+
+            with h5py.File(hdf5_file, "a") as file:
+                dataset = file[selected_dataset]
+                for position, position_group in dataset.items():
+                    if position == "alignment_scans":
+                        continue
+                    image = position_group["measurement/2Dimage"][()]
+
+                    if function_select == "integrate1d":
+                        raise TypeError("Integrate1d not supported yet")
+
+                    elif function_select == "medfilt1d":
+                        reintegrated_dict = xrd_pyfai_medfilt1d(poni, image, points)
+
+                    xrd_write_integrated_to_hdf5(position_group, reintegrated_dict, overwrite=True)
+
+                file.flush()
+
+            return "Integration successful", False
+
+
+
+
+
+

@@ -168,3 +168,5 @@ def update_dektak_hdf5(dektak_group):
 
         # Update the version tag to the current version
         dektak_group.attrs["profil_writer"] = PROFIL_WRITER_VERSION
+
+    return True

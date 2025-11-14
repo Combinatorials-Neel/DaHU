@@ -5,7 +5,7 @@ from ..hdf5_compilers.hdf5compile_moke import *
 """Callbacks for MOKE tab"""
 
 
-def callbacks_moke(app, children_moke):
+def callbacks_moke(app):
 
     # Callback to update moke plot based on heatmap click position
     @app.callback(
@@ -36,6 +36,30 @@ def callbacks_moke(app, children_moke):
             dataset_list = get_hdf5_datasets(hdf5_file, dataset_type="moke")
 
         return dataset_list, dataset_list[0]
+    
+    # Reads the given dataset into a DataFrame, then serialize it to json.
+    # Returns the json and the columns of the df as options for the plot selection
+    @app.callback(
+        [Output("moke_results_store", "data"),
+         Output("moke_heatmap_select", "options"),
+         Output("moke_heatmap_select", "value")],
+        Input("moke_select_dataset", "value"),
+        State("hdf5_path_store", "data"),
+    )
+    @check_conditions(moke_conditions, hdf5_path_index=1)
+    def moke_read_dataset_into_store(selected_dataset, hdf5_path):
+        with h5py.File(hdf5_path, "r") as hdf5_file:
+            moke_group = hdf5_file.get(selected_dataset)
+            moke_df = moke_make_results_dataframe_from_hdf5(moke_group)
+
+            if moke_df is None:
+                raise PreventUpdate
+
+            moke_df_json = moke_df.to_json(orient="split")
+            # First three columns are x_pos, y_pos and the ignored tag
+            options = list(moke_df.columns[3:])
+
+        return moke_df_json, options, None
 
     # Callback for heatmap selection
     @app.callback(
@@ -43,71 +67,55 @@ def callbacks_moke(app, children_moke):
             Output("moke_heatmap", "figure", allow_duplicate=True),
             Output("moke_heatmap_min", "value"),
             Output("moke_heatmap_max", "value"),
-            Output("moke_heatmap_select", "options"),
         ],
         Input("moke_heatmap_select", "value"),
         Input("moke_heatmap_min", "value"),
         Input("moke_heatmap_max", "value"),
         Input("moke_heatmap_precision", "value"),
         Input("moke_heatmap_edit", "value"),
-        Input("hdf5_path_store", "data"),
-        Input("moke_select_dataset", "value"),
+        State("hdf5_path_store", "data"),
+        State("moke_results_store", "data"),
         prevent_initial_call=True,
     )
     @check_conditions(moke_conditions, hdf5_path_index=5)
-    def moke_update_heatmap(
-        heatmap_select,
-        z_min,
-        z_max,
-        precision,
-        edit_toggle,
-        hdf5_path,
-        selected_dataset,
-    ):
-        with h5py.File(hdf5_path, "r") as hdf5_file:
-            moke_group = hdf5_file[selected_dataset]
+    def moke_update_heatmap(heatmap_select,z_min,z_max,precision,edit_toggle,hdf5_path,moke_df_json):
+        moke_df = pd.read_json(StringIO(moke_df_json), orient="split")
+        # Reset colorbar bounds when needed
+        if ctx.triggered_id in [
+            "moke_heatmap_select",
+            "moke_heatmap_edit",
+            "moke_heatmap_precision",
+        ]:
+            z_min = None
+            z_max = None
 
-            if ctx.triggered_id in [
-                "moke_heatmap_select",
-                "moke_heatmap_edit",
-                "moke_heatmap_precision",
-            ]:
-                z_min = None
-                z_max = None
+        masking = True
+        if edit_toggle in ["edit", "unfiltered"]:
+            masking = False
 
-            masking = True
-            if edit_toggle in ["edit", "unfiltered"]:
-                masking = False
+        if heatmap_select is not None:
+            name, unit = split_name_and_unit(heatmap_select)
+            plot_title = f"{name} MOKE map"
+            colorbar_title = f"{unit}"
+        else:
+            plot_title = ""
+            colorbar_title = ""
 
-            moke_df = moke_make_results_dataframe_from_hdf5(moke_group)
+        fig = make_heatmap_from_dataframe(
+            moke_df,
+            values=heatmap_select,
+            z_min=z_min,
+            z_max=z_max,
+            plot_title=plot_title,
+            colorbar_title=colorbar_title,
+            precision=precision,
+            masking=masking,
+        )
 
-            if heatmap_select is not None and selected_dataset is not None:
-                name, unit = split_name_and_unit(heatmap_select)
-                plot_title = f"{name} MOKE map <br>{selected_dataset}"
-                colorbar_title = f"{unit}"
-            else:
-                plot_title = ""
-                colorbar_title = ""
+        z_min = np.round(fig.data[0].zmin, precision)
+        z_max = np.round(fig.data[0].zmax, precision)
 
-            fig = make_heatmap_from_dataframe(
-                moke_df,
-                values=heatmap_select,
-                z_min=z_min,
-                z_max=z_max,
-                plot_title=plot_title,
-                colorbar_title=colorbar_title,
-                precision=precision,
-                masking=masking,
-            )
-
-            z_min = np.round(fig.data[0].zmin, precision)
-            z_max = np.round(fig.data[0].zmax, precision)
-
-            options = list(moke_df.columns[3:])
-            if "default" in options:
-                options.remove("default")
-
-            return fig, z_min, z_max, options
+        return fig, z_min, z_max
 
     # Profile plot
     @app.callback(
@@ -298,154 +306,3 @@ def callbacks_moke(app, children_moke):
             else:
                 position_group.attrs["ignored"] = False
                 return f"{target_x}, {target_y} ignore set to False"
-
-    #
-    #
-    #
-    #
-    #
-    # # Callback for data plot
-    # @app.callback(
-    #     Output('moke_plot', 'figure'),
-    #     Input('moke_plot_select', 'value'),
-    #     Input('moke_plot_dropdown', 'value'),
-    #     Input('moke_position_store', 'data'),
-    #     Input('moke_data_treatment_store', 'data'),
-    #     State('moke_path_store', 'data'),
-    #     State('moke_heatmap_select', 'value'),
-    #     State('moke_heatmap_edit', 'value'),
-    # )
-    #
-    # def update_plot(selected_plot, measurement_id, position, treatment_dict, folderpath,  heatmap_select, edit_toggle):
-    #     if folderpath is None:
-    #         raise PreventUpdate
-    #
-    #     if edit_toggle == 'edit':
-    #         raise PreventUpdate
-    #
-    #     folderpath = Path(folderpath)
-    #     if position is None:
-    #         fig = blank_plot()
-    #     else:
-    #         target_x = position[0]
-    #         target_y = position[1]
-    #         data = load_target_measurement_files(folderpath, target_x, target_y, measurement_id)
-    #         data = treat_data(data, folderpath, treatment_dict)
-    #         if selected_plot == 'Loop':
-    #             fig = loop_plot(data)
-    #         elif selected_plot == 'Raw data':
-    #             fig = data_plot(data)
-    #         elif selected_plot == 'Loop + Derivative':
-    #             fig = loop_derivative_plot(data)
-    #         elif selected_plot == 'Loop + Intercept':
-    #             fig = loop_intercept_plot(data, folderpath, treatment_dict)
-    #         else:
-    #             fig = blank_plot()
-    #
-    #         if heatmap_select == 'Coercivity max(dM/dH)' and position is not None:
-    #             pos, neg = calc_derivative_coercivity(data)
-    #             fig.add_vline(x=pos, line_width = 2, line_dash = 'dash', line_color = 'Crimson')
-    #             fig.add_vline(x=neg, line_width=2, line_dash='dash', line_color='Crimson')
-    #         if heatmap_select == 'Coercivity M = 0' and position is not None:
-    #             pos, neg = calc_mzero_coercivity(data)
-    #             fig.add_vline(x=pos, line_width=2, line_dash='dash', line_color='Crimson')
-    #             fig.add_vline(x=neg, line_width=2, line_dash='dash', line_color='Crimson')
-    #
-    #     return fig
-    #
-    #
-    # # Callback for heatmap plot selection
-    # @app.callback(
-    #     [Output('moke_heatmap', 'figure', allow_duplicate=True),
-    #      Output('moke_heatmap_min', 'value'),
-    #      Output('moke_heatmap_max', 'value')],
-    #     Input('moke_heatmap_select', 'value'),
-    #     Input('moke_database_path_store', 'data'),
-    #     Input('moke_heatmap_min', 'value'),
-    #     Input('moke_heatmap_max', 'value'),
-    #     Input('moke_heatmap_edit','value'),
-    #     prevent_initial_call=True
-    # )
-    # def update_heatmap(selected_plot, database_path, z_min, z_max, edit_toggle):
-    #
-    #     if database_path is None:
-    #         return go.Figure(layout=heatmap_layout('No database found')), None, None
-    #
-    #     database_path = Path(database_path)
-    #
-    #     if ctx.triggered_id in ['moke_heatmap_select', 'moke_heatmap_edit']:
-    #         z_min = None
-    #         z_max = None
-    #
-    #     masking = True
-    #     if edit_toggle in ['edit', 'unfiltered']:
-    #         masking = False
-    #
-    #     heatmap = heatmap_plot(database_path, mode=selected_plot, title=database_path.name.strip('_database.csv'),
-    #                            z_min=z_min, z_max=z_max, masking=masking)
-    #
-    #     z_min = significant_round(heatmap.data[0].zmin, 3)
-    #     z_max = significant_round(heatmap.data[0].zmax, 3)
-    #
-    #     return heatmap, z_min, z_max
-    #
-    #
-    # # Callback to load measurements in dropdown menu
-    # @app.callback(
-    #     Output('moke_plot_dropdown', 'options'),
-    #     Output('moke_plot_dropdown', 'value'),
-    #     Input('moke_path_store', 'data')
-    # )
-    #
-    # def update_plot_dropdown(folderpath):
-    #     if folderpath is None:
-    #         raise PreventUpdate
-    #     folderpath = Path(folderpath)
-    #     number = read_info_file(folderpath)['shots_per_point']
-    #     options=[{'label': 'Average', 'value': 0}]
-    #     for n in range(number+1):
-    #         if n != 0:
-    #             options.append({'label': n, 'value': n})
-    #     return options, 0
-    #
-    #
-    # # Callback to deal with heatmap edit mode
-    # @app.callback(
-    #     Output('moke_text_box', 'children', allow_duplicate=True),
-    #     Input('moke_heatmap', 'clickData'),
-    #     State('moke_heatmap_edit', 'value'),
-    #     State('moke_database_path_store', 'data'),
-    #     State('moke_database_metadata_store', 'data'),
-    #     prevent_initial_call=True
-    # )
-    #
-    # def heatmap_edit_mode(clickData, edit_toggle, database_path, metadata):
-    #     database_path = Path(database_path)
-    #
-    #     if edit_toggle != 'edit':
-    #         raise PreventUpdate
-    #
-    #     target_x = clickData['points'][0]['x']
-    #     target_y = clickData['points'][0]['y']
-    #
-    #     database = pd.read_csv(database_path, comment='#')
-    #
-    #     test = (database['x_pos (mm)'] == target_x) & (database['y_pos (mm)'] == target_y)
-    #     row_number = (database[test].index[0])
-    #
-    #     try:
-    #         if database.loc[row_number, 'Ignore'] == 0:
-    #             database.loc[row_number, 'Ignore'] = 1
-    #             save_with_metadata(database, database_path, metadata)
-    #             return f'Point x = {target_x}, y = {target_y} set to ignore', True
-    #
-    #         else:
-    #             database.loc[row_number, 'Ignore'] = 0
-    #             save_with_metadata(database, database_path, metadata)
-    #             return f'Point x = {target_x}, y = {target_y} no longer ignored', True
-    #
-    #     except KeyError:
-    #         return 'Invalid database. Please delete and reload to make a new one', False
-    #
-    #
-    #

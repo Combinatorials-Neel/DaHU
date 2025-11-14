@@ -6,7 +6,6 @@ from ..hdf5_compilers.hdf5compile_profil import *
 
 """Callbacks for profil tab"""
 
-
 def callbacks_profil(app):
 
     # Callback to update current position based on heatmap click
@@ -41,51 +40,52 @@ def callbacks_profil(app):
         return dataset_list, dataset_list[0]
 
 
-    # Callback to check if HDF5 has results
+    # Reads the given dataset into a DataFrame, then serialize it to json.
+    # Returns the json and the columns of the df as options for the plot selection
     @app.callback(
-        Output("profil_text_box", "children", allow_duplicate=True),
+        [Output("profil_results_store", "data"),
+         Output("profil_heatmap_select", "options"),
+         Output("profil_heatmap_select", "value")],
         Input("profil_select_dataset", "value"),
         State("hdf5_path_store", "data"),
-        prevent_initial_call=True,
     )
     @check_conditions(profil_conditions, hdf5_path_index=1)
-    def profil_check_for_results(selected_dataset, hdf5_path):
-        if selected_dataset is None:
-            raise PreventUpdate
-
+    def profil_read_dataset_into_store(selected_dataset, hdf5_path):
         with h5py.File(hdf5_path, "r") as hdf5_file:
-            profil_group = hdf5_file[selected_dataset]
-            if check_group_for_results(profil_group):
-                return "Found results for all points"
-            return "No results found"
+            profil_group = hdf5_file.get(selected_dataset)
+            profil_df = profil_make_results_dataframe_from_hdf5(profil_group)
 
-    # Callback for heatmap plot selection
+            if profil_df is None:
+                raise PreventUpdate
+
+            profil_df_json = profil_df.to_json(orient="split")
+            # First three columns are x_pos, y_pos and the ignored tag
+            options = list(profil_df.columns[3:])
+
+        return profil_df_json, options, None
+
+    # Reads from the serialized dataframe in store, and plots the heatmap
+    # Handles heatmap plotting options such as colorbar values and precision
+    # Returns a figure and the colorbar values
     @app.callback(
         [
             Output("profil_heatmap", "figure", allow_duplicate=True),
             Output("profil_heatmap_min", "value"),
             Output("profil_heatmap_max", "value"),
-            Output("profil_heatmap_select", "options"),
         ],
         Input("profil_heatmap_select", "value"),
         Input("profil_heatmap_min", "value"),
         Input("profil_heatmap_max", "value"),
         Input("profil_heatmap_precision", "value"),
         Input("profil_heatmap_edit", "value"),
-        Input("hdf5_path_store", "data"),
-        Input("profil_select_dataset", "value"),
+        State("hdf5_path_store", "data"),
+        State("profil_results_store", "data"),
         prevent_initial_call=True,
     )
     @check_conditions(profil_conditions, hdf5_path_index=5)
-    def profil_update_heatmap(
-        heatmap_select,
-        z_min,
-        z_max,
-        precision,
-        edit_toggle,
-        hdf5_path,
-        selected_dataset,
-    ):
+    def profil_update_heatmap(heatmap_select,z_min,z_max,precision,edit_toggle,hdf5_path,profil_df_json):
+        profil_df = pd.read_json(StringIO(profil_df_json), orient="split")
+        # Reset colorbar bounds when needed
         if ctx.triggered_id in [
             "profil_heatmap_select",
             "profil_heatmap_edit",
@@ -98,12 +98,8 @@ def callbacks_profil(app):
         if edit_toggle in ["edit", "unfiltered"]:
             masking = False
 
-        with h5py.File(hdf5_path, "r") as hdf5_file:
-            profil_group = hdf5_file[selected_dataset]
-            profil_df = profil_make_results_dataframe_from_hdf5(profil_group)
-
-        if heatmap_select is not None and selected_dataset is not None:
-            plot_title = f"Profilometry thickness map <br>{selected_dataset}"
+        if heatmap_select is not None:
+            plot_title = f"Profilometry thickness map"
             colorbar_title = "Thickness <br>(nm)"
         else:
             plot_title = ""
@@ -123,7 +119,7 @@ def callbacks_profil(app):
         z_min = np.round(fig.data[0].zmin, precision)
         z_max = np.round(fig.data[0].zmax, precision)
 
-        return fig, z_min, z_max, profil_df.columns[7:]
+        return fig, z_min, z_max
 
     # Profile plot
     @app.callback(

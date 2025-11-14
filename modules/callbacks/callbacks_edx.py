@@ -34,41 +34,29 @@ def callbacks_edx(app):
 
         return dataset_list, dataset_list[0]
     
-    
-    # Callback to check if HDF5 has results
+    # Reads the given dataset into a DataFrame, then serialize it to json.
+    # Returns the json and the columns of the df as options for the plot selection
     @app.callback(
-        Output("edx_text_box", "children", allow_duplicate=True),
+        [Output("edx_results_store", "data"),
+         Output("edx_heatmap_select", "options"),
+         Output("edx_heatmap_select", "value")],
         Input("edx_select_dataset", "value"),
         State("hdf5_path_store", "data"),
-        prevent_initial_call=True,
     )
     @check_conditions(edx_conditions, hdf5_path_index=1)
-    def edx_check_for_results(selected_dataset, hdf5_path):
-        if selected_dataset is None:
-            raise PreventUpdate
+    def edx_read_dataset_into_store(selected_dataset, hdf5_path):
+        with h5py.File(hdf5_path, "r") as hdf5_file:
+            edx_group = hdf5_file.get(selected_dataset)
+            edx_df = edx_make_results_dataframe_from_hdf5(edx_group)
 
-        with h5py.File(hdf5_path, 'r') as hdf5_file:
-            edx_group = hdf5_file[selected_dataset]
-            if check_group_for_results(edx_group):
-                return 'Found results for all points'
-            return'No results found'
-    
+            if edx_df is None:
+                raise PreventUpdate
 
-    # # Callback to get elements for the dropdown menu
-    # @app.callback(
-    #     [Output("edx_heatmap_select", "options"),
-    #      Output("edx_heatmap_select", "value")],
-    #     Input("edx_select_dataset", "value"),
-    #     State("hdf5_path_store", "data")
-    # )
-    #
-    # @check_conditions(edx_conditions, hdf5_path_index=1)
-    # def edx_update_element_list(selected_dataset, hdf5_path):
-    #     with h5py.File(hdf5_path, 'r') as hdf5_file:
-    #         edx_group = hdf5_file[selected_dataset]
-    #         edx_element_list = get_quantified_elements(edx_group)
-    #     return edx_element_list, edx_element_list[0]
-    
+            edx_df_json = edx_df.to_json(orient="split")
+            # First three columns are x_pos, y_pos and the ignored tag
+            options = list(edx_df.columns[3:])
+
+        return edx_df_json, options, None
 
     # Callback for heatmap selection
     @app.callback(
@@ -76,27 +64,20 @@ def callbacks_edx(app):
             Output("edx_heatmap", "figure", allow_duplicate=True),
             Output("edx_heatmap_min", "value"),
             Output("edx_heatmap_max", "value"),
-            Output("edx_heatmap_select", "options"),
         ],
         Input("edx_heatmap_select", "value"),
         Input("edx_heatmap_min", "value"),
         Input("edx_heatmap_max", "value"),
         Input("edx_heatmap_precision", "value"),
         Input("edx_heatmap_edit", "value"),
-        Input('hdf5_path_store', 'data'),
-        Input("edx_select_dataset", "value"),
+        State('hdf5_path_store', 'data'),
+        State("edx_results_store", "data"),
         prevent_initial_call=True,
     )
     @check_conditions(edx_conditions, hdf5_path_index=5)
-    def edx_update_heatmap(
-            heatmap_select,
-            z_min,
-            z_max,
-            precision,
-            edit_toggle,
-            hdf5_path,
-            selected_dataset):
-
+    def edx_update_heatmap(heatmap_select,z_min,z_max,precision,edit_toggle,hdf5_path,edx_df_json):
+        edx_df = pd.read_json(StringIO(edx_df_json), orient="split")
+        # Reset colorbar bounds when needed
         if ctx.triggered_id in [
             "edx_heatmap_select",
             "edx_heatmap_edit",
@@ -109,12 +90,8 @@ def callbacks_edx(app):
         if edit_toggle in ["edit", "unfiltered"]:
             masking = False
 
-        with h5py.File(hdf5_path, 'r') as hdf5_file:
-            edx_group = hdf5_file[selected_dataset]
-            edx_df = edx_make_results_dataframe_from_hdf5(edx_group)
-
-        if heatmap_select is not None and selected_dataset is not None:
-            plot_title = f"EDX composition map <br>{selected_dataset}"
+        if heatmap_select is not None:
+            plot_title = f"EDX composition map"
             colorbar_title = f"{heatmap_select.replace('Element', '')} <br>at.%"
         else:
             plot_title = ""
@@ -129,11 +106,7 @@ def callbacks_edx(app):
         z_min = np.round(fig.data[0].zmin, precision)
         z_max = np.round(fig.data[0].zmax, precision)
 
-        options = list(edx_df.columns[3:])
-        if "default" in options:
-            options.remove("default")
-
-        return fig, z_min, z_max, options
+        return fig, z_min, z_max
 
 
     # EDX plot

@@ -9,6 +9,8 @@ import pandas as pd
 import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
 from scipy.stats import linregress
+from io import StringIO
+import json
 
 
 # Decorator function to check conditions before executing callbacks, preventing errors
@@ -17,14 +19,19 @@ def check_conditions(conditions_function, hdf5_path_index):
         @functools.wraps(callback_function)
         def wrapper(*args, **kwargs):
             args = list(args)
-            args[hdf5_path_index] = Path(args[hdf5_path_index])
+            try:
+                args[hdf5_path_index] = Path(args[hdf5_path_index])
+            # Catch the error if hdf5_path is None, else raise the error
+            except TypeError as e:
+                if "NoneType" in str(e):
+                    raise PreventUpdate
+                else:
+                    raise e
             hdf5_path = args[hdf5_path_index]
             if not conditions_function(hdf5_path, *args, **kwargs):
                 raise PreventUpdate
             return callback_function(*args, **kwargs)
-
         return wrapper
-
     return decorator
 
 
@@ -105,17 +112,15 @@ def detect_measurement(filename_list: list):
         "XRD results": ["lst"],
         "Annealing": ["HIS"],
         "Magnetron": ["prp"],
-        "SQUID": ["dat"]
+        "SQUID": ["dat"],
+        "Picture": ["png, jpg, jpeg"],
+        "HT_hdf5": ["hdf5"],
     }
 
     for measurement_type, file_type in measurement_dict.items():
         for filename in filename_list:
-            if filename.startswith("."):  # Skip hidden files
-                continue
-            if (
-                filename.split(".")[-1] in file_type
-            ):  # Check extensions for correspondence to the dictionary spec
-                depth = filename.count("/")
+            if str(filename).split(".")[-1] in file_type: # Check extensions for correspondence to the dictionary spec
+                depth = str(filename).count("/")
                 return measurement_type, depth
     return None
 
@@ -352,14 +357,15 @@ def pairwise(list):
     return zip(a, a)
 
 
-def get_target_position_group(measurement_group, target_x, target_y):
-    for position, position_group in measurement_group.items():
+def get_target_position_group(dataset_group, target_x, target_y):
+    for position, position_group in dataset_group.items():
         instrument_group = position_group.get("instrument")
         if (
             instrument_group["x_pos"][()] == target_x
             and instrument_group["y_pos"][()] == target_y
         ):
             return position_group
+    raise KeyError(f"Failed to find position {(target_x, target_y)} in {dataset_group}")
 
 
 def abs_mean(value_list):
