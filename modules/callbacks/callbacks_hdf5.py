@@ -146,10 +146,17 @@ def callbacks_hdf5(app):
         Input("hdf5_upload_mode_toggle", "on"),
     )
     def toggle_upload_mode(toggle_state):
+        select_div_style = {
+            "border": "3px solid #000000",
+            "borderRadius": "4px",
+            "padding": "45px",
+            "textAlign": "center",
+        }
+
         if toggle_state:
             return {}, {"display": "none"}
         else:
-            return {"display": "none"}, {}
+            return {"display": "none"}, select_div_style
 
 
     @app.callback(

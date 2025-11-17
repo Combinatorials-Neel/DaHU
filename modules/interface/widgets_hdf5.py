@@ -26,7 +26,7 @@ def top_left_card():
                     children=[
                         du.Upload(
                             id="hdf5_upload",
-                            text="Drag and Drop or click to browse",
+                            text="Upload a file. Drag and Drop or click to browse",
                             filetypes=["zip", "h5", "hdf5", "HIS", "dat", "jpg", "jpeg", "png"],
                             upload_id="temp",
                         ),
@@ -36,14 +36,9 @@ def top_left_card():
                 html.Div(
                     id="hdf5_select_div",
                     children=[
-                        html.H5(
-                            id="hdf5_select",
-                            children="Click here to select file",
-                            n_clicks=0
-                        )
+                        html.Div("Select a file or folder. Click to browse"),
                     ],
-                    style={"display": "none"}
-                ),
+                    className="module-box"),
                 html.Div(
                     id="hdf5_dataset_input",
                     children=[
