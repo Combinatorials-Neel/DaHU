@@ -36,7 +36,8 @@ def top_left_card():
                 html.Div(
                     id="hdf5_select_div",
                     children=[
-                        html.Div("Select a file or folder. Click to browse"),
+                        html.Div(id="hdf5_select",
+                                 children="Select a file or folder. Click to browse"),
                     ],
                     className="module-box"),
                 html.Div(

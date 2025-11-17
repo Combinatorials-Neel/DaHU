@@ -53,6 +53,8 @@ def cleanup_directory(folderpath):
 
 
 def safe_glob(directory, pattern="*"):
+    if directory.is_file():
+        return [directory]
     return [
         f
         for f in directory.glob(pattern)
@@ -61,11 +63,14 @@ def safe_glob(directory, pattern="*"):
 
 
 def safe_rglob(directory, pattern="*"):
-    return [
-        f
-        for f in directory.rglob(pattern)
-        if f.is_file() and not f.name.startswith(".") and not f.name.startswith("._")
-    ]
+    if directory.is_file():
+        return [directory]
+    else:
+        return [
+            f
+            for f in directory.rglob(pattern)
+            if f.is_file() and not f.name.startswith(".") and not f.name.startswith("._")
+        ]
 
 
 def is_macos_system_file(file_path):
@@ -114,7 +119,7 @@ def detect_measurement(filename_list: list):
         "Magnetron": ["prp"],
         "SQUID": ["dat"],
         "Picture": ["png, jpg, jpeg"],
-        "HT_hdf5": ["hdf5"],
+        "HT hdf5": ["hdf5"],
     }
 
     for measurement_type, file_type in measurement_dict.items():
