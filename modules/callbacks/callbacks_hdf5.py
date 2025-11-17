@@ -113,6 +113,7 @@ def callbacks_hdf5(app):
                     if type(dataset_name) is str:
                         dataset_name = [dataset_name]
                     copy_datasets_to_hdf5(hdf5_path, uploaded_folder_path, dataset_name, manual_1)
+                    return f"Copied datasets {dataset_name} from {uploaded_folder_path} to {hdf5_path}."
 
             return f'Failed to add measurement to {hdf5_path}.'
 
@@ -180,8 +181,8 @@ def callbacks_hdf5(app):
         if (ctx.triggered_id == "browser_select_button" and select_click > 0
                 and is_open and browser_source_id == "hdf5_select"):
             return stored_cwd, f"Chosen path: {stored_cwd}", False, None
-
-        return is_open, previous_path, "Select a file or folder. Click to browse", browser_source_id
+        else:
+            raise PreventUpdate
 
 
     @app.callback(
@@ -634,8 +635,8 @@ def callbacks_hdf5(app):
         if (ctx.triggered_id == "browser_select_button" and select_click > 0
                 and is_open and browser_source_id == "hdf5_path_box"):
             return False, stored_cwd, None
-
-        return is_open, hdf5_path, browser_source_id
+        else:
+            raise PreventUpdate
 
 
     @app.callback(
