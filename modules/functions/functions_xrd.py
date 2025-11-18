@@ -480,8 +480,8 @@ def xrd_write_integrated_to_hdf5(position_group, reintegrated_dict, overwrite=Tr
     config_group.create_dataset("data", data=json.dumps(reintegrated_dict["config"]))
     config_group.create_dataset("type", data="DaHU reintegrated")
 
-    integrated_group.create_dataset("program", data="pyFAI")
-    integrated_group.create_dataset("version", data=reintegrated_dict["version"])
+    instrument_group.create_dataset("program", data="pyFAI")
+    instrument_group.create_dataset("version", data=reintegrated_dict["version"])
 
 
 

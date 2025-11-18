@@ -5,7 +5,7 @@ Functions for DEKTAK parsing
 from ..functions.functions_shared import *
 from ..hdf5_compilers.hdf5compile_base import *
 
-PROFIL_WRITER_VERSION = "0.2"
+PROFIL_WRITER_VERSION = "0.3"
 
 
 def read_header_from_dektak(file_path):
@@ -131,7 +131,7 @@ def write_dektak_results_to_hdf5(position_group, results_dict, overwrite=True):
         results["measured_height"].attrs["units"] = "nm"
         results["extracted_positions"].attrs["units"] = "μm"
         results["extracted_heights"].attrs["units"] = "nm"
-        results["adjusting_slope"].attrs["units"] = "nm/μm"
+        results["fit_coefficients"].attrs["units"] = "nm/μm"
     else:
         results.attrs["type"] = "manual"
         for key, result in results_dict.items():
@@ -165,6 +165,12 @@ def update_dektak_hdf5(dektak_group):
                 if "type" not in results_group.attrs:
                     results_group.attrs["type"] = "fitted"
         # end of patch
+    if source_version < 0.3:
+        # Version 0.3 renamed adjusting_slope to fit_coefficients to reflect the possibility of higher order fits
+        for position, position_group in dektak_group.items():
+            results_group = position_group.get("results")
+            if results_group:
+                rename_group(results_group, "adjusting_slope", "fit_coefficients")
 
         # Update the version tag to the current version
         dektak_group.attrs["profil_writer"] = PROFIL_WRITER_VERSION

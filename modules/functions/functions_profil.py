@@ -63,6 +63,9 @@ def multi_step_function(x, *params):
 def parabola(x, a, b, c):
     return a * x**2 + b * x + c
 
+def linear(x, a, b):
+    return a * x + b
+
 def generate_parameters(height, x0, n_steps):
     guess = []
     length = 4000 / (2*n_steps) # Length of a step
@@ -106,24 +109,34 @@ def residuals(params, x, y):
     return y - multi_step_function(x, *params)
 
 
-def profil_measurement_dataframe_treat(df, coefficients=None, smoothing=True):
+def profil_measurement_dataframe_treat(df, fit_coefficients=None, smoothing=True, degree=1):
     # Calculate and remove linear component from profile with step point linear fit
-    if coefficients is None:
-        coefficients = curve_fit(parabola, df["distance_(um)"], df["total_profile_(nm)"])[0]
+    if fit_coefficients is None:
+        if degree == 1:
+            fit_coefficients = curve_fit(linear, df["distance_(um)"], df["total_profile_(nm)"])[0]
+        elif degree == 2:
+            fit_coefficients = curve_fit(parabola, df["distance_(um)"], df["total_profile_(nm)"])[0]
 
-    df["adjusted_profile_(nm)"] = df["total_profile_(nm)"] - parabola(df["distance_(um)"], coefficients[0], coefficients[1], coefficients[2])
+    if len(fit_coefficients) == 2:
+        df["adjusted_profile_(nm)"] = df["total_profile_(nm)"] - linear(df["distance_(um)"], fit_coefficients[0],
+                                                                          fit_coefficients[1])
+    elif len(fit_coefficients) == 3:
+        df["adjusted_profile_(nm)"] = df["total_profile_(nm)"] - parabola(df["distance_(um)"], fit_coefficients[0],
+                                                                          fit_coefficients[1], fit_coefficients[2])
+    else:
+        raise ValueError("Unexpected number of fit_coefficients")
     if smoothing:
         df["adjusted_profile_(nm)"] = savgol_filter(df["adjusted_profile_(nm)"], 100, 0)
 
-    return coefficients, df
+    return fit_coefficients, df
 
 
 def profil_measurement_dataframe_fit_steps(df, n_steps, x0_guess):
     results_dict = {}
 
     if "adjusted_profile_(nm)" not in df.columns:
-        coefficients, df = profil_measurement_dataframe_treat(df, smoothing=True)
-        results_dict["adjusting_slope"] = coefficients
+        fit_coefficients, df = profil_measurement_dataframe_treat(df, smoothing=True)
+        results_dict["fit_coefficients"] = fit_coefficients
 
     # Detect the position of the first step of the measurement
     df = derivate_dataframe(df, column="adjusted_profile_(nm)")
@@ -194,7 +207,7 @@ def profil_make_results_dataframe_from_hdf5(profil_group):
     return result_dataframe
 
 
-def profil_plot_total_profile_from_dataframe(fig, df, adjusting_slope = None, position=(1,1)):
+def profil_plot_total_profile_from_dataframe(fig, df, fit_coefficients = None, position=(1,1)):
     # First plot for raw measurement and linear component
     fig.update_xaxes(title_text="Distance_(um)", row=1, col=1)
     fig.update_yaxes(title_text="Profile_(nm)", row=1, col=1)
@@ -210,11 +223,18 @@ def profil_plot_total_profile_from_dataframe(fig, df, adjusting_slope = None, po
     )
 
     # If a slope is specified, plot the slope
-    if adjusting_slope is not None:
+    if fit_coefficients is not None:
+        if len(fit_coefficients) == 2:
+            y = linear(df["distance_(um)"], fit_coefficients[0], fit_coefficients[1])
+        elif len(fit_coefficients) == 3:
+            y = parabola(df["distance_(um)"], fit_coefficients[0], fit_coefficients[1], fit_coefficients[2])
+        else:
+            raise ValueError("Unexpected number of fit_coefficients")
+
         fig.add_trace(
             go.Scatter(
                 x=df["distance_(um)"],
-                y=parabola(df["distance_(um)"], adjusting_slope[0], adjusting_slope[1], adjusting_slope[2]),
+                y=y,
                 mode="lines",
                 line=dict(color="Crimson", width=2),
             ), row = position[0], col = position[1]
