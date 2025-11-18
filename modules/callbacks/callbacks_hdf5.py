@@ -110,7 +110,10 @@ def callbacks_hdf5(app):
                 # manual 2 = NaN
                 # manual 3 = NaN
                 if uploaded_folder_path is not None:
+                    if type(dataset_name) is str:
+                        dataset_name = [dataset_name]
                     copy_datasets_to_hdf5(hdf5_path, uploaded_folder_path, dataset_name, manual_1)
+                    return f"Copied datasets {dataset_name} from {uploaded_folder_path} to {hdf5_path}."
 
             return f'Failed to add measurement to {hdf5_path}.'
 
@@ -146,10 +149,17 @@ def callbacks_hdf5(app):
         Input("hdf5_upload_mode_toggle", "on"),
     )
     def toggle_upload_mode(toggle_state):
+        select_div_style = {
+            "border": "3px solid #000000",
+            "borderRadius": "4px",
+            "padding": "45px",
+            "textAlign": "center",
+        }
+
         if toggle_state:
             return {}, {"display": "none"}
         else:
-            return {"display": "none"}, {}
+            return {"display": "none"}, select_div_style
 
 
     @app.callback(
@@ -167,12 +177,12 @@ def callbacks_hdf5(app):
     )
     def browse_for_data_file(open_click, select_click, is_open, previous_path, stored_cwd, browser_source_id):
         if ctx.triggered_id == "hdf5_select" and open_click > 0 and not is_open:
-            return previous_path, "Click here to select file", True, "hdf5_select"
+            return previous_path, "Select a file or folder. Click to browse", True, "hdf5_select"
         if (ctx.triggered_id == "browser_select_button" and select_click > 0
                 and is_open and browser_source_id == "hdf5_select"):
             return stored_cwd, f"Chosen path: {stored_cwd}", False, None
-
-        return is_open, previous_path, "Click here to select file", browser_source_id
+        else:
+            raise PreventUpdate
 
 
     @app.callback(
@@ -417,7 +427,7 @@ def callbacks_hdf5(app):
         [Output("hdf5_dataset_input", "children"),
          Output("hdf5_text_box", "children", allow_duplicate=True)],
         Input("hdf5_measurement_type", "value"),
-        State("hdf5_path_store", "data"),
+        State("hdf5_upload_folder_path", "data"),
         prevent_initial_call=True
     )
     def switch_input_mode(measurement_type, hdf5_path):
@@ -625,8 +635,8 @@ def callbacks_hdf5(app):
         if (ctx.triggered_id == "browser_select_button" and select_click > 0
                 and is_open and browser_source_id == "hdf5_path_box"):
             return False, stored_cwd, None
-
-        return is_open, hdf5_path, browser_source_id
+        else:
+            raise PreventUpdate
 
 
     @app.callback(

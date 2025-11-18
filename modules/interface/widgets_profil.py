@@ -91,7 +91,7 @@ def profil_top_right_card():
                 html.Br(),
                 dbc.Checklist(
                     id="profil_plot_select",
-                    options=[{"label": "Adjusting Slope", "value": "adjusting_slope"},
+                    options=[{"label": "Flattening", "value": "flattening"},
                              {"label": "Profile Fits", "value": "fit_parameters"}],
                     value=["adjusting_slope", "profile_fits"],
                     style={"display": "inline-block"}

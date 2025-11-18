@@ -183,15 +183,20 @@ def copy_datasets_to_hdf5(hdf5_path, source_path, dataset_list, copy_type):
     if copy_type not in ["soft copy", "hard copy"]:
         raise ValueError("Copy type must be either 'soft copy' or 'hard copy'.")
 
-    with h5py.File(hdf5_path, "r") as hdf5_file:
-        with h5py.File(source_path, "a") as source_file:
+    with h5py.File(source_path, "r") as source_file:
+        with h5py.File(hdf5_path, "r+") as hdf5_file:
             for dataset in dataset_list:
                 if copy_type == "hard copy":
-                    copied_group = source_file.copy(dataset, hdf5_file)
-                    copied_group.attrs["source"] = source_file.name
+                    source_file.copy(dataset, hdf5_file)
                 if copy_type == "soft copy":
-                    hdf5_file[dataset] = h5py.ExternalLink(source_file, dataset)
-                    hdf5_file[dataset].attrs["source"] = source_file.name
+                    target_dataset = hdf5_file.create_group(dataset)
+                    source_dataset = source_file[dataset]
+                    for name in source_dataset.keys():
+                        target_dataset[name] = h5py.ExternalLink(str(source_path), f"/{source_dataset.name}/{name}")
+                    for name, attr in source_dataset.attrs.items():
+                        target_dataset.attrs[name] = attr
+
+                hdf5_file[dataset].attrs["source"] = source_path.name
 
 
 

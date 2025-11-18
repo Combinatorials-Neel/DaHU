@@ -341,6 +341,8 @@ def callbacks_xrd(app):
         if (ctx.triggered_id == "browser_select_button" and select_click > 0
                 and is_open and browser_source_id == "xrd_path_box"):
             return False, stored_cwd, None
+        else:
+            raise PreventUpdate
 
     @app.callback(
         [Output("xrd_path_box", "children", allow_duplicate=True),

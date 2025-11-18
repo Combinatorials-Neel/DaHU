@@ -156,22 +156,22 @@ def callbacks_profil(app):
                 profil_group, target_x, target_y
             )
 
-        adjusting_slope = None
+        fit_coefficients = None
         fit_parameters = None
         measured_height = None
         if results_dict:
-            adjusting_slope = results_dict["adjusting_slope"]
+            fit_coefficients = results_dict["fit_coefficients"]
             fit_parameters = results_dict["fit_parameters"]
             measured_height = results_dict["measured_height"]
 
-        adjusting_slope, measurement_df = profil_measurement_dataframe_treat(
-            measurement_df, adjusting_slope
+        fit_coefficients, measurement_df = profil_measurement_dataframe_treat(
+            measurement_df, fit_coefficients
         )
 
-        if "adjusting_slope" not in plot_options:
-            adjusting_slope = None
+        if "flattening" not in plot_options:
+            fit_coefficients = None
         fig = profil_plot_total_profile_from_dataframe(
-            fig, measurement_df, adjusting_slope
+            fig, measurement_df, fit_coefficients
         )
 
         if "fit_parameters" not in plot_options:
