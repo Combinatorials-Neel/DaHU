@@ -300,6 +300,18 @@ def moke_calc_mzero_coercivity(data: pd.DataFrame, threshold=8.0e-3):
 
     return coercivity_positive, coercivity_negative
 
+def moke_calc_remanence(data: pd.DataFrame):
+    remanence_positive = data.loc[
+        np.abs(data.loc[data["magnetization"] > 0, "field"]).idxmin(skipna=True),
+        "magnetization",
+    ]
+    remanence_negative = data.loc[
+        np.abs(data.loc[data["magnetization"] < 0, "field"]).idxmin(skipna=True),
+        "magnetization",
+    ]
+
+    return remanence_positive, remanence_negative
+
 
 def moke_fit_intercept(data: pd.DataFrame, treatment_dict: dict):
     """
@@ -416,6 +428,7 @@ def moke_batch_fit(moke_group, treatment_dict):
         coercivity_m0 = list(moke_calc_mzero_coercivity(measurement_dataframe))
         coercivity_dmdh = list(moke_calc_derivative_coercivity(measurement_dataframe))
         intercepts = list(moke_fit_intercept(measurement_dataframe, treatment_dict))
+        remanence = list(moke_calc_remanence(measurement_dataframe))
 
         results_dict[f"{position}"] = {
             "max_kerr_signal": max_kerr_rotation,
@@ -436,6 +449,16 @@ def moke_batch_fit(moke_group, treatment_dict):
                 "mean": abs_mean(intercepts[:2]),
                 "fit_parameters": intercepts[2],
             },
+            "abs_remanence": {
+                "positive": remanence[0],
+                "negative": remanence[1],
+                "mean": abs_mean(remanence),
+            },
+            "rel_remanence": {
+                "positive": remanence[0] / max_kerr_rotation,
+                "negative": remanence[1] / max_kerr_rotation,
+                "mean": abs_mean([remanence[0]/max_kerr_rotation, remanence[1]/max_kerr_rotation]),
+            }
         }
 
     return results_dict

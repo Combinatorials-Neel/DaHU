@@ -355,7 +355,7 @@ def moke_results_dict_to_hdf5(moke_group, results_dict, treatment_dict=None):
 
             save_dict_to_hdf5(results_group, results_dict[position])
             for subname, subgroup in results_group.items():
-                if subname in ["max_kerr_signal", "reflectivity"]:
+                if subname in ["max_kerr_signal", "reflectivity", "abs_remanence"]:
                     subgroup.attrs["units"] = "V"
                 if subname in ["coercivity_m0", "coercivity_dmdh", "intercept_field"]:
                     for subsubname, subsubgroup in subgroup.items():
