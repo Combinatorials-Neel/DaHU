@@ -449,12 +449,7 @@ def moke_batch_fit(moke_group, treatment_dict):
                 "mean": abs_mean(intercepts[:2]),
                 "fit_parameters": intercepts[2],
             },
-            "abs_remanence": {
-                "positive": remanence[0],
-                "negative": remanence[1],
-                "mean": abs_mean(remanence),
-            },
-            "rel_remanence": {
+            "remanent_kerr_signal": {
                 "positive": remanence[0] / max_kerr_rotation,
                 "negative": remanence[1] / max_kerr_rotation,
                 "mean": abs_mean([remanence[0]/max_kerr_rotation, remanence[1]/max_kerr_rotation]),

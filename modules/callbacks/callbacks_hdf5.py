@@ -683,7 +683,6 @@ def callbacks_hdf5(app):
         if n_clicks > 0:
 
             sample_dict = {
-                "file_type": file_type,
                 "sample_name": file_name,
                 "fabrication_date": file_date,
                 "operator": file_operator,

@@ -6,7 +6,7 @@ from ..functions.functions_shared import *
 from ..functions.functions_xrd import xrd_q_tth
 from ..hdf5_compilers.hdf5compile_base import *
 
-ESRF_WRITER_VERSION = "0.2"
+ESRF_WRITER_VERSION = "0.3"
 
 
 def return_cdte_source_path(dataset_group):
