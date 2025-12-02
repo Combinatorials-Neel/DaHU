@@ -427,7 +427,7 @@ def callbacks_hdf5(app):
         [Output("hdf5_dataset_input", "children"),
          Output("hdf5_text_box", "children", allow_duplicate=True)],
         Input("hdf5_measurement_type", "value"),
-        State("hdf5_upload_folder_path", "data"),
+        State("hdf5_path_store", "data"),
         prevent_initial_call=True
     )
     def switch_input_mode(measurement_type, hdf5_path):
