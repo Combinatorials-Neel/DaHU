@@ -5,7 +5,7 @@ Functions for DEKTAK parsing
 from ..functions.functions_shared import *
 from ..hdf5_compilers.hdf5compile_base import *
 
-PROFIL_WRITER_VERSION = "0.3"
+PROFIL_WRITER_VERSION = "0.4"
 
 
 def read_header_from_dektak(file_path):
@@ -124,19 +124,25 @@ def write_dektak_results_to_hdf5(position_group, results_dict, overwrite=True):
         del position_group["results"]
 
     results = safe_create_new_subgroup(position_group, "results")
+    fit = safe_create_new_subgroup(results, "fit")
     if "fit_parameters" in results_dict.keys():
         results.attrs["type"] = "fitted"
         for key, result in results_dict.items():
-            results[key] = result
-        results["measured_height"].attrs["units"] = "nm"
-        results["extracted_positions"].attrs["units"] = "μm"
-        results["extracted_heights"].attrs["units"] = "nm"
-        results["fit_coefficients"].attrs["units"] = "nm/μm"
+            if "fit" in key:
+                fit[key] = result
+            else:
+                results[key] = result
+
+        results["measured_thickness"].attrs["units"] = "nm"
+
+        fit["fit_positions"].attrs["units"] = "μm"
+        fit["fit_thicknesses"].attrs["units"] = "nm"
+        fit["fit_coefficients"].attrs["units"] = "nm/μm"
     else:
         results.attrs["type"] = "manual"
         for key, result in results_dict.items():
             results[key] = result
-        results["measured_height"].attrs["units"] = "nm"
+        results["measured_thickness"].attrs["units"] = "nm"
     return None
 
 

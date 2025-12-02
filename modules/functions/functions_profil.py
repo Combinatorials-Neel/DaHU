@@ -155,9 +155,10 @@ def profil_measurement_dataframe_fit_steps(df, n_steps, x0_guess):
     position_list, height_list = extract_fit(fitted_params)
 
     results_dict["fit_parameters"] = fitted_params
-    results_dict["extracted_positions"] = position_list
-    results_dict["extracted_heights"] = height_list
-    results_dict["measured_height"] = np.mean(height_list).round()
+    results_dict["fit_positions"] = position_list
+    results_dict["fit_heights"] = height_list
+    results_dict["fit_curve"] = multi_step_function(distance_array, fitted_params)
+    results_dict["measured_thickness"] = np.mean(height_list).round()
 
     # ransac = RANSACRegressor(LinearRegression(), residual_threshold=None)
     # ransac.fit(position_list, height_list)

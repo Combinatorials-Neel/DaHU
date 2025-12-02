@@ -8,7 +8,11 @@ from collections import defaultdict
 from ..functions.functions_moke import *
 from ..hdf5_compilers.hdf5compile_base import *
 
-MOKE_WRITER_VERSION = '0.2'
+MOKE_WRITER_VERSION = '0.3'
+
+moke_dict = {
+
+}
 
 def moke_info_from_filename(file_path):
     """
@@ -45,30 +49,6 @@ def moke_info_from_filename(file_path):
         raise Exception("Couldn't match pattern to moke filename")
 
     return info_dict
-
-# def get_wafer_positions(filename):
-#     """
-#     Returns the wafer positions (x and y indices) from the given filepath.
-#
-#     The wafer positions are stored in the filename of the given filepath
-#     as 'pN_XxYy_magnetization.txt', where N is the scan number, X and Y are
-#     the wafer positions.
-#
-#     Parameters
-#     ----------
-#     filepath : str
-#         The filepath to the MOKE data file (.txt)
-#
-#     Returns
-#     -------
-#     tuple
-#         A tuple containing the x and y wafer positions.
-#     """
-#     pattern = r"p(\d+)_x(-?\d+(?:\.\d+)?)_y(-?\d+(?:\.\d+)?)"
-#     match = re.search(pattern, filename)
-#
-#
-#     return x_pos, y_pos
 
 
 def read_header_from_moke(file_path):
@@ -187,8 +167,8 @@ def write_moke_to_hdf5(hdf5_path, source_path, dataset_name = None, mode="a"):
     Writes the contents of the MOKE data file (.txt) to the given HDF5 file.
 
     Args:
-        HDF5_path (str or Path): The path to the HDF5 file to write the data to.
-        measurement_dict (dict): Dictionary formatted as dict[filename] = file string.
+        hdf5_path (str or Path): The path to the HDF5 file to write the data to
+        source_path (str or Path): The path to the folder containing the moke data files (.txt)
         dataset_name (str): Name for the HDF5 group. If None, the name put into the moke will be used
         mode (str, optional): The mode to open the HDF5 file in. Defaults to "a".
 
@@ -234,10 +214,6 @@ def write_moke_to_hdf5(hdf5_path, source_path, dataset_name = None, mode="a"):
         moke_group.attrs["instrument"] = "S-MOKE"
         moke_group.attrs["moke_writer"] = MOKE_WRITER_VERSION
 
-        # Create a scan_parameters group in moke with the contents of info.txt
-        scan_parameters_group = moke_group.create_group("scan_parameters")
-        set_instrument_from_dict(header_dict, scan_parameters_group)
-
         # For every position, write measurement to HDF5
         for scan_number in grouped_dict.keys():
             info_dict = moke_info_from_filename(grouped_dict[scan_number][0])
@@ -253,12 +229,13 @@ def write_moke_to_hdf5(hdf5_path, source_path, dataset_name = None, mode="a"):
             scan.attrs["ignored"] = False
 
             # Instrument group for metadata
-            instrument = scan.create_group("instrument")
-            instrument.attrs["HT_class"] = "HTinstrument"
-            instrument["x_pos"] = convertFloat(x_pos)
-            instrument["y_pos"] = convertFloat(y_pos)
-            instrument["x_pos"].attrs["units"] = "mm"
-            instrument["y_pos"].attrs["units"] = "mm"
+            instrument_group = scan.create_group("instrument")
+            instrument_group.attrs["HT_class"] = "HTinstrument"
+            instrument_group["x_pos"] = convertFloat(x_pos)
+            instrument_group["y_pos"] = convertFloat(y_pos)
+            set_instrument_from_dict(header_dict, instrument_group)
+            instrument_group["x_pos"].attrs["units"] = "mm"
+            instrument_group["y_pos"].attrs["units"] = "mm"
 
             # Measurement group for data
             data = scan.create_group("measurement")

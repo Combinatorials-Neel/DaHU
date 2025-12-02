@@ -6,7 +6,7 @@ from ..functions.functions_shared import *
 from ..functions.functions_xrd import xrd_q_tth
 from ..hdf5_compilers.hdf5compile_base import *
 
-ESRF_WRITER_VERSION = "0.2"
+ESRF_WRITER_VERSION = "0.3"
 
 
 def return_cdte_source_path(dataset_group):
@@ -334,7 +334,7 @@ def write_xrd_results_to_hdf5(hdf5_path, results_folderpath, target_dataset):
     if isinstance(results_folderpath, str):
         results_folderpath = Path(results_folderpath)
 
-    with h5py.File(hdf5_path, "a") as target:
+    with h5py.File(hdf5_path, "r+") as target:
 
         if target_dataset not in target:
             raise NameError("Couldn't locate target dataset")
@@ -369,6 +369,9 @@ def write_xrd_results_to_hdf5(hdf5_path, results_folderpath, target_dataset):
                             names=column_names,
                         )
                         df["Residual"] = df["Total Counts"] - df["Calculated"]
+
+                        if "results" in group.keys():
+                            del group["results"]
 
                         target_results_group = safe_create_new_subgroup(
                             group, "results"

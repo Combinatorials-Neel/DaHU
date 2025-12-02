@@ -149,6 +149,9 @@ def create_new_hdf5(hdf5_path, hdf5_type, sample_dict):
             hdf5_file.attrs["HT_type"] = "dataset"
             hdf5_file.attrs["dataset_writer"] = DATASET_WRITER_VERSION
 
+            samples = hdf5_file.create_group("samples")
+            samples.attrs["HT_class"] = "samples"
+
         return True
 
 
