@@ -541,7 +541,7 @@ def moke_plot_oscilloscope_from_dataframe(fig, df):
 
 
 def moke_plot_loop_from_dataframe(fig, df):
-    fig.update_xaxes(title_text="Field (T)")
+    fig.update_xaxes(title_text="Applied &mu;<sub>0</sub>H (T)")
     fig.update_yaxes(title_text="Kerr signal (V)")
 
     fig.add_trace(

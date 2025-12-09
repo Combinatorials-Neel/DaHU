@@ -143,7 +143,7 @@ def heatmap_layout(title=""):
         title=dict(text=title, font=dict(size=24)),
         xaxis=dict(
             title="X (mm)",
-            tickfont=dict(size=24),
+            tickfont=dict(size=28),
             title_font=dict(size=20),
             range=[-43, 43],
             tickmode="linear",
@@ -152,7 +152,7 @@ def heatmap_layout(title=""):
         ),
         yaxis=dict(
             title="Y (mm)",
-            tickfont=dict(size=24),
+            tickfont=dict(size=28),
             title_font=dict(size=20),
             range=[-43, 43],
             tickmode="linear",
@@ -210,7 +210,7 @@ def colorbar_layout(z_min, z_max, precision=0, title=""):
     z_mid = (z_min + z_max) / 2
     colorbar = dict(
         title=dict(text=f"{title} <br>&nbsp;<br>", font=dict(size=20)),
-        tickfont=dict(size=22),
+        tickfont=dict(size=28),
         tickvals=[
             z_min,
             (z_min + z_mid) / 2,

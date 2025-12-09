@@ -18,8 +18,10 @@ def callbacks_browser(app):
             raise PreventUpdate
         return data_path
 
+
     @app.callback(
-        Output("cwd", "children"),
+        [Output("cwd", "children"),
+         Output("stored_cwd", "data", allow_duplicate=True)],
         Input("stored_cwd", "data"),
         Input("parent_dir", "n_clicks"),
         Input("cwd", "children"),
@@ -28,9 +30,10 @@ def callbacks_browser(app):
     def get_parent_directory(stored_cwd, n_clicks, current_dir):
         triggered_id = ctx.triggered_id
         if triggered_id == "stored_cwd":
-            return stored_cwd
+            return stored_cwd, stored_cwd
         parent = Path(current_dir).parent.as_posix()
-        return parent
+        return parent, parent
+
 
     @app.callback(
         Output("cwd_files", "children"),
@@ -89,3 +92,16 @@ def callbacks_browser(app):
         index = ctx.triggered_id["index"]
         return title[index]
 
+
+    @app.callback(
+        Output("data_path_store", "data"),
+        Input("browser_default_button", "n_clicks"),
+        State("stored_cwd", "data"),
+        State("browser_popup", "is_open"),
+        prevent_initial_call=True,
+    )
+    def set_default_data_directory(n_clicks, stored_cwd, is_open):
+        if is_open and ctx.triggered_id == "browser_default_button":
+            return stored_cwd
+        else:
+            raise PreventUpdate
