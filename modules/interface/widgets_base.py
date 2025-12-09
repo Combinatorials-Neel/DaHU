@@ -57,7 +57,18 @@ def widget_browser_modal():
         centered=True,
         size="xl",
         children=[
-        dbc.ModalHeader("Browser"),
+        dbc.ModalHeader([
+            dbc.Row([
+                dbc.Col(
+                    "File Browser"
+                ),
+                dbc.Col(
+                    dbc.Button("Set default directory", id="browser_default_button", color="primary"),
+                    className = "d-flex ms_auto"
+
+                ),
+            ])
+        ]),
         dbc.ModalBody([
             html.Div(
                 dbc.Row(

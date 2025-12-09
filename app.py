@@ -34,7 +34,8 @@ UPLOAD_FOLDER_ROOT = os.path.join(script_dir, "uploads")
 cleanup_directory(UPLOAD_FOLDER_ROOT)
 
 # %%
-app = Dash(suppress_callback_exceptions=True, external_stylesheets=[dbc.themes.FLATLY])
+app = Dash(suppress_callback_exceptions=True, external_stylesheets=[dbc.themes.FLATLY], external_scripts=[
+      'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML'])
 
 dash_uploader.configure_upload(app, UPLOAD_FOLDER_ROOT)
 
