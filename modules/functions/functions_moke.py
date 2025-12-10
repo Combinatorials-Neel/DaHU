@@ -82,7 +82,11 @@ def moke_get_results_from_hdf5(moke_group, target_x, target_y):
 def moke_get_instrument_dict_from_hdf5(moke_group):
     instrument_dict = {}
 
-    parameters_group = moke_group.get("scan_parameters")
+    if "scan_parameters" in moke_group: # legacy implementation for moke version <= 0.2
+        parameters_group = moke_group.get("scan_parameters")
+    else: # temporary implementation (I know, I know...)
+        position  = next(iter(moke_group)) # Get any position from the group
+        parameters_group = moke_group.get(f"{position}/instrument")
     for value, value_group in parameters_group.items():
         instrument_dict[value] = convert_bytes(value_group[()])
 
