@@ -196,7 +196,7 @@ def write_moke_to_hdf5(hdf5_path, source_path, dataset_name = None, mode="a"):
 
     # Sort the dictionary by measurement "p_number" (index), and group measurements by indexes.
     # Example filename: p1_x-15.0_y45.0_magnetization.txt
-    pattern = re.compile(r"p(\d+)")
+    pattern = re.compile(r"^p(\d+)")
 
     grouped_dict = defaultdict(list)
 
