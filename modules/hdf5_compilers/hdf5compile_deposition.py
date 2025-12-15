@@ -178,7 +178,7 @@ def write_magnetron_to_hdf5(hdf5_path, source_path):
         instrument_dict = read_prp_from_magnetron(file_path)
 
     with h5py.File(hdf5_path, "a") as hdf5_file:
-        deposition_group = hdf5_file.create_group("deposition")
+        deposition_group = hdf5_file.create_group("sample/deposition")
         deposition_group.attrs["HT_type"] = "magnetron"
         deposition_group.attrs["instrument"] = "AllianceConcept DP850"
         deposition_group.attrs["magnetron_writer"] = MAGNETRON_WRITER_VERSION
