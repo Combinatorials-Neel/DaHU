@@ -7,7 +7,7 @@ from ..hdf5_compilers.hdf5compile_base import *
 
 import xml.etree.ElementTree as et
 
-EDX_WRITER_VERSION = "0.1 beta"
+EDX_WRITER_VERSION = "0.2"
 
 
 def visit_items(item, edx_dict=None):
@@ -279,6 +279,9 @@ def write_edx_to_hdf5(hdf5_path, source_path, dataset_name=None):
         edx_group.attrs["instrument"] = "Bruker Quantax Xflash-7"
         edx_group.attrs["edx_writer"] = EDX_WRITER_VERSION
 
+        initialize_dataset_group(edx_group)
+        positions_group = edx_group.get("positions")
+
         for file_name in safe_rglob(source_path, pattern="*.spx"):
             file_path = source_path / file_name
 
@@ -287,14 +290,14 @@ def write_edx_to_hdf5(hdf5_path, source_path, dataset_name=None):
             edx_dict, channels = read_data_from_spx(file_path)
             energy = make_energy_dataset(edx_dict, channels)
 
-            scan = edx_group.create_group(
+            position_group = positions_group.create_group(
                 f"({wafer_positions[0]},{wafer_positions[1]})"
             )
-            scan.attrs["index"] = scan_numbers
-            scan.attrs["ignored"] = False
+            position_group.attrs["index"] = scan_numbers
+            position_group.attrs["ignored"] = False
 
             # Instrument group for metadata
-            instrument = scan.create_group("instrument")
+            instrument = position_group.create_group("instrument")
             instrument.attrs["NX_class"] = "HTinstrument"
 
             instrument["x_pos"] = wafer_positions[0]
@@ -303,12 +306,12 @@ def write_edx_to_hdf5(hdf5_path, source_path, dataset_name=None):
             instrument["y_pos"].attrs["units"] = "mm"
 
             # Result group
-            results = scan.create_group("results")
+            results = position_group.create_group("results")
             results.attrs["NX_class"] = "HTresult"
             set_instrument_and_result_from_dict(edx_dict, instrument, results)
 
             # Measurement group
-            data = scan.create_group("measurement")
+            data = position_group.create_group("measurement")
             data.attrs["NX_class"] = "HTdata"
 
             counts = data.create_dataset(

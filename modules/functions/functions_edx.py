@@ -35,7 +35,9 @@ def get_quantified_elements(edx_group):
 def edx_make_results_dataframe_from_hdf5(edx_group):
     data_dict_list = []
 
-    for position, position_group in edx_group.items():
+    positions_group = get_positions_group(edx_group)
+
+    for position, position_group in positions_group.items():
         instrument_group = position_group.get('instrument')
         # Exclude spots outside the wafer
         if np.abs(instrument_group["x_pos"][()]) + np.abs(instrument_group["y_pos"][()]) <= 60:

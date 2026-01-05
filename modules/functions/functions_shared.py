@@ -363,14 +363,15 @@ def pairwise(list):
 
 
 def get_target_position_group(dataset_group, target_x, target_y):
-    for position, position_group in dataset_group.items():
+    positions_group = get_positions_group(dataset_group)
+    for position, position_group in positions_group.items():
         instrument_group = position_group.get("instrument")
         if (
             instrument_group["x_pos"][()] == target_x
             and instrument_group["y_pos"][()] == target_y
         ):
             return position_group
-    raise KeyError(f"Failed to find position {(target_x, target_y)} in {dataset_group}")
+    raise KeyError(f"Failed to find position {(target_x, target_y)} in {dataset_group}/{positions_group}")
 
 
 def abs_mean(value_list):
@@ -414,3 +415,16 @@ def linear_fit(df, x_col, y_col):
     print(f"Intercept: {result.intercept}")
     print(f"R-squared: {result.rvalue**2}")
     return result
+
+def get_positions_group(dataset_group):
+    """
+    Function to maintain compatibility with older HDF5 files where positions where directly defined
+    in the root dataset group instead of in a subgroup
+
+    @param dataset_group: Dataset group that you want the positions from
+    @return: h5py.Group containing the positions
+    """
+    if "positions" in dataset_group:
+        return dataset_group["positions"]
+    else:
+        return dataset_group

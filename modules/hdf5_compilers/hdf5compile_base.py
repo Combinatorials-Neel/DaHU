@@ -225,3 +225,34 @@ def update_library_hdf5(hdf5_file):
 
     return True
 
+
+def initialize_dataset_group(dataset_group):
+    """
+    Initialize the subgroups and attributes for a new dataset HDF5 group
+
+    @param dataset_group: newly created dataset HDF5 group that needs to be initialized
+    @return: bool
+    """
+    experiment_group = safe_create_new_subgroup(dataset_group, "experiment_info")
+    # SoftLink sample info from the library hdf5 root
+    experiment_group["sample"] = h5py.SoftLink("/sample")
+    # add date
+    # add calibration
+
+    additional_scans_group = safe_create_new_subgroup(dataset_group, "additional_scans")
+
+    positions_group = safe_create_new_subgroup(dataset_group, "positions")
+
+    return True
+
+
+
+    
+
+
+
+
+
+
+
+

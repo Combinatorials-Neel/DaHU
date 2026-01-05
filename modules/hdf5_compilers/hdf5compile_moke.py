@@ -3,12 +3,11 @@ Functions for MOKE parsing
 """
 
 import stringcase
-from collections import defaultdict
 
 from ..functions.functions_moke import *
 from ..hdf5_compilers.hdf5compile_base import *
 
-MOKE_WRITER_VERSION = '0.3'
+MOKE_WRITER_VERSION = '0.4'
 
 moke_dict = {
 
@@ -194,42 +193,35 @@ def write_moke_to_hdf5(hdf5_path, source_path, dataset_name = None, mode="a"):
     if not found_info:
         raise Exception("Could not find info.txt file. Check measurement.")
 
-    # Sort the dictionary by measurement "p_number" (index), and group measurements by indexes.
-    # Example filename: p1_x-15.0_y45.0_magnetization.txt
-    pattern = re.compile(r"^p(\d+)")
-
-    grouped_dict = defaultdict(list)
-
-    for file_name in safe_rglob(source_path, pattern='p*.txt'):
-        match = re.search(pattern, str(file_name))
-        if match:
-            p_number = match.group(1)  # Extract p_number from measurement name
-            file_path = source_path / file_name
-            grouped_dict[p_number].append(file_path)  # Dictionary with measurements grouped by p_numbers
+    path_dict = moke_make_path_dictionary(source_path)
 
     with h5py.File(hdf5_path, mode) as hdf5_file:
         # Create the root group for the measurement
         moke_group = hdf5_file.create_group(f"{dataset_name}")
+        # Initialize attributes for the group
         moke_group.attrs["HT_type"] = "moke"
         moke_group.attrs["instrument"] = "S-MOKE"
         moke_group.attrs["moke_writer"] = MOKE_WRITER_VERSION
 
+        initialize_dataset_group(moke_group)
+        positions_group = moke_group.get("positions")
+
         # For every position, write measurement to HDF5
-        for scan_number in grouped_dict.keys():
-            info_dict = moke_info_from_filename(grouped_dict[scan_number][0])
-            mag_array, pul_array, sum_array = read_data_from_moke(grouped_dict[scan_number])
+        for scan_number in path_dict.keys():
+            info_dict = moke_info_from_filename(path_dict[scan_number][0])
+            mag_array, pul_array, sum_array = read_data_from_moke(path_dict[scan_number])
             time_dict = get_time_from_moke(len(mag_array))
             nb_acquisitions = len(mag_array[0])
 
             x_pos = info_dict['x_pos']
             y_pos = info_dict['y_pos']
 
-            scan = moke_group.create_group(f"({x_pos},{y_pos})")
-            scan.attrs["index"] = scan_number
-            scan.attrs["ignored"] = False
+            position_group = positions_group.create_group(f"({x_pos},{y_pos})")
+            position_group.attrs["index"] = scan_number
+            position_group.attrs["ignored"] = False
 
             # Instrument group for metadata
-            instrument_group = scan.create_group("instrument")
+            instrument_group = position_group.create_group("instrument")
             instrument_group.attrs["HT_class"] = "HTinstrument"
             instrument_group["x_pos"] = convertFloat(x_pos)
             instrument_group["y_pos"] = convertFloat(y_pos)
@@ -238,10 +230,10 @@ def write_moke_to_hdf5(hdf5_path, source_path, dataset_name = None, mode="a"):
             instrument_group["y_pos"].attrs["units"] = "mm"
 
             # Measurement group for data
-            data = scan.create_group("measurement")
-            data.attrs["HT_class"] = "HTmeasurement"
+            measurement_group = position_group.create_group("measurement")
+            measurement_group.attrs["HT_class"] = "HTmeasurement"
             time = [convertFloat(t) for t in time_dict]
-            time_node = data.create_dataset("time", data=time, dtype="float")
+            time_node = measurement_group.create_dataset("time", data=time, dtype="float")
             time_node.attrs["units"] = "μs"
 
             # Prepare arrays to generate mean
@@ -252,7 +244,7 @@ def write_moke_to_hdf5(hdf5_path, source_path, dataset_name = None, mode="a"):
 
             # Create shot groups in HDF5
             for i in range(nb_acquisitions):
-                shot_group = data.create_group(f"shot_{i+1}")
+                shot_group = measurement_group.create_group(f"shot_{i+1}")
                 mag = mag_array[:,i]
                 mag_node = shot_group.create_dataset(
                     f"magnetization_{i+1}", data=mag, dtype="float"
@@ -287,7 +279,7 @@ def write_moke_to_hdf5(hdf5_path, source_path, dataset_name = None, mode="a"):
             mean_magnetization = np.mean(np.stack(mag_arrays), axis=0)
             mean_reflectivity = np.mean(np.stack(sum_arrays), axis=0)
 
-            shot_group = data.create_group("shot_mean")
+            shot_group = measurement_group.create_group("shot_mean")
             integrated_pulse_mean_node = shot_group.create_dataset(
                 "integrated_pulse_mean", data=mean_integrated_pulse, dtype="float"
             )
@@ -312,10 +304,12 @@ def moke_results_dict_to_hdf5(moke_group, results_dict, treatment_dict=None):
     if treatment_dict is None:
         treatment_dict = {}
 
-    for position in list(moke_group.keys()):
+    positions_group = get_positions_group(moke_group)
+
+    for position in list(positions_group.keys()):
         if "scan_parameters" in position:
             continue
-        position_group = moke_group[position]
+        position_group = positions_group[position]
         if position in results_dict.keys():
 
             if "results" in position_group:
