@@ -74,6 +74,9 @@ def write_dektak_to_hdf5(hdf5_path, source_path, dataset_name=None, mode="a"):
         profil_group.attrs["instrument"] = "Bruker DektakXT"
         profil_group.attrs["profil_writer"] = PROFIL_WRITER_VERSION
 
+        initialize_dataset_group(profil_group)
+        positions_group = profil_group.get("positions")
+
         for file_name in safe_rglob(source_path, "*.asc2d"):
             file_path = source_path / file_name
 
@@ -84,18 +87,19 @@ def write_dektak_to_hdf5(hdf5_path, source_path, dataset_name=None, mode="a"):
             x_pos, y_pos = position_from_tuple(scan_number)
 
             try:
-                scan = profil_group.create_group(
+                position_group = positions_group.create_group(
                     f"({round(float(x_pos), 1)},{round(float(y_pos),1)})"
                 )
-                scan.attrs["ignored"] = False
+                position_group.attrs["ignored"] = False
             except ValueError:
                 print(
-                    f"Warning, data for position {round(float(x_pos), 1)},{round(float(y_pos),1)} already exists, this should not happen, skipping."
+                    f"Warning, data for position {round(float(x_pos), 1)},{round(float(y_pos),1)} already exists"
+                    f"This should not happen, skipping."
                 )
                 continue
 
             # Instrument group for metadata
-            instrument = scan.create_group("instrument")
+            instrument = position_group.create_group("instrument")
             instrument.attrs["NX_class"] = "HTinstrument"
             instrument["x_pos"] = convertFloat(x_pos)
             instrument["y_pos"] = convertFloat(y_pos)
@@ -105,7 +109,7 @@ def write_dektak_to_hdf5(hdf5_path, source_path, dataset_name=None, mode="a"):
             set_instrument_from_dict(header_dict, instrument)
 
             # Measurement group for data
-            data = scan.create_group("measurement")
+            data = position_group.create_group("measurement")
             data.attrs["NX_class"] = "HTmeasurement"
             for col in asc2d_dataframe.columns:
                 node = data.create_dataset(

@@ -208,7 +208,9 @@ def callbacks_profil(app):
             if fit_mode == "Batch fitting":
                 with h5py.File(hdf5_path, "a") as hdf5_file:
                     profil_group = hdf5_file[selected_dataset]
-                    for position, position_group in profil_group.items():
+                    positions_group = get_positions_group(profil_group)
+                    for position, position_group in positions_group.items():
+                        print(position)
                         results_dict = profil_spot_fit_steps(
                             position_group, nb_steps, x0
                         )
