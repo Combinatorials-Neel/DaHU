@@ -178,7 +178,10 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
             esrf_group.attrs["instrument"] = "bm02 esrf"
             esrf_group.attrs["esrf_writer"] = ESRF_WRITER_VERSION
 
-            alignment_group = esrf_group.create_group("alignment_scans")
+            initialize_dataset_group(esrf_group)
+            positions_group = esrf_group.get("positions")
+
+            alignment_group = esrf_group.get("additional_scans")
             for name, group in raw_source.items():
                 alignment_test, alignment_type = esrf_check_if_alignment(group)
 
@@ -208,7 +211,7 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                         del source_measurement_group["CdTe"]
 
                 elif esrf_check_if_measurement(group):
-                    target_position_group = esrf_group.create_group(
+                    target_position_group = positions_group.create_group(
                         f"({x_pos},{y_pos})"
                     )
 
@@ -263,11 +266,11 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
         with h5py.File(processed_h5_path, "r") as processed_source:
             for name, group in processed_source.items():
                 integrate_group = group.get("CdTe_integrate")
-                for target_name, target_group in esrf_group.items():
+                for target_name, target_group in positions_group.items():
                     if "alignment" in target_name:
                         continue
                     if target_group.attrs["index"] == name:
-                        target_position_group = esrf_group.get(target_name)
+                        target_position_group = positions_group.get(target_name)
                         target_instrument_group = target_position_group.get(
                             "instrument"
                         )
@@ -288,7 +291,7 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                         del target_integrated_group
 
         # Iterate over newly created groups to then format them properly
-        for position, position_group in esrf_group.items():
+        for position, position_group in positions_group.items():
             if position == "alignment_scans":
                 continue
             try:
