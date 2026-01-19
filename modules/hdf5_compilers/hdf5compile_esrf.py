@@ -347,7 +347,8 @@ def write_xrd_results_to_hdf5(hdf5_path, results_folderpath, target_dataset):
         for lst_filepath in safe_rglob(results_folderpath, pattern="*.lst"):
             dia_filepath = lst_filepath.with_suffix(".dia")
             file_index = str(lst_filepath.stem).split("_")[-1]
-            for name, group in target_group.items():
+            positions_group = get_positions_group(target_group)
+            for name, group in positions_group.items():
                 if name == "alignment_scans":
                     continue
                 else:
