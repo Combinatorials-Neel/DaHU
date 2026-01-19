@@ -40,11 +40,12 @@ def profil_get_results_from_hdf5(profil_group, target_x, target_y):
     for value, value_group in results_group.items():
         if isinstance(value_group, h5py.Group):
             for vvalue, vvalue_group in value_group.items():
-                data_dict[vvalue] = vvalue_group
+                data_dict[vvalue] = vvalue_group[()]
         else:
             data_dict[value] = value_group[()]
 
     data_dict["type"] = results_group.attrs["type"]
+    print(data_dict)
 
     return data_dict
 
@@ -277,9 +278,9 @@ def profil_plot_adjusted_profile_from_dataframe(fig, df, fit_parameters = None, 
 
 
 def profil_plot_measured_heights_from_dict(fig, results_dict, position=(3,1)):
-    position_list = results_dict["extracted_positions"]
-    height_list = results_dict["extracted_heights"]
-    measured_height = results_dict["measured_height"]
+    position_list = results_dict["fit_positions"]
+    height_list = results_dict["fit_thicknesses"]
+    measured_height = results_dict["measured_thickness"]
 
     # Third plot
     fig.update_xaxes(title_text="Distance_(um)", row=2, col=1)

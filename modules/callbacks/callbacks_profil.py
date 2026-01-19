@@ -162,7 +162,7 @@ def callbacks_profil(app):
         if results_dict:
             fit_coefficients = results_dict["fit_coefficients"]
             fit_parameters = results_dict["fit_parameters"]
-            measured_height = results_dict["measured_height"]
+            measured_height = results_dict["measured_thickness"]
 
         fit_coefficients, measurement_df = profil_measurement_dataframe_treat(
             measurement_df, fit_coefficients
