@@ -190,7 +190,7 @@ def copy_datasets_to_hdf5(hdf5_path, source_path, dataset_list, copy_type):
         with h5py.File(hdf5_path, "r+") as hdf5_file:
             for dataset in dataset_list:
                 if copy_type == "hard copy":
-                    source_file.copy(dataset, hdf5_file)
+                    source_file.copy(dataset, hdf5_file, expand_soft=True)
                 if copy_type == "soft copy":
                     target_dataset = hdf5_file.create_group(dataset)
                     source_dataset = source_file[dataset]
