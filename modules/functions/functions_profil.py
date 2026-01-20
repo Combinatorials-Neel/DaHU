@@ -45,7 +45,6 @@ def profil_get_results_from_hdf5(profil_group, target_x, target_y):
             data_dict[value] = value_group[()]
 
     data_dict["type"] = results_group.attrs["type"]
-    print(data_dict)
 
     return data_dict
 
@@ -268,7 +267,7 @@ def profil_plot_adjusted_profile_from_dataframe(fig, df, fit_parameters = None, 
         fig.add_trace(
             go.Scatter(
                 x=df["distance_(um)"],
-                y=multi_step_function(df["distance_(um)"], *fit_parameters),
+                y=multi_step_function(df["distance_(um)"], fit_parameters),
                 mode="lines",
                 line=dict(color="Crimson", width=2),
             ), row=position[0], col=position[1]
