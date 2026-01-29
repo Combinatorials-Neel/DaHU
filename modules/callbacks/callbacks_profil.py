@@ -210,7 +210,6 @@ def callbacks_profil(app):
                     profil_group = hdf5_file[selected_dataset]
                     positions_group = get_positions_group(profil_group)
                     for position, position_group in positions_group.items():
-                        print(position)
                         results_dict = profil_spot_fit_steps(
                             position_group, nb_steps, x0
                         )

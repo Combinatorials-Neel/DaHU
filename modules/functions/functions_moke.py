@@ -110,10 +110,9 @@ def moke_get_instrument_dict_from_hdf5(moke_group):
     else: # temporary implementation (I know, I know...)
         positions_group = get_positions_group(moke_group)
         position  = next(iter(positions_group)) # Get any position from the group
-        parameters_group = moke_group.get(f"{position}/instrument")
+        parameters_group = positions_group.get(f"{position}/instrument")
     for value, value_group in parameters_group.items():
         instrument_dict[value] = convert_bytes(value_group[()])
-
     return instrument_dict
 
 
