@@ -371,7 +371,9 @@ def write_xrd_results_to_hdf5(hdf5_path, results_folderpath, target_dataset):
                             skiprows=1,
                             header=None,
                             names=column_names,
+                            index_col=False
                         )
+                        print(df)
                         df["Residual"] = df["Total Counts"] - df["Calculated"]
 
                         if "results" in group.keys():
