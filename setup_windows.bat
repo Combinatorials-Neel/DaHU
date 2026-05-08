@@ -13,7 +13,8 @@ call venv\Scripts\activate
 REM Upgrade pip and install dependencies
 echo Installing dependencies...
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install --upgrade setuptools
+pip install --no-cache-dir -r requirements.txt
 
 echo Setup complete! To activate the environment manually, run: venv\Scripts\activate
 pause
