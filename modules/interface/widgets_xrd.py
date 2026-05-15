@@ -200,7 +200,7 @@ def widget_xrd_integrate_modal():
                     dbc.Col(children=[
                         dbc.Select(
                             id="pyfai_poni_select",
-                            options=["esrf1", "esrf2", "esrf3"]
+                            options=["esrf1", "esrf2", "esrf3", "esrf4"]
                         )
                     ], width=8)
                 ]),

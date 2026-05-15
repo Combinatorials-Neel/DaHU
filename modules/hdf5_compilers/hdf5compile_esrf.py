@@ -6,7 +6,7 @@ from ..functions.functions_shared import *
 from ..functions.functions_xrd import xrd_q_tth
 from ..hdf5_compilers.hdf5compile_base import *
 
-ESRF_WRITER_VERSION = "0.3"
+ESRF_WRITER_VERSION = "0.31"
 
 
 def return_cdte_source_path(dataset_group):
@@ -57,6 +57,8 @@ def esrf_check_if_alignment(hdf5_group):
             return True, "kth"
         if "th" in title:
             return True, "th"
+        if "ome" in title:
+            return True, "ome"
         if "tsz" in title:
             return True, "tsz"
 
@@ -304,6 +306,9 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                 hdf5_squeeze_dataset(hdf5_file, measurement_group["falconx/falconx_det0"])
 
                 # Sometimes unit is A^-1, sometimes it's nm^-1, who even knows anymore
+                if integrated_group is None:
+                    continue
+
                 q_group = integrated_group["q"]
                 q_data = q_group[()]
                 if q_group.attrs["units"] == "A^-1":

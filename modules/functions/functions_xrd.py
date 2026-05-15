@@ -465,7 +465,11 @@ def xrd_pyfai_medfilt1d(poni, image, points, percentile=(0, 99.9)):
 
 def xrd_write_integrated_to_hdf5(position_group, reintegrated_dict, overwrite=True):
     if overwrite:
-        del position_group["measurement/integrated"]
+        try:
+            del position_group["measurement/integrated"]
+            del position_group["instrument/integrated"]
+        except KeyError:
+            pass
     else:
         rename_group(position_group["measurement/integrated"], "integrated", "old_integrated")
 
