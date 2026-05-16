@@ -39,7 +39,11 @@ def callbacks_xrd(app):
             dataset_list = ["/"]
         else:
             with h5py.File(hdf5_path, "r") as hdf5_file:
-                dataset_list = get_hdf5_datasets(hdf5_file, dataset_type="xrd")
+                dataset_list = []
+                dataset_list = dataset_list + get_hdf5_datasets(hdf5_file, dataset_type="xrd")
+                dataset_list = dataset_list + get_hdf5_datasets(hdf5_file, dataset_type="xrd_wafer")
+                dataset_list = dataset_list + get_hdf5_datasets(hdf5_file, dataset_type="xrd_furnace")
+
         return dataset_list, dataset_list[0]
 
     # Reads the given dataset into a DataFrame, then serialize it to json.

@@ -21,15 +21,18 @@ def xrd_conditions(hdf5_path, *args, **kwargs):
     if not h5py.is_hdf5(hdf5_path):
         return False
     with h5py.File(hdf5_path, "r") as hdf5_file:
-        dataset_list = get_hdf5_datasets(hdf5_file, dataset_type="xrd")
+        dataset_list = []
+        dataset_list = dataset_list + get_hdf5_datasets(hdf5_file, dataset_type="xrd")
+        dataset_list = dataset_list + get_hdf5_datasets(hdf5_file, dataset_type="xrd_wafer")
+        dataset_list = dataset_list + get_hdf5_datasets(hdf5_file, dataset_type="xrd_furnace")
         if len(dataset_list) == 0:
             return False
     return True
 
 
 def xrd_q_tth(q_list, energy):
-    constant = 1.2363  # hc/e in keV.nm
-    wavelength = constant / energy  # in nm
+    constant = 1.2363 # hc/e in keV.nm
+    wavelength = constant / energy # in nm
     to_theta = lambda q: np.arcsin(q * wavelength / (4 * np.pi))  # in rad
     to_degree = lambda t: t * 180 / np.pi
 
@@ -42,7 +45,7 @@ def xrd_tth_q(tth_list, energy):
     constant = 1.2363  # hc/e in keV.nm
     wavelength = constant / energy  # in nm
     to_rad = lambda t: t * np.pi / 180
-    to_q = lambda t: (4 * np.pi) / wavelength * np.sin(t / 2)
+    to_q = lambda t: (4*np.pi)/wavelength * np.sin(t/2)
 
     q_list = [to_q(to_rad(tth)) for tth in tth_list]
 
@@ -380,8 +383,9 @@ def xrd_export_sum_spectrum(positions_group, export_path):
     return True
 
 
-def export_xrd_position_to_files(position_group, export_path, save_metadata=False):
+def export_xrd_position_to_files(position_group, export_path, save_metadata = False, save_image=False):
     index = position_group.attrs["index"]
+    group_name = position_group.name
 
     image_path = (export_path / index).with_suffix(".img")
     file_path = (export_path / index).with_suffix(".xy")
@@ -394,7 +398,8 @@ def export_xrd_position_to_files(position_group, export_path, save_metadata=Fals
     image_file = dtrekimage.DtrekImage()
     image_file.data = image_array
 
-    image_file.save(image_path)
+    if save_image:
+        image_file.save(image_path)
 
     integrated_group = position_group.get("measurement/integrated")
     counts_array = integrated_group["counts"][()]
@@ -422,7 +427,7 @@ def xrd_make_analysis_dataframe_from_hdf5(xrd_group):
 
         counts = np.sum(measurement_group["2Dimage"][()])
         integrated = measurement_group["integrated/counts"][()]
-        peaks, _ = find_peaks(integrated[: int(0.9 * len(integrated))], prominence=3.5)
+        peaks, _ = find_peaks(integrated[:int(0.9*len(integrated))], prominence=3.5)
 
         data_dict = {
             "x_pos (mm)": instrument_group["x_pos"][()],
@@ -509,7 +514,7 @@ def xrd_make_analysis_dataframe_from_nexus(xrd_group):
 
         counts = np.sum(measurement_group["CdTe"][0])
         integrated = integrated_group["intensity"][()]
-        peaks, _ = find_peaks(integrated[: int(0.9 * len(integrated))], prominence=3.5)
+        peaks, _ = find_peaks(integrated[:int(0.9*len(integrated))], prominence=3.5)
 
         data_dict = {
             "x_pos (mm)": positioners_group["xsamp"][()],
@@ -536,7 +541,7 @@ def xrd_pyfai_medfilt1d(poni, image, points, percentile=(0, 99.9)):
 
     I = reintegrated[1]
 
-    I = I / np.sum(I)
+    I = I/np.sum(I)
     counts = I * np.sum(image)
 
     config = {

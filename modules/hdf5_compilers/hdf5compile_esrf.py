@@ -6,7 +6,7 @@ from ..functions.functions_shared import *
 from ..functions.functions_xrd import xrd_q_tth
 from ..hdf5_compilers.hdf5compile_base import *
 
-ESRF_WRITER_VERSION = "0.31"
+ESRF_WRITER_VERSION = "0.4"
 
 
 def return_cdte_source_path(dataset_group):
@@ -61,6 +61,12 @@ def esrf_check_if_alignment(hdf5_group):
             return True, "ome"
         if "tsz" in title:
             return True, "tsz"
+        if "h2tx" in title:
+            return True, "h2tx"
+        if "h2tz" in title:
+            return True, "h2tz"
+        if "h2tz" in title:
+            return True, "h2tz"
 
     return False, None
 
@@ -175,8 +181,13 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
 
     with h5py.File(hdf5_path, "a") as hdf5_file:
         with h5py.File(raw_h5_path, "a") as raw_source:
+            if "nanodacse_loop" in raw_source["1.1/instrument"].keys():
+                mode = "furnace"
+            else:
+                mode = "wafer"
+
             esrf_group = hdf5_file.create_group(dataset_name)
-            esrf_group.attrs["HT_type"] = "xrd"
+            esrf_group.attrs["HT_type"] = f"xrd_{mode}"
             esrf_group.attrs["instrument"] = "bm02 esrf"
             esrf_group.attrs["esrf_writer"] = ESRF_WRITER_VERSION
 
@@ -190,13 +201,17 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                 source_instrument_group = group.get("instrument")
                 source_measurement_group = group.get("measurement")
 
-                x_pos = np.round(source_instrument_group["positioners/xsamp"][()], 2)
-                # Correct for when the dial gives negative 0
-                if x_pos == -0:
-                    x_pos = 0.0
-                y_pos = np.round(source_instrument_group["positioners/ysamp"][()], 2)
-                if y_pos == -0:
-                    y_pos = 0.0
+                if mode == "wafer":
+                    x_pos = np.round(source_instrument_group["positioners/xsamp"][()], 2)
+                    # Correct for when the dial gives negative 0
+                    if x_pos == -0:
+                        x_pos = 0.0
+                    y_pos = np.round(source_instrument_group["positioners/ysamp"][()], 2)
+                    if y_pos == -0:
+                        y_pos = 0.0
+                elif mode == "furnace":
+                    temperature = int(np.round(source_instrument_group["nanodacse_in1/data"][()], 0))
+
 
                 if alignment_test:
                     target_position_group = create_incremental_group(
@@ -213,9 +228,14 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                         del source_measurement_group["CdTe"]
 
                 elif esrf_check_if_measurement(group):
-                    target_position_group = positions_group.create_group(
-                        f"({x_pos},{y_pos})"
-                    )
+                    if mode == "wafer":
+                        target_position_group = positions_group.create_group(
+                            f"({x_pos},{y_pos})"
+                        )
+                    if mode == "furnace":
+                        target_position_group = positions_group.create_group(
+                            f"({temperature} C, {name})"
+                        )
 
                 else:
                     print(f"Couldn't identify measurement {name}. Skipping")
@@ -230,8 +250,11 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                 )
 
                 target_instrument_group = target_position_group.get("instrument")
-                target_instrument_group.create_dataset(name = "x_pos", data = x_pos)
-                target_instrument_group.create_dataset(name = "y_pos", data = y_pos)
+                if mode == "wafer":
+                    target_instrument_group.create_dataset(name = "x_pos", data = x_pos)
+                    target_instrument_group.create_dataset(name = "y_pos", data = y_pos)
+                elif mode == "furnace":
+                    target_instrument_group.create_dataset(name = "temperature", data = temperature)
 
                 # Put some basic order in the measurement group
                 target_measurement_group = target_position_group.create_group(
