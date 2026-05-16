@@ -7,7 +7,7 @@ from ..hdf5_compilers.hdf5compile_base import *
 
 import xml.etree.ElementTree as et
 
-EDX_WRITER_VERSION = "0.1 beta"
+EDX_WRITER_VERSION = "0.2"
 
 
 def visit_items(item, edx_dict=None):
@@ -126,25 +126,43 @@ def get_position_from_path(filepath):
 
     return int(x_idx), int(y_idx)
 
+def find_max_idx(source_path):
+    max_x = 0
+    max_y = 0
+    for file_name in safe_rglob(source_path, pattern="*.spx"):
+        file_path = source_path / file_name
+        scan_numbers = get_position_from_path(file_path)
+        if scan_numbers[0] > max_x:
+            max_x = scan_numbers[0]
+        if scan_numbers[1] > max_y:
+            max_y = scan_numbers[1]
+
+    return max_x, max_y
+
+
+
 
 def calculate_wafer_positions(
-    scan_numbers, step_x=5, step_y=5, start_x=-40, start_y=-40
+    scan_numbers, start_x=-40, start_y=-40, end_x=40, end_y=40, max_idx_x=17, max_idx_y=17
 ):
     """
     Calculates the wafer positions based on scan numbers and specified step and start values.
 
     Args:
         scan_numbers (tuple): A tuple containing the x and y indices of the scan.
-        step_x (int, optional): The step size in the x direction. Defaults to 5.
-        step_y (int, optional): The step size in the y direction. Defaults to 5.
         start_x (int, optional): The starting position in the x direction. Defaults to -40.
         start_y (int, optional): The starting position in the y direction. Defaults to -40.
+        end_x (int, optional): The ending position in the x direction. Defaults to 40.
+        end_y (int, optional): The ending position in the y direction. Defaults to 40.
 
     Returns:
         tuple: A tuple containing the calculated x and y positions on the wafer.
     """
     # Only valid if +X +Y direction scan is selected in the EDX scan and motors axis are aligned with wafer axis
     x_idx, y_idx = scan_numbers
+    step_x = (np.abs(start_x) + np.abs(end_x)) / (max_idx_x - 1)
+    step_y = (np.abs(start_y) + np.abs(end_y)) / (max_idx_y - 1)
+
     x_pos, y_pos = -((x_idx - 1) * step_x + start_x), (y_idx - 1) * step_y + start_y
 
     return float(x_pos), float(y_pos)
@@ -279,22 +297,27 @@ def write_edx_to_hdf5(hdf5_path, source_path, dataset_name=None):
         edx_group.attrs["instrument"] = "Bruker Quantax Xflash-7"
         edx_group.attrs["edx_writer"] = EDX_WRITER_VERSION
 
+        initialize_dataset_group(edx_group)
+        positions_group = edx_group.get("positions")
+
+        max_x, max_y = find_max_idx(source_path)
+
         for file_name in safe_rglob(source_path, pattern="*.spx"):
             file_path = source_path / file_name
 
             scan_numbers = get_position_from_path(file_path)
-            wafer_positions = calculate_wafer_positions(scan_numbers)
+            wafer_positions = calculate_wafer_positions(scan_numbers, max_idx_x=max_x, max_idx_y=max_y)
             edx_dict, channels = read_data_from_spx(file_path)
             energy = make_energy_dataset(edx_dict, channels)
 
-            scan = edx_group.create_group(
+            position_group = positions_group.create_group(
                 f"({wafer_positions[0]},{wafer_positions[1]})"
             )
-            scan.attrs["index"] = scan_numbers
-            scan.attrs["ignored"] = False
+            position_group.attrs["index"] = scan_numbers
+            position_group.attrs["ignored"] = False
 
             # Instrument group for metadata
-            instrument = scan.create_group("instrument")
+            instrument = position_group.create_group("instrument")
             instrument.attrs["NX_class"] = "HTinstrument"
 
             instrument["x_pos"] = wafer_positions[0]
@@ -303,12 +326,12 @@ def write_edx_to_hdf5(hdf5_path, source_path, dataset_name=None):
             instrument["y_pos"].attrs["units"] = "mm"
 
             # Result group
-            results = scan.create_group("results")
+            results = position_group.create_group("results")
             results.attrs["NX_class"] = "HTresult"
             set_instrument_and_result_from_dict(edx_dict, instrument, results)
 
             # Measurement group
-            data = scan.create_group("measurement")
+            data = position_group.create_group("measurement")
             data.attrs["NX_class"] = "HTdata"
 
             counts = data.create_dataset(

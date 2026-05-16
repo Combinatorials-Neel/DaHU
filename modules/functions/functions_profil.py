@@ -19,40 +19,40 @@ def profil_conditions(hdf5_path, *args, **kwargs):
 
 
 def profil_get_measurement_from_hdf5(profil_group, target_x, target_y):
-    for position, position_group in profil_group.items():
-        instrument_group = position_group.get("instrument")
-        if instrument_group["x_pos"][()] == target_x and instrument_group["y_pos"][()] == target_y:
-            measurement_group = position_group.get("measurement")
+    position_group = get_target_position_group(profil_group, target_x, target_y)
+    measurement_group = position_group.get("measurement")
 
-            distance_array = measurement_group["distance"][()]
-            profile_array = measurement_group["profile"][()]
+    distance_array = measurement_group["distance"][()]
+    profile_array = measurement_group["profile"][()]
 
-            measurement_dataframe = pd.DataFrame({"distance_(um)": distance_array, "total_profile_(nm)": profile_array})
+    measurement_dataframe = pd.DataFrame({"distance_(um)": distance_array, "total_profile_(nm)": profile_array})
 
-            return measurement_dataframe
+    return measurement_dataframe
 
 
 def profil_get_results_from_hdf5(profil_group, target_x, target_y):
     data_dict = {}
 
-    for position, position_group in profil_group.items():
-        instrument_group = position_group.get("instrument")
-        if instrument_group["x_pos"][()] == target_x and instrument_group["y_pos"][()] == target_y:
-            results_group = position_group.get("results")
-            if results_group is None:
-                return None
-            for value, value_group in results_group.items():
-                data_dict[value] = value_group[()]
-            data_dict["type"] = results_group.attrs["type"]
+    position_group = get_target_position_group(profil_group, target_x, target_y)
+    results_group = position_group.get("results")
+    if results_group is None:
+        return None
+    for value, value_group in results_group.items():
+        if isinstance(value_group, h5py.Group):
+            for vvalue, vvalue_group in value_group.items():
+                data_dict[vvalue] = vvalue_group[()]
+        else:
+            data_dict[value] = value_group[()]
+
+    data_dict["type"] = results_group.attrs["type"]
 
     return data_dict
 
 
-def multi_step_function(x, *params):
+def multi_step_function(x, params):
     # Generate function with multiple steps
     # Even indices are the x positions of the steps,
     # Odd indices are the y values after each step.
-
     y = np.full_like(x, params[1])
     for i in range(0, len(params) - 2, 2):
         x0 = params[i]
@@ -106,7 +106,7 @@ def extract_fit(fitted_params):
 
 def residuals(params, x, y):
     # Loss function for fitting
-    return y - multi_step_function(x, *params)
+    return y - multi_step_function(x, params)
 
 
 def profil_measurement_dataframe_treat(df, fit_coefficients=None, smoothing=True, degree=1):
@@ -156,7 +156,7 @@ def profil_measurement_dataframe_fit_steps(df, n_steps, x0_guess):
 
     results_dict["fit_parameters"] = fitted_params
     results_dict["fit_positions"] = position_list
-    results_dict["fit_heights"] = height_list
+    results_dict["fit_thicknesses"] = height_list
     results_dict["fit_curve"] = multi_step_function(distance_array, fitted_params)
     results_dict["measured_thickness"] = np.mean(height_list).round()
 
@@ -180,9 +180,11 @@ def profil_spot_fit_steps(position_group, nb_steps, x0):
 
 
 def profil_make_results_dataframe_from_hdf5(profil_group):
+    valid_results = ["measured_thickness"]
     data_dict_list = []
+    positions_group = get_positions_group(profil_group)
 
-    for position, position_group in profil_group.items():
+    for position, position_group in positions_group.items():
         instrument_group = position_group.get("instrument")
         # Exclude spots outside the wafer
         if np.abs(instrument_group["x_pos"][()]) + np.abs(instrument_group["y_pos"][()]) <= 60:
@@ -195,11 +197,12 @@ def profil_make_results_dataframe_from_hdf5(profil_group):
 
             if results_group is not None:
                 for value, value_group in results_group.items():
-                    if "units" in value_group.attrs:
-                        units = value_group.attrs["units"]
-                    else:
-                        units = "arb"
-                    data_dict[f"{value}_({units})"] = value_group[()]
+                    if value in valid_results:
+                        if "units" in value_group.attrs:
+                            units = value_group.attrs["units"]
+                        else:
+                            units = "arb"
+                        data_dict[f"{value}_({units})"] = value_group[()]
 
             data_dict_list.append(data_dict)
 
@@ -264,7 +267,7 @@ def profil_plot_adjusted_profile_from_dataframe(fig, df, fit_parameters = None, 
         fig.add_trace(
             go.Scatter(
                 x=df["distance_(um)"],
-                y=multi_step_function(df["distance_(um)"], *fit_parameters),
+                y=multi_step_function(df["distance_(um)"], fit_parameters),
                 mode="lines",
                 line=dict(color="Crimson", width=2),
             ), row=position[0], col=position[1]
@@ -274,9 +277,9 @@ def profil_plot_adjusted_profile_from_dataframe(fig, df, fit_parameters = None, 
 
 
 def profil_plot_measured_heights_from_dict(fig, results_dict, position=(3,1)):
-    position_list = results_dict["extracted_positions"]
-    height_list = results_dict["extracted_heights"]
-    measured_height = results_dict["measured_height"]
+    position_list = results_dict["fit_positions"]
+    height_list = results_dict["fit_thicknesses"]
+    measured_height = results_dict["measured_thickness"]
 
     # Third plot
     fig.update_xaxes(title_text="Distance_(um)", row=2, col=1)

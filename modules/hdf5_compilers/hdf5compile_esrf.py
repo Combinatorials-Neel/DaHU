@@ -6,7 +6,7 @@ from ..functions.functions_shared import *
 from ..functions.functions_xrd import xrd_q_tth
 from ..hdf5_compilers.hdf5compile_base import *
 
-ESRF_WRITER_VERSION = "0.3"
+ESRF_WRITER_VERSION = "0.31"
 
 
 def return_cdte_source_path(dataset_group):
@@ -57,6 +57,8 @@ def esrf_check_if_alignment(hdf5_group):
             return True, "kth"
         if "th" in title:
             return True, "th"
+        if "ome" in title:
+            return True, "ome"
         if "tsz" in title:
             return True, "tsz"
 
@@ -178,7 +180,10 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
             esrf_group.attrs["instrument"] = "bm02 esrf"
             esrf_group.attrs["esrf_writer"] = ESRF_WRITER_VERSION
 
-            alignment_group = esrf_group.create_group("alignment_scans")
+            initialize_dataset_group(esrf_group)
+            positions_group = esrf_group.get("positions")
+
+            alignment_group = esrf_group.get("additional_scans")
             for name, group in raw_source.items():
                 alignment_test, alignment_type = esrf_check_if_alignment(group)
 
@@ -208,7 +213,7 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                         del source_measurement_group["CdTe"]
 
                 elif esrf_check_if_measurement(group):
-                    target_position_group = esrf_group.create_group(
+                    target_position_group = positions_group.create_group(
                         f"({x_pos},{y_pos})"
                     )
 
@@ -263,11 +268,11 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
         with h5py.File(processed_h5_path, "r") as processed_source:
             for name, group in processed_source.items():
                 integrate_group = group.get("CdTe_integrate")
-                for target_name, target_group in esrf_group.items():
+                for target_name, target_group in positions_group.items():
                     if "alignment" in target_name:
                         continue
                     if target_group.attrs["index"] == name:
-                        target_position_group = esrf_group.get(target_name)
+                        target_position_group = positions_group.get(target_name)
                         target_instrument_group = target_position_group.get(
                             "instrument"
                         )
@@ -288,7 +293,7 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                         del target_integrated_group
 
         # Iterate over newly created groups to then format them properly
-        for position, position_group in esrf_group.items():
+        for position, position_group in positions_group.items():
             if position == "alignment_scans":
                 continue
             try:
@@ -301,6 +306,9 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                 hdf5_squeeze_dataset(hdf5_file, measurement_group["falconx/falconx_det0"])
 
                 # Sometimes unit is A^-1, sometimes it's nm^-1, who even knows anymore
+                if integrated_group is None:
+                    continue
+
                 q_group = integrated_group["q"]
                 q_data = q_group[()]
                 if q_group.attrs["units"] == "A^-1":
@@ -344,7 +352,8 @@ def write_xrd_results_to_hdf5(hdf5_path, results_folderpath, target_dataset):
         for lst_filepath in safe_rglob(results_folderpath, pattern="*.lst"):
             dia_filepath = lst_filepath.with_suffix(".dia")
             file_index = str(lst_filepath.stem).split("_")[-1]
-            for name, group in target_group.items():
+            positions_group = get_positions_group(target_group)
+            for name, group in positions_group.items():
                 if name == "alignment_scans":
                     continue
                 else:
@@ -367,7 +376,9 @@ def write_xrd_results_to_hdf5(hdf5_path, results_folderpath, target_dataset):
                             skiprows=1,
                             header=None,
                             names=column_names,
+                            index_col=False
                         )
+                        print(df)
                         df["Residual"] = df["Total Counts"] - df["Calculated"]
 
                         if "results" in group.keys():

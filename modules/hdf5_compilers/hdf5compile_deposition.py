@@ -55,7 +55,7 @@ def translate_prp_dict(prp_dict):
     pulverisation_dict = {
         "entry 1": "",
         "entry 2": "",
-        "entry 3": "argon flow (sccm)",
+        "entry 3": "",
         "entry 4": "",
         "entry 5": "sputtering time (s)",
         "entry 6": "",
@@ -69,7 +69,7 @@ def translate_prp_dict(prp_dict):
         "entry 14": "",
         "entry 15": "",
         "entry 16": "",
-        "entry 17": "RF power (W)",
+        "entry 17": "argon flow (sccm)",
         "entry 18": "",
         "entry 19": "",
         "entry 20": "",
@@ -88,7 +88,7 @@ def translate_prp_dict(prp_dict):
         "entry 33": "",
         "entry 34": "",
         "entry 35": "",
-        "entry 36": "",
+        "entry 36": "RF power (W)",
         "entry 37": "",
         "entry 38": "",
         "entry 39": "",
@@ -178,7 +178,7 @@ def write_magnetron_to_hdf5(hdf5_path, source_path):
         instrument_dict = read_prp_from_magnetron(file_path)
 
     with h5py.File(hdf5_path, "a") as hdf5_file:
-        deposition_group = hdf5_file.create_group("deposition")
+        deposition_group = hdf5_file.create_group("sample/deposition")
         deposition_group.attrs["HT_type"] = "magnetron"
         deposition_group.attrs["instrument"] = "AllianceConcept DP850"
         deposition_group.attrs["magnetron_writer"] = MAGNETRON_WRITER_VERSION

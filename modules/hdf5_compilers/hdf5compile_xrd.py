@@ -197,6 +197,9 @@ def write_smartlab_to_hdf5(hdf5_path, source_path, dataset_name):
         xrd_group.attrs["instrument"] = "Rigaku Smartlab"
         xrd_group.attrs["smartlab_writer"] = SMARTLAB_WRITER_VERSION
 
+        initialize_dataset_group(xrd_group)
+        positions_group = xrd_group.get("positions")
+
         for ras_name in safe_rglob(source_path, pattern="*.ras"):
             if "test" in str(ras_name):
                 continue
@@ -211,7 +214,7 @@ def write_smartlab_to_hdf5(hdf5_path, source_path, dataset_name):
                     img_header, img_data = read_image_from_img(img_path)
                     break
 
-            position_group = xrd_group.create_group(f"({x_pos},{y_pos})")
+            position_group = positions_group.create_group(f"({x_pos},{y_pos})")
             position_group.attrs["index"] = get_scan_numbers(str(ras_name))
             position_group.attrs["ignored"] = False
 

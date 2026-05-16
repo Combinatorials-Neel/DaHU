@@ -1,13 +1,13 @@
+setuptools~=78.1.1
 dash~=2.18.2
 dash_bootstrap_components
 plotly~=6.0.0
-scipy~=1.15.1
+scipy~=1.17.1
 IPython~=8.32.0
 openpyxl~=3.1.5
 numpy~=2.2.2
 natsort~=8.4.0
 pandas~=2.2.3
-setuptools~=78.1.1
 fabio~=2024.9.0
 ./modules/
 

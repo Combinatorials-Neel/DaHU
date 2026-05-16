@@ -1,5 +1,7 @@
 """ """
 import numpy as np
+from numpy.f2py.crackfortran import groupends
+from collections import defaultdict
 from scipy.signal import savgol_filter
 from plotly.subplots import make_subplots
 
@@ -17,6 +19,27 @@ def moke_conditions(hdf5_path, *args, **kwargs):
         if len(dataset_list) == 0:
             return False
     return True
+
+def moke_make_path_dictionary(source_path, pattern=r"^p(\d+)"):
+    """
+    Generates a dictionary of moke measurement files sorted by measurement p-number
+    Structure: {p-number:[file_path_1.txt, file_path_2.txt, ...], ...}
+
+    @param source_path: Folder path containing the measurements to be parsed
+    @param pattern: regex pattern to extract p-numbers from file names.
+                    Default example filename: p1_x-15.0_y45.0_magnetization.txt
+    @return: dictionary containing the paths sorted by p-numbers
+    """
+
+    grouped_dict = defaultdict(list)
+    for file_path in safe_rglob(source_path, pattern='p*.txt'):
+        file_name = file_path.name
+        match = re.search(pattern, str(file_name))
+        if match:
+            p_number = match.group(1)  # Extract p_number from measurement name
+            file_path = source_path / file_name
+            grouped_dict[p_number].append(file_path)  # Dictionary with measurements grouped by p_number
+    return grouped_dict
 
 
 def moke_get_measurement_from_hdf5(moke_group, target_x, target_y, index=1):
@@ -85,11 +108,11 @@ def moke_get_instrument_dict_from_hdf5(moke_group):
     if "scan_parameters" in moke_group: # legacy implementation for moke version <= 0.2
         parameters_group = moke_group.get("scan_parameters")
     else: # temporary implementation (I know, I know...)
-        position  = next(iter(moke_group)) # Get any position from the group
-        parameters_group = moke_group.get(f"{position}/instrument")
+        positions_group = get_positions_group(moke_group)
+        position  = next(iter(positions_group)) # Get any position from the group
+        parameters_group = positions_group.get(f"{position}/instrument")
     for value, value_group in parameters_group.items():
         instrument_dict[value] = convert_bytes(value_group[()])
-
     return instrument_dict
 
 
@@ -403,7 +426,8 @@ def moke_fit_intercept(data: pd.DataFrame, treatment_dict: dict):
 
 def moke_batch_fit(moke_group, treatment_dict):
     results_dict = {}
-    for position, position_group in moke_group.items():
+    positions_group = get_positions_group(moke_group)
+    for position, position_group in positions_group.items():
         if "scan_parameters" in position:
             continue
 
@@ -465,7 +489,8 @@ def moke_batch_fit(moke_group, treatment_dict):
 
 def moke_make_results_dataframe_from_hdf5(moke_group):
     data_dict_list = []
-    for position, position_group in moke_group.items():
+    positions_group = get_positions_group(moke_group)
+    for position, position_group in positions_group.items():
 
         if "scan_parameters" in position:
             continue

@@ -428,9 +428,10 @@ def callbacks_hdf5(app):
          Output("hdf5_text_box", "children", allow_duplicate=True)],
         Input("hdf5_measurement_type", "value"),
         State("hdf5_path_store", "data"),
+        State('hdf5_upload_folder_path', 'data'),
         prevent_initial_call=True
     )
-    def switch_input_mode(measurement_type, hdf5_path):
+    def switch_input_mode(measurement_type, hdf5_path, upload_path):
         # Redefine the base children for fallback
         new_children = [
             html.Label("Dataset Name"),
@@ -583,8 +584,10 @@ def callbacks_hdf5(app):
             ]
 
         if measurement_type == "HT hdf5":
-            with h5py.File(hdf5_path, "r") as hdf5_file:
-                datasets = get_hdf5_datasets(hdf5_file, "all")
+            with h5py.File(upload_path, "r") as hdf5_file:
+                datasets = get_hdf5_datasets(hdf5_file, dataset_type="all")
+                if "sample" in datasets:
+                    datasets.remove("sample")
             if not datasets:
                 return new_children, "No datasets found in HDF5 file"
             new_children = [
@@ -593,7 +596,6 @@ def callbacks_hdf5(app):
                     id="hdf5_dataset_name",
                     className="long-item",
                     options=datasets,
-                    value=datasets[0],
                     multi=True
                 ),
                 dcc.Dropdown(
@@ -761,6 +763,8 @@ def callbacks_hdf5(app):
             #Set default value for comment to ensure the group is created regardless
             if not comment:
                 comment = ""
+            if None in [type, element, time, thickness, temperature, power, distance, angle, comment]:
+                raise ValueError("All fields must be filled to create a new layer")
             with h5py.File(hdf5_path, "a") as hdf5_file:
                 sample_group = hdf5_file.get("sample")
                 #If layer group exists, overwrite the values

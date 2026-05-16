@@ -291,7 +291,7 @@ def callbacks_xrd(app):
             raise PreventUpdate
         if n_clicks > 0:
             hdf5_path = Path(hdf5_path)
-            export_path = hdf5_path.parent / selected_dataset
+            export_path = hdf5_path.parent / selected_dataset / "xrd_export"
             if not os.path.exists(export_path):
                 os.makedirs(export_path)
             else:
@@ -299,8 +299,9 @@ def callbacks_xrd(app):
 
             with h5py.File(hdf5_path, "r") as hdf5_file:
                 xrd_group = hdf5_file[selected_dataset]
-                xrd_export_sum_spectrum(xrd_group, export_path)
-                for position, position_group in xrd_group.items():
+                positions_group = get_positions_group(xrd_group)
+                xrd_export_sum_spectrum(positions_group, export_path)
+                for position, position_group in positions_group.items():
                     if position == "alignment_scans":
                         continue
                     export_xrd_position_to_files(position_group, export_path)
@@ -391,8 +392,9 @@ def callbacks_xrd(app):
             poni = pyFAI.load(str(poni_path))
 
             with h5py.File(hdf5_file, "a") as file:
-                dataset = file[selected_dataset]
-                for position, position_group in dataset.items():
+                xrd_group = file[selected_dataset]
+                positions_group = get_positions_group(xrd_group)
+                for position, position_group in positions_group.items():
                     if position == "alignment_scans":
                         continue
                     image = position_group["measurement/2Dimage"][()]

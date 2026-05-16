@@ -43,7 +43,7 @@ def write_library_to_dataset_hdf5(library_path, dataset_path, copy_type="soft"):
                 profil_position_group = profil_group[position]
                 xrd_position_group = xrd_group[position]
 
-                position_group = create_incremental_group(dataset_file, f"[{sample_name}]")
+                position_group = create_incremental_group(dataset_file, f"sample")
 
                 edx_position_group.copy(position_group)
                 moke_position_group.copy(position_group)
@@ -52,14 +52,8 @@ def write_library_to_dataset_hdf5(library_path, dataset_path, copy_type="soft"):
 
                 position_group.create_group("sample")
 
-            samples_group = dataset_file["samples"]
+            samples_group = dataset_file["libraries"]
             sample_group.create_group(f"{sample_name}")
 
             dataset_file.flush()
         library_file.flush()
-
-
-
-
-
-

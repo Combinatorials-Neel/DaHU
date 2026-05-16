@@ -52,7 +52,7 @@ def write_annealing_to_hdf5(hdf5_path, source_path, anneal_dict, dataset_name):
         dataset_name = source_path.stem
     
     with h5py.File(hdf5_path, "a") as hdf5_file:
-        annealing_group = hdf5_file.create_group(f"{dataset_name}")
+        annealing_group = hdf5_file.create_group(f"sample/{dataset_name}")
         annealing_group.attrs["HT_type"] = "annealing"
         annealing_group.attrs["instrument"] = "JetFirst RTA"
         annealing_group.attrs["data_source"] = source_path.name
@@ -75,7 +75,7 @@ def write_annealing_to_hdf5(hdf5_path, source_path, anneal_dict, dataset_name):
         
 def manual_annealing_to_hdf5(hdf5_path, anneal_dict, dataset_name):
     with h5py.File(hdf5_path, "a") as hdf5_file:
-        annealing_group = hdf5_file.create_group(dataset_name)
+        annealing_group = hdf5_file.create_group(f"sample/{dataset_name}")
         annealing_group.attrs["HT_type"] = "annealing"
         annealing_group.attrs["instrument"] = anneal_dict["instrument"]
         annealing_group.attrs["data_source"] = "manual"

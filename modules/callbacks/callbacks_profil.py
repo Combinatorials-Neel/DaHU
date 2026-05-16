@@ -162,7 +162,7 @@ def callbacks_profil(app):
         if results_dict:
             fit_coefficients = results_dict["fit_coefficients"]
             fit_parameters = results_dict["fit_parameters"]
-            measured_height = results_dict["measured_height"]
+            measured_height = results_dict["measured_thickness"]
 
         fit_coefficients, measurement_df = profil_measurement_dataframe_treat(
             measurement_df, fit_coefficients
@@ -208,7 +208,8 @@ def callbacks_profil(app):
             if fit_mode == "Batch fitting":
                 with h5py.File(hdf5_path, "a") as hdf5_file:
                     profil_group = hdf5_file[selected_dataset]
-                    for position, position_group in profil_group.items():
+                    positions_group = get_positions_group(profil_group)
+                    for position, position_group in positions_group.items():
                         results_dict = profil_spot_fit_steps(
                             position_group, nb_steps, x0
                         )

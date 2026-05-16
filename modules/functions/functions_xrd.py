@@ -100,7 +100,8 @@ def xrd_make_results_dataframe_from_hdf5(xrd_group):
 
     data_dict_list = []
 
-    for position, position_group in xrd_group.items():
+    positions_group = get_positions_group(xrd_group)
+    for position, position_group in positions_group.items():
         if position == "alignment_scans":
             continue
         instrument_group = position_group.get("instrument")
@@ -264,11 +265,11 @@ def xrd_plot_esrfimage_from_array(array, z_min, z_max):
     return fig
 
 
-def xrd_export_sum_spectrum(xrd_group, export_path):
+def xrd_export_sum_spectrum(positions_group, export_path):
     counts_array = None
     tth_array = None
 
-    for position, position_group in xrd_group.items():
+    for position, position_group in positions_group.items():
         if position == "alignment_scans":
             continue
         if tth_array is None:
@@ -318,7 +319,8 @@ def export_xrd_position_to_files(position_group, export_path, save_metadata = Fa
 
 def xrd_make_analysis_dataframe_from_hdf5(xrd_group):
     data_dict_list = []
-    for position, position_group in xrd_group.items():
+    positions_group = get_positions_group(xrd_group)
+    for position, position_group in positions_group.items():
         if position == "alignment_scans":
             continue
         instrument_group = position_group.get("instrument")
@@ -463,7 +465,11 @@ def xrd_pyfai_medfilt1d(poni, image, points, percentile=(0, 99.9)):
 
 def xrd_write_integrated_to_hdf5(position_group, reintegrated_dict, overwrite=True):
     if overwrite:
-        del position_group["measurement/integrated"]
+        try:
+            del position_group["measurement/integrated"]
+            del position_group["instrument/integrated"]
+        except KeyError:
+            pass
     else:
         rename_group(position_group["measurement/integrated"], "integrated", "old_integrated")
 
