@@ -404,7 +404,7 @@ def callbacks_xrd(app):
                     image = position_group["measurement/2Dimage"][()]
 
                     if function_select == "integrate1d":
-                        raise TypeError("Integrate1d not supported yet")
+                        reintegrated_dict = xrd_pyfai_integrate1d(poni, image, points)
 
                     elif function_select == "medfilt1d":
                         reintegrated_dict = xrd_pyfai_medfilt1d(poni, image, points)

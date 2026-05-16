@@ -530,6 +530,42 @@ def xrd_make_analysis_dataframe_from_nexus(xrd_group):
     return results_df
 
 
+def xrd_pyfai_integrate1d(poni, image, points):
+    integrated_dict = {}
+
+    reintegrated = poni.integrate1d(image, points, method="no_csr_cython", unit='q_nm^-1')
+    q = reintegrated[0]
+    tth = xrd_q_tth(q, energy=25)
+
+    I = reintegrated[1]
+
+    I = I/np.sum(I)
+    counts = I * np.sum(image)
+
+    config = {
+            "function": "integrate1d",
+            "npt": str(points),
+            "method": "no_csr_cython",
+            "detector": str(poni.detector.__class__.__name__),
+            "distance": str(poni.dist),
+            "wavelength": str(poni.wavelength),
+            "poni1": str(poni._poni1),
+            "poni2": str(poni._poni2),
+            "rot1": str(poni._rot1),
+            "rot2": str(poni._rot2),
+            "rot3": str(poni._rot3)
+        }
+
+    integrated_dict["q"] = q
+    integrated_dict["tth"] = tth
+    integrated_dict["I"] = I
+    integrated_dict["counts"] = counts
+    integrated_dict["config"] = config
+    integrated_dict["version"] = pyFAI.version
+
+    return integrated_dict
+
+
 def xrd_pyfai_medfilt1d(poni, image, points, percentile=(0, 99.9)):
     integrated_dict = {}
 
