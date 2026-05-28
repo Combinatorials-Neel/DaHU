@@ -139,9 +139,9 @@ def write_dektak_results_to_hdf5(position_group, results_dict, overwrite=True):
 
         results["measured_thickness"].attrs["units"] = "nm"
 
-        fit["fit_positions"].attrs["units"] = "μm"
-        fit["fit_thicknesses"].attrs["units"] = "nm"
-        fit["fit_coefficients"].attrs["units"] = "nm/μm"
+        # fit["fit_positions"].attrs["units"] = "μm"
+        # fit["fit_thicknesses"].attrs["units"] = "nm"
+        # fit["fit_coefficients"].attrs["units"] = "nm/μm"
     else:
         results.attrs["type"] = "manual"
         for key, result in results_dict.items():

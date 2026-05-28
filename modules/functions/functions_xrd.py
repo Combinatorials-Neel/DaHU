@@ -26,23 +26,23 @@ def xrd_conditions(hdf5_path, *args, **kwargs):
             return False
     return True
 
+
 def xrd_q_tth(q_list, energy):
-    constant = 1.2363 # hc/e in keV.nm
-    wavelength = constant / energy # in nm
+    constant = 1.2363  # hc/e in keV.nm
+    wavelength = constant / energy  # in nm
     to_theta = lambda q: np.arcsin(q * wavelength / (4 * np.pi))  # in rad
     to_degree = lambda t: t * 180 / np.pi
 
-    tth_list = [
-        2 * to_degree(to_theta(q)) for q in q_list
-    ]
+    tth_list = [2 * to_degree(to_theta(q)) for q in q_list]
 
     return tth_list
+
 
 def xrd_tth_q(tth_list, energy):
     constant = 1.2363  # hc/e in keV.nm
     wavelength = constant / energy  # in nm
     to_rad = lambda t: t * np.pi / 180
-    to_q = lambda t: (4*np.pi)/wavelength * np.sin(t/2)
+    to_q = lambda t: (4 * np.pi) / wavelength * np.sin(t / 2)
 
     q_list = [to_q(to_rad(tth)) for tth in tth_list]
 
@@ -53,16 +53,22 @@ def xrd_get_integrated_from_hdf5(xrd_group, target_x, target_y):
     position_group = get_target_position_group(xrd_group, target_x, target_y)
     measurement_group = position_group.get("measurement")
 
-    integrated_group = measurement_group.get("integrated")
-    q_array = integrated_group["q"][()]
-    intensity_array = integrated_group["intensity"][()]
-    counts_array = integrated_group["counts"][()]
+    if "integrated" in measurement_group.keys():
+        integrated_group = measurement_group.get("integrated")
+        q_array = integrated_group["q"][()]
+        intensity_array = integrated_group["intensity"][()]
+        counts_array = integrated_group["counts"][()]
 
-    measurement_dataframe = pd.DataFrame({
-        "q": q_array,
-        "intensity": intensity_array,
-        "counts": counts_array
-    })
+    # Case for HT parser (no integrated group) -W.R.
+    else:
+        counts_array = measurement_group["Counts"][()]
+        intensity_array = [count / np.cumsum(counts_array) for count in counts_array]
+        two_theta_array = measurement_group["Two_theta"][()]
+        q_array = xrd_tth_q(two_theta_array, energy=8.0478)  # in keV
+
+    measurement_dataframe = pd.DataFrame(
+        {"q": q_array, "intensity": intensity_array, "counts": counts_array}
+    )
 
     return measurement_dataframe
 
@@ -72,6 +78,7 @@ def xrd_get_image_from_hdf5(xrd_group, target_x, target_y):
     measurement_group = position_group.get("measurement")
 
     image_array = measurement_group["2Dimage"][()]
+
     return image_array
 
 
@@ -79,6 +86,7 @@ def xrd_get_fits_from_hdf5(xrd_group, target_x, target_y):
     fits_dict = {}
     position_group = get_target_position_group(xrd_group, target_x, target_y)
     fits_group = position_group.get("results/fits")
+
     for dataset, dataset_group in fits_group.items():
         fits_dict[dataset] = dataset_group[()]
 
@@ -93,6 +101,66 @@ def xrd_get_results_from_hdf5(xrd_group, target_x, target_y):
         raise KeyError("results group not found in file")
     data_dict = hdf5_group_to_dict(results_group)
     return data_dict
+
+
+# Added a new function to parse new xrd results format (HT parser) -W.R.
+def get_xrd_results_dict_ht_parser(result_group):
+    results = {"phases": {}, "r_coefficients": {}}
+
+    # Detect new format (HT parser)
+    if "texture" not in result_group:
+        return None
+
+    # R coefficients
+    r_group = result_group.get("r_coefficients")
+    if r_group is not None and "Rwp" in r_group:
+        rwp_dataset = r_group["Rwp"]
+
+        results["r_coefficients"]["Rwp"] = {
+            "value": float(rwp_dataset[()]),
+            "units": rwp_dataset.attrs.get("units", "%"),
+        }
+
+    # Phases
+    phases_group = result_group.get("phases")
+
+    if phases_group is None:
+        return results
+
+    for phase_name, phase_group in phases_group.items():
+        phase_dict = {}
+
+        # Phase fraction
+        if "phase_fraction" in phase_group:
+            pf = phase_group["phase_fraction"]
+
+            phase_dict["phase_fraction"] = {
+                "value": float(pf[()]),
+                "units": pf.attrs.get("units", "arb"),
+            }
+
+        # Lattice parameters
+        lattice_group = phase_group.get("lattice")
+        if lattice_group is not None:
+
+            if "a" in lattice_group:
+                a = lattice_group["a"]
+                phase_dict["A"] = {
+                    "value": float(a[()]),
+                    "units": a.attrs.get("units", "nm"),
+                }
+
+            if "c" in lattice_group:
+                c = lattice_group["c"]
+                phase_dict["C"] = {
+                    "value": float(c[()]),
+                    "units": c.attrs.get("units", "nm"),
+                }
+
+        if phase_dict:
+            results["phases"][phase_name] = phase_dict
+
+    return results
 
 
 def xrd_make_results_dataframe_from_hdf5(xrd_group):
@@ -119,30 +187,54 @@ def xrd_make_results_dataframe_from_hdf5(xrd_group):
             }
 
             # Check in phases for refined lattice parameters and weight fraction
+            results_group = position_group.get("results")
             phases_group = position_group.get("results/phases")
-            if phases_group is not None:
-                for phase, phase_group in phases_group.items():
-                    for value, value_group in phase_group.items():
-                        if value in OPTIONS_LIST:
-                            dataset = str(value_group[()].decode())
-                            if "units" in value_group.attrs:
-                                units = value_group.attrs["units"]
-                            else:
-                                units = "arb"
 
-                            # Check if refined parameter is not UNDEF
-                            value_str = dataset.split("+")[0]
-                            if value_str == "UNDEF":
-                                dataset = np.nan
-                            elif value_str == "ERROR":
-                                dataset = np.nan
-                                print(
-                                    f"Warning : Error in refined lattice parameter in {xrd_group} for phase {phase}"
-                                )
-                            else:
-                                dataset = float(value_str)
+            # Detect parser version, HT parser always contains 'texture' group -W.R
+            if results_group:
+                is_ht_parser = "texture" in results_group
+            else:
+                is_ht_parser = False
 
-                            data_dict[f"[{phase}]_{value}_({units})"] = dataset
+            if is_ht_parser:
+                parsed_results = get_xrd_results_dict_ht_parser(results_group)
+
+                if parsed_results is not None:
+                    for phase, phase_dict in parsed_results["phases"].items():
+                        for value in OPTIONS_LIST:
+                            if value not in phase_dict:
+                                continue
+
+                            val = phase_dict[value]["value"]
+                            units = phase_dict[value]["units"]
+
+                            data_dict[f"[{phase}]_{value}_({units})"] = val
+
+            # If not HT parser, parse the old format -W.R
+            else:
+                if phases_group is not None:
+                    for phase, phase_group in phases_group.items():
+                        for value, value_group in phase_group.items():
+                            if value in OPTIONS_LIST:
+                                dataset = str(value_group[()].decode())
+                                if "units" in value_group.attrs:
+                                    units = value_group.attrs["units"]
+                                else:
+                                    units = "arb"
+
+                                # Check if refined parameter is not UNDEF
+                                value_str = dataset.split("+")[0]
+                                if value_str == "UNDEF":
+                                    dataset = np.nan
+                                elif value_str == "ERROR":
+                                    dataset = np.nan
+                                    print(
+                                        f"Warning : Error in refined lattice parameter in {xrd_group} for phase {phase}"
+                                    )
+                                else:
+                                    dataset = float(value_str)
+
+                                data_dict[f"[{phase}]_{value}_({units})"] = dataset
 
             data_dict_list.append(data_dict)
 
@@ -174,7 +266,7 @@ def xrd_plot_integrated_from_dataframe(fig, df, name):
             y=df["counts"],
             mode="lines",
             line=dict(color="SlateBlue", width=2),
-            name=name
+            name=name,
         )
     )
 
@@ -277,16 +369,18 @@ def xrd_export_sum_spectrum(positions_group, export_path):
         if counts_array is None:
             counts_array = position_group["measurement/integrated/counts"][()]
         else:
-            counts_array = counts_array + position_group["measurement/integrated/counts"][()]
+            counts_array = (
+                counts_array + position_group["measurement/integrated/counts"][()]
+            )
 
-    with open(export_path/"sum.xy", "w") as export_file:
+    with open(export_path / "sum.xy", "w") as export_file:
         for x, y in zip(tth_array, counts_array):
             export_file.write(f"{x}\t{y}\n")
 
     return True
 
 
-def export_xrd_position_to_files(position_group, export_path, save_metadata = False):
+def export_xrd_position_to_files(position_group, export_path, save_metadata=False):
     index = position_group.attrs["index"]
 
     image_path = (export_path / index).with_suffix(".img")
@@ -328,14 +422,14 @@ def xrd_make_analysis_dataframe_from_hdf5(xrd_group):
 
         counts = np.sum(measurement_group["2Dimage"][()])
         integrated = measurement_group["integrated/counts"][()]
-        peaks, _ = find_peaks(integrated[:int(0.9*len(integrated))], prominence=3.5)
+        peaks, _ = find_peaks(integrated[: int(0.9 * len(integrated))], prominence=3.5)
 
         data_dict = {
             "x_pos (mm)": instrument_group["x_pos"][()],
             "y_pos (mm)": instrument_group["y_pos"][()],
             "ignored": position_group.attrs["ignored"],
             "counts": counts,
-            "peaks": len(peaks)
+            "peaks": len(peaks),
         }
 
         data_dict_list.append(data_dict)
@@ -378,11 +472,13 @@ def xrd_get_position_group_from_nexus(hdf5_file, target_x, target_y):
                 return position_group
     return None
 
+
 def xrd_get_image_from_nexus(xrd_group, target_x, target_y):
     position_group = xrd_get_position_group_from_nexus(xrd_group, target_x, target_y)
     measurement_group = position_group.get("measurement")
     image_array = measurement_group["CdTe"][0]
     return image_array
+
 
 def xrd_get_integrated_from_nexus(xrd_group, target_x, target_y):
     position_group = xrd_get_position_group_from_nexus(xrd_group, target_x, target_y)
@@ -391,12 +487,15 @@ def xrd_get_integrated_from_nexus(xrd_group, target_x, target_y):
     q_array = integrated_group["q"][()]
     intensity_array = integrated_group["intensity"][()]
 
-    measurement_dataframe = pd.DataFrame({
-        "q": q_array,
-        "intensity": intensity_array,
-    })
+    measurement_dataframe = pd.DataFrame(
+        {
+            "q": q_array,
+            "intensity": intensity_array,
+        }
+    )
 
     return measurement_dataframe
+
 
 def xrd_make_analysis_dataframe_from_nexus(xrd_group):
     data_dict_list = []
@@ -410,14 +509,14 @@ def xrd_make_analysis_dataframe_from_nexus(xrd_group):
 
         counts = np.sum(measurement_group["CdTe"][0])
         integrated = integrated_group["intensity"][()]
-        peaks, _ = find_peaks(integrated[:int(0.9*len(integrated))], prominence=3.5)
+        peaks, _ = find_peaks(integrated[: int(0.9 * len(integrated))], prominence=3.5)
 
         data_dict = {
             "x_pos (mm)": positioners_group["xsamp"][()],
             "y_pos (mm)": positioners_group["ysamp"][()],
             "ignored": position_group.attrs["ignored"],
             "counts": counts,
-            "peaks": len(peaks)
+            "peaks": len(peaks),
         }
 
         data_dict_list.append(data_dict)
@@ -429,29 +528,31 @@ def xrd_make_analysis_dataframe_from_nexus(xrd_group):
 def xrd_pyfai_medfilt1d(poni, image, points, percentile=(0, 99.9)):
     integrated_dict = {}
 
-    reintegrated = poni.medfilt1d_ng(image, points, method="no_csr_cython", percentile=percentile, unit='q_nm^-1')
+    reintegrated = poni.medfilt1d_ng(
+        image, points, method="no_csr_cython", percentile=percentile, unit="q_nm^-1"
+    )
     q = reintegrated[0]
     tth = xrd_q_tth(q, energy=25)
 
     I = reintegrated[1]
 
-    I = I/np.sum(I)
+    I = I / np.sum(I)
     counts = I * np.sum(image)
 
     config = {
-            "function": "medfilt1d_ng",
-            "npt": str(points),
-            "method": "no_csr_cython",
-            "percentile": str(percentile),
-            "detector": str(poni.detector.__class__.__name__),
-            "distance": str(poni.dist),
-            "wavelength": str(poni.wavelength),
-            "poni1": str(poni._poni1),
-            "poni2": str(poni._poni2),
-            "rot1": str(poni._rot1),
-            "rot2": str(poni._rot2),
-            "rot3": str(poni._rot3)
-        }
+        "function": "medfilt1d_ng",
+        "npt": str(points),
+        "method": "no_csr_cython",
+        "percentile": str(percentile),
+        "detector": str(poni.detector.__class__.__name__),
+        "distance": str(poni.dist),
+        "wavelength": str(poni.wavelength),
+        "poni1": str(poni._poni1),
+        "poni2": str(poni._poni2),
+        "rot1": str(poni._rot1),
+        "rot2": str(poni._rot2),
+        "rot3": str(poni._rot3),
+    }
 
     integrated_dict["q"] = q
     integrated_dict["tth"] = tth
@@ -471,7 +572,9 @@ def xrd_write_integrated_to_hdf5(position_group, reintegrated_dict, overwrite=Tr
         except KeyError:
             pass
     else:
-        rename_group(position_group["measurement/integrated"], "integrated", "old_integrated")
+        rename_group(
+            position_group["measurement/integrated"], "integrated", "old_integrated"
+        )
 
     integrated_group = position_group["measurement"].create_group("integrated")
 
@@ -488,9 +591,3 @@ def xrd_write_integrated_to_hdf5(position_group, reintegrated_dict, overwrite=Tr
 
     instrument_group.create_dataset("program", data="pyFAI")
     instrument_group.create_dataset("version", data=reintegrated_dict["version"])
-
-
-
-
-
-
