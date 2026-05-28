@@ -53,7 +53,7 @@ def xrd_get_integrated_from_hdf5(xrd_group, target_x, target_y):
     position_group = get_target_position_group(xrd_group, target_x, target_y)
     measurement_group = position_group.get("measurement")
 
-    if hasattr(measurement_group, "integrated"):
+    if "integrated" in measurement_group.keys():
         integrated_group = measurement_group.get("integrated")
         q_array = integrated_group["q"][()]
         intensity_array = integrated_group["intensity"][()]
@@ -190,7 +190,11 @@ def xrd_make_results_dataframe_from_hdf5(xrd_group):
             phases_group = position_group.get("results/phases")
 
             # Detect parser version, HT parser always contains 'texture' group -W.R
-            is_ht_parser = "texture" in results_group
+            if results_group:
+                is_ht_parser = "texture" in results_group
+            else:
+                is_ht_parser = False
+
             if is_ht_parser:
                 parsed_results = get_xrd_results_dict_ht_parser(results_group)
 
