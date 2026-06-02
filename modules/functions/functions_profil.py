@@ -19,20 +19,13 @@ def profil_conditions(hdf5_path, *args, **kwargs):
 
 
 def profil_get_measurement_from_hdf5(profil_group, target_x, target_y):
-    for position, position_group in profil_group.items():
-        instrument_group = position_group.get("instrument")
-        if (
-            instrument_group["x_pos"][()] == target_x
-            and instrument_group["y_pos"][()] == target_y
-        ):
-            measurement_group = position_group.get("measurement")
+    position_group = get_target_position_group(profil_group, target_x, target_y)
+    measurement_group = position_group.get("measurement")
 
     distance_array = measurement_group["distance"][()]
     profile_array = measurement_group["profile"][()]
 
-    measurement_dataframe = pd.DataFrame(
-        {"distance_(um)": distance_array, "total_profile_(nm)": profile_array}
-    )
+    measurement_dataframe = pd.DataFrame({"distance_(um)": distance_array, "total_profile_(nm)": profile_array})
 
     return measurement_dataframe
 
@@ -40,29 +33,21 @@ def profil_get_measurement_from_hdf5(profil_group, target_x, target_y):
 def profil_get_results_from_hdf5(profil_group, target_x, target_y):
     data_dict = {}
 
-    for position, position_group in profil_group.items():
-        instrument_group = position_group.get("instrument")
-        if (
-            instrument_group["x_pos"][()] == target_x
-            and instrument_group["y_pos"][()] == target_y
-        ):
-            results_group = position_group.get("results")
-            if results_group is None:
-                return None
-            for value, value_group in results_group.items():
-                if isinstance(value_group, h5py.Group):
-                    for fit_label, fit_value in value_group.items():
-                        if not isinstance(fit_value, h5py.Dataset):
-                            continue
+    position_group = get_target_position_group(profil_group, target_x, target_y)
+    results_group = position_group.get("results")
+    if results_group is None:
+        return None
+    for value, value_group in results_group.items():
+        if isinstance(value_group, h5py.Group):
+            for vvalue, vvalue_group in value_group.items():
+                data_dict[vvalue] = vvalue_group[()]
+        else:
+            data_dict[value] = value_group[()]
 
-                        data_dict[fit_label] = fit_value[()]
-
-                if isinstance(value_group, h5py.Dataset):
-                    data_dict[value] = value_group[()]
-
-            data_dict["type"] = results_group.attrs["type"]
+    data_dict["type"] = results_group.attrs["type"]
 
     return data_dict
+
 
 def multi_step_function(x, params):
     # Generate function with multiple steps
@@ -75,23 +60,20 @@ def multi_step_function(x, params):
         y = np.where(x >= x0, y1, y)
     return y
 
-
 def parabola(x, a, b, c):
     return a * x**2 + b * x + c
-
 
 def linear(x, a, b):
     return a * x + b
 
-
 def generate_parameters(height, x0, n_steps):
     guess = []
-    length = 4000 / (2 * n_steps)  # Length of a step
-    for n in range(n_steps + 1):
-        guess.append(x0 + 2 * length * n)  # Step up position
-        guess.append(height)  # Step up height
-        guess.append(x0 + length + 2 * length * n)  # Step down position
-        guess.append(0)  # Step down height
+    length = 4000 / (2*n_steps) # Length of a step
+    for n in range(n_steps+1):
+        guess.append(x0+2*length*n) # Step up position
+        guess.append(height) # Step up height
+        guess.append(x0+length+2*length*n) # Step down position
+        guess.append(0) # Step down height
     return guess
 
 
@@ -127,31 +109,20 @@ def residuals(params, x, y):
     return y - multi_step_function(x, params)
 
 
-def profil_measurement_dataframe_treat(
-    df, fit_coefficients=None, smoothing=True, degree=1
-):
+def profil_measurement_dataframe_treat(df, fit_coefficients=None, smoothing=True, degree=1):
     # Calculate and remove linear component from profile with step point linear fit
     if fit_coefficients is None:
         if degree == 1:
-            fit_coefficients = curve_fit(
-                linear, df["distance_(um)"], df["total_profile_(nm)"]
-            )[0]
+            fit_coefficients = curve_fit(linear, df["distance_(um)"], df["total_profile_(nm)"])[0]
         elif degree == 2:
-            fit_coefficients = curve_fit(
-                parabola, df["distance_(um)"], df["total_profile_(nm)"]
-            )[0]
+            fit_coefficients = curve_fit(parabola, df["distance_(um)"], df["total_profile_(nm)"])[0]
 
     if len(fit_coefficients) == 2:
-        df["adjusted_profile_(nm)"] = df["total_profile_(nm)"] - linear(
-            df["distance_(um)"], fit_coefficients[0], fit_coefficients[1]
-        )
+        df["adjusted_profile_(nm)"] = df["total_profile_(nm)"] - linear(df["distance_(um)"], fit_coefficients[0],
+                                                                          fit_coefficients[1])
     elif len(fit_coefficients) == 3:
-        df["adjusted_profile_(nm)"] = df["total_profile_(nm)"] - parabola(
-            df["distance_(um)"],
-            fit_coefficients[0],
-            fit_coefficients[1],
-            fit_coefficients[2],
-        )
+        df["adjusted_profile_(nm)"] = df["total_profile_(nm)"] - parabola(df["distance_(um)"], fit_coefficients[0],
+                                                                          fit_coefficients[1], fit_coefficients[2])
     else:
         raise ValueError("Unexpected number of fit_coefficients")
     if smoothing:
@@ -169,30 +140,17 @@ def profil_measurement_dataframe_fit_steps(df, n_steps, x0_guess):
 
     # Detect the position of the first step of the measurement
     df = derivate_dataframe(df, column="adjusted_profile_(nm)")
-    df_head = df.loc[
-        (df["distance_(um)"] > x0_guess * 0.7) & (df["distance_(um)"] < x0_guess * 1.3)
-    ]
+    df_head = df.loc[(df["distance_(um)"] > x0_guess*0.7) & (df["distance_(um)"] < x0_guess*1.3)]
     max_index = np.abs(df_head["derivative"]).idxmax()
     x0 = df_head.loc[max_index, "distance_(um)"]
 
     distance_array = df["distance_(um)"].to_numpy()
     profile_array = df["adjusted_profile_(nm)"].to_numpy()
 
-    guess = generate_parameters(height=1, x0=x0, n_steps=n_steps)
+    guess = generate_parameters(height = 1, x0 = x0, n_steps = n_steps)
 
-    result = least_squares(
-        residuals,
-        guess,
-        jac="2-point",
-        args=(distance_array, profile_array),
-        loss="soft_l1",
-    )
-    if result.success:
-        fitted_params = result.x
-    else:
-        fitted_params = result.x[0]
-
-    # print(result.success, len(fitted_params))
+    result = least_squares(residuals, guess, jac="2-point", args=(distance_array, profile_array), loss="soft_l1")
+    fitted_params = result.x
 
     position_list, height_list = extract_fit(fitted_params)
 
@@ -208,20 +166,15 @@ def profil_measurement_dataframe_fit_steps(df, n_steps, x0_guess):
 
     return results_dict
 
-
 def profil_spot_fit_steps(position_group, nb_steps, x0):
     measurement_group = position_group.get("measurement")
 
     distance_array = measurement_group["distance"][()]
     profile_array = measurement_group["profile"][()]
 
-    measurement_dataframe = pd.DataFrame(
-        {"distance_(um)": distance_array, "total_profile_(nm)": profile_array}
-    )
+    measurement_dataframe = pd.DataFrame({"distance_(um)": distance_array, "total_profile_(nm)": profile_array})
 
-    results_dict = profil_measurement_dataframe_fit_steps(
-        measurement_dataframe, nb_steps, x0
-    )
+    results_dict = profil_measurement_dataframe_fit_steps(measurement_dataframe, nb_steps, x0)
 
     return results_dict
 
@@ -234,28 +187,21 @@ def profil_make_results_dataframe_from_hdf5(profil_group):
     for position, position_group in positions_group.items():
         instrument_group = position_group.get("instrument")
         # Exclude spots outside the wafer
-        if (
-            np.abs(instrument_group["x_pos"][()])
-            + np.abs(instrument_group["y_pos"][()])
-            <= 60
-        ):
+        if np.abs(instrument_group["x_pos"][()]) + np.abs(instrument_group["y_pos"][()]) <= 60:
 
             results_group = position_group.get("results")
 
-            data_dict = {
-                "x_pos (mm)": instrument_group["x_pos"][()],
-                "y_pos (mm)": instrument_group["y_pos"][()],
-                "ignored": position_group.attrs["ignored"],
-            }
+            data_dict = {"x_pos (mm)": instrument_group["x_pos"][()],
+                         "y_pos (mm)": instrument_group["y_pos"][()],
+                         "ignored": position_group.attrs["ignored"]}
 
             if results_group is not None:
                 for value, value_group in results_group.items():
-                    if isinstance(value_group, h5py.Dataset):
+                    if value in valid_results:
                         if "units" in value_group.attrs:
                             units = value_group.attrs["units"]
                         else:
                             units = "arb"
-
                         data_dict[f"{value}_({units})"] = value_group[()]
 
             data_dict_list.append(data_dict)
@@ -265,9 +211,7 @@ def profil_make_results_dataframe_from_hdf5(profil_group):
     return result_dataframe
 
 
-def profil_plot_total_profile_from_dataframe(
-    fig, df, fit_coefficients=None, position=(1, 1)
-):
+def profil_plot_total_profile_from_dataframe(fig, df, fit_coefficients = None, position=(1,1)):
     # First plot for raw measurement and linear component
     fig.update_xaxes(title_text="Distance_(um)", row=1, col=1)
     fig.update_yaxes(title_text="Profile_(nm)", row=1, col=1)
@@ -279,9 +223,7 @@ def profil_plot_total_profile_from_dataframe(
             y=df["total_profile_(nm)"],
             mode="lines",
             line=dict(color="SlateBlue", width=3),
-        ),
-        row=position[0],
-        col=position[1],
+        ), row = position[0], col = position[1]
     )
 
     # If a slope is specified, plot the slope
@@ -289,12 +231,7 @@ def profil_plot_total_profile_from_dataframe(
         if len(fit_coefficients) == 2:
             y = linear(df["distance_(um)"], fit_coefficients[0], fit_coefficients[1])
         elif len(fit_coefficients) == 3:
-            y = parabola(
-                df["distance_(um)"],
-                fit_coefficients[0],
-                fit_coefficients[1],
-                fit_coefficients[2],
-            )
+            y = parabola(df["distance_(um)"], fit_coefficients[0], fit_coefficients[1], fit_coefficients[2])
         else:
             raise ValueError("Unexpected number of fit_coefficients")
 
@@ -304,17 +241,13 @@ def profil_plot_total_profile_from_dataframe(
                 y=y,
                 mode="lines",
                 line=dict(color="Crimson", width=2),
-            ),
-            row=position[0],
-            col=position[1],
+            ), row = position[0], col = position[1]
         )
 
     return fig
 
 
-def profil_plot_adjusted_profile_from_dataframe(
-    fig, df, fit_parameters=None, position=(2, 1)
-):
+def profil_plot_adjusted_profile_from_dataframe(fig, df, fit_parameters = None, position=(2,1)):
     # Second plot for adjusted profile and fits
     fig.update_xaxes(title_text="Distance_(um)", row=2, col=1)
     fig.update_yaxes(title_text="Thickness_(nm)", row=2, col=1)
@@ -326,9 +259,7 @@ def profil_plot_adjusted_profile_from_dataframe(
             y=df["adjusted_profile_(nm)"],
             mode="lines",
             line=dict(color="SlateBlue", width=3),
-        ),
-        row=position[0],
-        col=position[1],
+        ), row=position[0], col=position[1]
     )
 
     # If fit parameters are specified, plot the fitted steps
@@ -339,15 +270,13 @@ def profil_plot_adjusted_profile_from_dataframe(
                 y=multi_step_function(df["distance_(um)"], fit_parameters),
                 mode="lines",
                 line=dict(color="Crimson", width=2),
-            ),
-            row=position[0],
-            col=position[1],
+            ), row=position[0], col=position[1]
         )
 
     return fig
 
 
-def profil_plot_measured_heights_from_dict(fig, results_dict, position=(3, 1)):
+def profil_plot_measured_heights_from_dict(fig, results_dict, position=(3,1)):
     position_list = results_dict["fit_positions"]
     height_list = results_dict["fit_thicknesses"]
     measured_height = results_dict["measured_thickness"]
@@ -358,30 +287,44 @@ def profil_plot_measured_heights_from_dict(fig, results_dict, position=(3, 1)):
 
     # Scattered heights
     fig.add_trace(
-        go.Scatter(
-            x=position_list,
-            y=height_list,
-            mode="markers",
-            # name="Measured thickness",
-            line=dict(color="SlateBlue ", width=3),
-        ),
-        row=position[0],
-        col=position[1],
+        go.Scatter(x=position_list, y=height_list,
+                   mode="markers",
+                   # name="Measured thickness",
+                   line=dict(color="SlateBlue ", width=3)),
+        row=position[0], col=position[1]
     )
 
     # Mean line
-    fig.add_hline(
-        y=measured_height,
-        line=dict(color="Crimson", width=2),
-        row=position[0],
-        col=position[1],
-    )
+    fig.add_hline(y=measured_height, line=dict(color="Crimson", width=2), row=position[0], col=position[1])
 
     return fig
 
 
 
-# ARCHIVE FOR POLYNOMIAL FIT, MIGHT COME BACK TO IT SOMEDAY
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+ARCHIVE FOR POLYNOMIAL FIT, MIGHT COME BACK TO IT SOMEDAY
+"""
 
 # def profil_measurement_dataframe_fit_poly(df, est_height, degree = 3):
 #     results_dict = {}
@@ -534,3 +477,6 @@ def profil_plot_measured_heights_from_dict(fig, results_dict, position=(3, 1)):
 #     fig.update_layout(plot_layout(""))
 #
 #     return fig
+
+
+

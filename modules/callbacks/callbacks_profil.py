@@ -6,7 +6,6 @@ from ..hdf5_compilers.hdf5compile_profil import *
 
 """Callbacks for profil tab"""
 
-
 def callbacks_profil(app):
 
     # Callback to update current position based on heatmap click
@@ -40,14 +39,13 @@ def callbacks_profil(app):
 
         return dataset_list, dataset_list[0]
 
+
     # Reads the given dataset into a DataFrame, then serialize it to json.
     # Returns the json and the columns of the df as options for the plot selection
     @app.callback(
-        [
-            Output("profil_results_store", "data"),
-            Output("profil_heatmap_select", "options"),
-            Output("profil_heatmap_select", "value"),
-        ],
+        [Output("profil_results_store", "data"),
+         Output("profil_heatmap_select", "options"),
+         Output("profil_heatmap_select", "value")],
         Input("profil_select_dataset", "value"),
         State("hdf5_path_store", "data"),
     )
@@ -85,9 +83,7 @@ def callbacks_profil(app):
         prevent_initial_call=True,
     )
     @check_conditions(profil_conditions, hdf5_path_index=5)
-    def profil_update_heatmap(
-        heatmap_select, z_min, z_max, precision, edit_toggle, hdf5_path, profil_df_json
-    ):
+    def profil_update_heatmap(heatmap_select,z_min,z_max,precision,edit_toggle,hdf5_path,profil_df_json):
         profil_df = pd.read_json(StringIO(profil_df_json), orient="split")
         # Reset colorbar bounds when needed
         if ctx.triggered_id in [
@@ -162,8 +158,7 @@ def callbacks_profil(app):
 
         fit_coefficients = None
         fit_parameters = None
-        # measured_height = None
-
+        measured_height = None
         if results_dict:
             fit_coefficients = results_dict["fit_coefficients"]
             fit_parameters = results_dict["fit_parameters"]
@@ -189,9 +184,7 @@ def callbacks_profil(app):
         if results_dict:
             fig = profil_plot_measured_heights_from_dict(fig, results_dict)
 
-        fig.update_layout(
-            plot_layout(title=f"x = {target_x}, y = {target_y}"),
-        )
+        fig.update_layout(plot_layout(title=f"x = {target_x}, y = {target_y}"),)
 
         return fig
 
@@ -240,18 +233,12 @@ def callbacks_profil(app):
             if fit_mode == "Manual":
                 with h5py.File(hdf5_path, "a") as hdf5_file:
                     profil_group = hdf5_file[selected_dataset]
-                    position_group = get_target_position_group(
-                        profil_group, target_position[0], target_position[1]
-                    )
-                    results_group = safe_create_new_subgroup(
-                        position_group, new_subgroup_name="results"
-                    )
-                    if "measured_thickness" in results_group:
-                        del results_group["measured_thickness"]
-                    results_group["measured_thickness"] = (
-                        nb_steps  # nb_steps input reused for manual height input
-                    )
-                    results_group["measured_thickness"].attrs["units"] = "nm"
+                    position_group = get_target_position_group(profil_group, target_position[0], target_position[1])
+                    results_group = safe_create_new_subgroup(position_group, new_subgroup_name="results")
+                    if "measured_height" in results_group:
+                        del results_group["measured_height"]
+                    results_group["measured_height"] = nb_steps #nb_steps input reused for manual height input
+                    results_group["measured_height"].attrs["units"] = "nm"
                 return f"Manually assigned height to position {target_position}"
 
     # Callback to deal with heatmap edit mode
@@ -281,6 +268,7 @@ def callbacks_profil(app):
                 position_group.attrs["ignored"] = False
                 return f"{target_x}, {target_y} ignore set to False"
 
+
     # Callback for fit modes
     @app.callback(
         Output("profil_fit_inputs", "children"),
@@ -306,20 +294,8 @@ def callbacks_profil(app):
             ]
         else:
             new_children = [
-                dcc.Input(
-                    id="profil_fit_nb_steps",
-                    className="long-item",
-                    type="number",
-                    placeholder="Height",
-                    value=None,
-                ),
-                dcc.Input(
-                    id="profil_fit_x0",
-                    className="long-item",
-                    type="number",
-                    placeholder="First step position",
-                    value=None,
-                    style={"display": "none"},
-                ),
+                dcc.Input(id="profil_fit_nb_steps", className="long-item", type="number", placeholder="Height", value=None),
+                dcc.Input(id="profil_fit_x0", className="long-item", type="number", placeholder="First step position",
+                          value=None, style = {'display': 'none'})
             ]
         return new_children

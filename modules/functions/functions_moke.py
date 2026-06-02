@@ -1,5 +1,4 @@
 """ """
-
 import numpy as np
 from numpy.f2py.crackfortran import groupends
 from collections import defaultdict
@@ -106,11 +105,11 @@ def moke_get_results_from_hdf5(moke_group, target_x, target_y):
 def moke_get_instrument_dict_from_hdf5(moke_group):
     instrument_dict = {}
 
-    if "scan_parameters" in moke_group:  # legacy implementation for moke version <= 0.2
+    if "scan_parameters" in moke_group: # legacy implementation for moke version <= 0.2
         parameters_group = moke_group.get("scan_parameters")
-    else:  # temporary implementation (I know, I know...)
+    else: # temporary implementation (I know, I know...)
         positions_group = get_positions_group(moke_group)
-        position = next(iter(positions_group))  # Get any position from the group
+        position  = next(iter(positions_group)) # Get any position from the group
         parameters_group = positions_group.get(f"{position}/instrument")
     for value, value_group in parameters_group.items():
         instrument_dict[value] = convert_bytes(value_group[()])
@@ -120,9 +119,7 @@ def moke_get_instrument_dict_from_hdf5(moke_group):
 def moke_integrate_pulse_array(pulse_array):
     pulse_array = pulse_array.copy()
 
-    pulse_array[
-        (np.abs(pulse_array) >= 0.0016666) & (np.abs(pulse_array) <= 0.0016668)
-    ] = 0
+    pulse_array[(np.abs(pulse_array) >= 0.0016666) & (np.abs(pulse_array) <= 0.0016668)] = 0
     pulse_array[(np.abs(pulse_array) >= 0.0045) & (np.abs(pulse_array) <= 0.0055)] = 0
     pulse_array[pulse_array == 0] = np.nan
 
@@ -330,7 +327,6 @@ def moke_calc_mzero_coercivity(data: pd.DataFrame, threshold=8.0e-3):
 
     return coercivity_positive, coercivity_negative
 
-
 def moke_calc_remanence(data: pd.DataFrame):
     remanence_positive = data.loc[
         np.abs(data.loc[data["magnetization"] > 0, "field"]).idxmin(skipna=True),
@@ -484,10 +480,8 @@ def moke_batch_fit(moke_group, treatment_dict):
             "remanent_kerr_signal": {
                 "positive": remanence[0] / max_kerr_rotation,
                 "negative": remanence[1] / max_kerr_rotation,
-                "mean": abs_mean(
-                    [remanence[0] / max_kerr_rotation, remanence[1] / max_kerr_rotation]
-                ),
-            },
+                "mean": abs_mean([remanence[0]/max_kerr_rotation, remanence[1]/max_kerr_rotation]),
+            }
         }
 
     return results_dict
@@ -576,15 +570,12 @@ def moke_plot_oscilloscope_from_dataframe(fig, df):
 
 
 def moke_plot_loop_from_dataframe(fig, df):
-    fig.update_xaxes(title_text="log(Applied &mu;<sub>0</sub>H) (T)")
+    fig.update_xaxes(title_text="Applied &mu;<sub>0</sub>H (T)")
     fig.update_yaxes(title_text="Kerr signal (V)")
-
-    # df["field_log"] = np.log10(np.abs(df["field"]))
 
     fig.add_trace(
         go.Scatter(
             x=df["field"],
-            # x=df["field_log"],
             y=df["magnetization"],
             mode="markers",
             line=dict(color="SlateBlue", width=3),
@@ -612,7 +603,6 @@ def moke_plot_vlines(fig, values):
 
     return fig
 
-
 def moke_plot_intercept(fig, intercept_dict):
     negative_intercept_field = intercept_dict["negative"]
     positive_intercept_field = intercept_dict["positive"]
@@ -630,13 +620,15 @@ def moke_plot_intercept(fig, intercept_dict):
     range_positive = np.arange(0.8 * positive_intercept_field, max_field, 0.1)
     range_negative = np.arange(-max_field, 0.8 * negative_intercept_field, 0.1)
 
+
+
     # Plot linear section fit
     fig.add_trace(
         go.Scatter(
             x=intercept_dict["fit_parameters"]["linear_section_range"],
-            y=intercept_dict["fit_parameters"]["linear_section_intercept"]
-            + intercept_dict["fit_parameters"]["linear_section_slope"]
-            * intercept_dict["fit_parameters"]["linear_section_range"],
+            y=intercept_dict["fit_parameters"]["linear_section_intercept"] +
+              intercept_dict["fit_parameters"]["linear_section_slope"] *
+              intercept_dict["fit_parameters"]["linear_section_range"],
             mode="lines",
             line=dict(color="Firebrick", width=3),
         )
@@ -646,8 +638,8 @@ def moke_plot_intercept(fig, intercept_dict):
     fig.add_trace(
         go.Scatter(
             x=range_linear,
-            y=intercept_dict["fit_parameters"]["linear_section_intercept"]
-            + intercept_dict["fit_parameters"]["linear_section_slope"] * range_linear,
+            y=intercept_dict["fit_parameters"]["linear_section_intercept"] +
+              intercept_dict["fit_parameters"]["linear_section_slope"] *  range_linear,
             mode="lines",
             line=dict(color="Firebrick", width=3, dash="dash"),
         )
@@ -657,9 +649,9 @@ def moke_plot_intercept(fig, intercept_dict):
     fig.add_trace(
         go.Scatter(
             x=intercept_dict["fit_parameters"]["positive_section_range"],
-            y=intercept_dict["fit_parameters"]["positive_section_intercept"]
-            + intercept_dict["fit_parameters"]["positive_section_slope"]
-            * intercept_dict["fit_parameters"]["positive_section_range"],
+            y=intercept_dict["fit_parameters"]["positive_section_intercept"] +
+              intercept_dict["fit_parameters"]["positive_section_slope"] *
+              intercept_dict["fit_parameters"]["positive_section_range"],
             mode="lines",
             line=dict(color="Firebrick", width=3),
         )
@@ -669,9 +661,8 @@ def moke_plot_intercept(fig, intercept_dict):
     fig.add_trace(
         go.Scatter(
             x=range_positive,
-            y=intercept_dict["fit_parameters"]["positive_section_intercept"]
-            + intercept_dict["fit_parameters"]["positive_section_slope"]
-            * range_positive,
+            y=intercept_dict["fit_parameters"]["positive_section_intercept"] +
+              intercept_dict["fit_parameters"]["positive_section_slope"] * range_positive,
             mode="lines",
             line=dict(color="Firebrick", width=3, dash="dash"),
         )
@@ -681,9 +672,9 @@ def moke_plot_intercept(fig, intercept_dict):
     fig.add_trace(
         go.Scatter(
             x=intercept_dict["fit_parameters"]["negative_section_range"],
-            y=intercept_dict["fit_parameters"]["negative_section_intercept"]
-            + intercept_dict["fit_parameters"]["negative_section_slope"]
-            * intercept_dict["fit_parameters"]["negative_section_range"],
+            y=intercept_dict["fit_parameters"]["negative_section_intercept"] +
+              intercept_dict["fit_parameters"]["negative_section_slope"] *
+              intercept_dict["fit_parameters"]["negative_section_range"],
             mode="lines",
             line=dict(color="Firebrick", width=3),
         )
@@ -693,9 +684,8 @@ def moke_plot_intercept(fig, intercept_dict):
     fig.add_trace(
         go.Scatter(
             x=range_negative,
-            y=intercept_dict["fit_parameters"]["negative_section_intercept"]
-            + intercept_dict["fit_parameters"]["negative_section_slope"]
-            * range_negative,
+            y=intercept_dict["fit_parameters"]["negative_section_intercept"] +
+              intercept_dict["fit_parameters"]["negative_section_slope"] * range_negative,
             mode="lines",
             line=dict(color="Firebrick", width=3, dash="dash"),
         )
@@ -724,7 +714,6 @@ def moke_plot_intercept(fig, intercept_dict):
 
     return fig
 
-
 def moke_plot_loop_map(hdf5_file, options_dict, normalize=False):
     results_dataframe = moke_make_results_dataframe_from_hdf5(hdf5_file)
     instrument_dict = moke_get_instrument_dict_from_hdf5(hdf5_file)
@@ -738,38 +727,19 @@ def moke_plot_loop_map(hdf5_file, options_dict, normalize=False):
         results_dataframe["y_pos (mm)"].max(),
     )
 
-    if (
-        "number_of_points_x" in instrument_dict.keys()
-        and "number_of_points_y" in instrument_dict.keys()
-    ):
-        x_dim, y_dim = int(instrument_dict["number_of_points_x"]), int(
-            instrument_dict["number_of_points_y"]
-        )
-    elif (
-        "Number_of_points_x" in instrument_dict.keys()
-        and "Number_of_points_y" in instrument_dict.keys()
-    ):
-        x_dim, y_dim = int(instrument_dict["Number_of_points_x"]), int(
-            instrument_dict["Number_of_points_y"]
-        )
-    else:
-        print("No MOKE metadata found, setting x_dim and y_dim to 17, 17.")
-        x_dim = 17
-        y_dim = 17
+    x_dim, y_dim = int(instrument_dict["number_of_points_x"]), int(
+        instrument_dict["number_of_points_y"]
+    )
 
     if x_dim == 1:
         step_x = 1
     else:
-        step_x = (np.abs(x_max) + np.abs(x_min)) / (x_dim - 1) + (
-            (np.abs(x_max) + np.abs(x_min)) % (x_dim - 1) > 0
-        )
+        step_x = (np.abs(x_max) + np.abs(x_min)) / (x_dim - 1) + ((np.abs(x_max) + np.abs(x_min)) % (x_dim - 1) > 0)
 
     if y_dim == 1:
         step_y = 1
     else:
-        step_y = (np.abs(y_max) + np.abs(y_min)) / (y_dim - 1) + (
-            (np.abs(y_max) + np.abs(y_min)) % (y_dim - 1) > 0
-        )
+        step_y = (np.abs(y_max) + np.abs(y_min)) / (y_dim - 1) + ((np.abs(y_max) + np.abs(y_min)) % (y_dim - 1) > 0)
 
     fig = make_subplots(
         rows=y_dim, cols=x_dim, horizontal_spacing=0.001, vertical_spacing=0.001
