@@ -210,7 +210,11 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                     if y_pos == -0:
                         y_pos = 0.0
                 elif mode == "furnace":
-                    temperature = int(np.round(source_instrument_group["nanodacse_in1/data"][()], 0))
+                    temperature = np.round(source_instrument_group["nanodacse_in1/data"][()], 0)
+                    if len(temperature) > 1:
+                        temperature = int(temperature[0])
+                    else:
+                        temperature = int(temperature)
 
 
                 if alignment_test:
@@ -234,7 +238,7 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                         )
                     if mode == "furnace":
                         target_position_group = positions_group.create_group(
-                            f"({temperature} C, {name})"
+                            f"({name}, {temperature} C)"
                         )
 
                 else:
