@@ -9,6 +9,8 @@ from ..hdf5_compilers.hdf5compile_base import *
 
 MOKE_WRITER_VERSION = '0.4'
 
+POSITION_DECIMAL_ROUND_NUMBER = 3
+
 moke_dict = {
 
 }
@@ -213,8 +215,8 @@ def write_moke_to_hdf5(hdf5_path, source_path, dataset_name = None, mode="a"):
             time_dict = get_time_from_moke(len(mag_array))
             nb_acquisitions = len(mag_array[0])
 
-            x_pos = info_dict['x_pos']
-            y_pos = info_dict['y_pos']
+            x_pos = np.round(info_dict['x_pos'], POSITION_DECIMAL_ROUND_NUMBER)
+            y_pos = np.round(info_dict['y_pos'], POSITION_DECIMAL_ROUND_NUMBER)
 
             position_group = positions_group.create_group(f"({x_pos},{y_pos})")
             position_group.attrs["index"] = scan_number

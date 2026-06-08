@@ -16,8 +16,8 @@ def callbacks_moke(app):
     def update_position(heatmap_click):
         if heatmap_click is None:
             return None
-        target_x = heatmap_click["points"][0]["x"]
-        target_y = heatmap_click["points"][0]["y"]
+        target_x = np.round(heatmap_click["points"][0]["x"], POSITION_DECIMAL_ROUND_NUMBER)
+        target_y = np.round(heatmap_click["points"][0]["y"], POSITION_DECIMAL_ROUND_NUMBER)
 
         position = (target_x, target_y)
 

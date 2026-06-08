@@ -751,8 +751,8 @@ def moke_plot_loop_map(hdf5_file, options_dict, normalize=False):
 
     # Update layout for aesthetics
     fig.update_layout(
-        height=1000,
-        width=1200,
+        height=100+50*y_dim,
+        width=150+100*x_dim,
         title_text="",
         showlegend=False,
         plot_bgcolor="white",
