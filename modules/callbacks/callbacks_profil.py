@@ -235,10 +235,10 @@ def callbacks_profil(app):
                     profil_group = hdf5_file[selected_dataset]
                     position_group = get_target_position_group(profil_group, target_position[0], target_position[1])
                     results_group = safe_create_new_subgroup(position_group, new_subgroup_name="results")
-                    if "measured_height" in results_group:
-                        del results_group["measured_height"]
-                    results_group["measured_height"] = nb_steps #nb_steps input reused for manual height input
-                    results_group["measured_height"].attrs["units"] = "nm"
+                    if "measured_thickness" in results_group:
+                        del results_group["measured_thickness"]
+                    results_group["measured_thickness"] = nb_steps #nb_steps input reused for manual height input
+                    results_group["measured_thickness"].attrs["units"] = "nm"
                 return f"Manually assigned height to position {target_position}"
 
     # Callback to deal with heatmap edit mode
