@@ -428,3 +428,12 @@ def get_positions_group(dataset_group):
         return dataset_group["positions"]
     else:
         return dataset_group
+
+
+def make_exports_folder(path):
+    path = Path(path)
+    export_path = path.parent / f"{path.name}_exports"
+    if not os.path.exists(export_path):
+        os.makedirs(export_path)
+    else:
+        raise NameError(f"{export_path} already exists")
