@@ -1,7 +1,12 @@
 import h5py
 import numpy as np
+from pathlib import Path
 
 from modules.functions.functions_shared import extract_value_unit
+from ..functions.functions_edx import edx_make_results_dataframe_from_hdf5
+from ..functions.functions_profil import profil_make_results_dataframe_from_hdf5
+from ..functions.functions_xrd import xrd_make_results_dataframe_from_hdf5
+from ..functions.functions_moke import moke_make_results_dataframe_from_hdf5
 
 
 def write_dict_to_hdf5(xrd_dict, node):
@@ -123,4 +128,32 @@ def hdf5_squeeze_dataset(hdf5_file, dataset_group):
     new_dataset_group = hdf5_file.create_dataset(group_path, data=data)
     for name, value in attrs_dict.items():
         new_dataset_group.attrs["name"] = value
+
+
+def hdf5_export_results_to_csv(hdf5_path):
+    hdf5_path = Path(hdf5_path)
+    general_df = None
+    with h5py.File(hdf5_path, "r") as hdf5_file:
+        for dataset_name, dataset_group in hdf5_file.items():
+            if dataset_name == "sample":
+                continue
+            else:
+                if dataset_group.attrs["HT_type"] == "edx":
+                    df = edx_make_results_dataframe_from_hdf5(dataset_group)
+                if dataset_group.attrs["HT_type"] == "moke":
+                    df = moke_make_results_dataframe_from_hdf5(dataset_group)
+                if dataset_group.attrs["HT_type"] in ["esrf", "xrd"]:
+                    df = xrd_make_results_dataframe_from_hdf5(dataset_group)
+                if dataset_group.attrs["HT_type"] == "profil":
+                    df = profil_make_results_dataframe_from_hdf5(dataset_group)
+
+            df = df.drop('ignored', axis=1, errors='ignore')
+            df = df.set_index(["x_pos (mm)", "y_pos (mm)"])
+            df = df.add_suffix(f"[{dataset_name}]")
+            if general_df is None:
+                general_df = df
+            else:
+                general_df = general_df.join(df, how='outer')
+
+    general_df.to_csv(hdf5_path.with_suffix(".csv"), index=True)
 
