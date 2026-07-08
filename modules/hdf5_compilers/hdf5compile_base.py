@@ -245,6 +245,60 @@ def initialize_dataset_group(dataset_group):
 
     return True
 
+def return_ontology_dict():
+    ontology_dict = {
+        "AtomPercent": {
+            "ontology": "magnetic-materials.LocalAtomPercent",
+            "iri": "https://w3id.org/emmo/domain/magnetic-materials#EMMO_5301f12c-a2b9-593d-aca2-54070821a720"
+        },
+        "MassPercent": {
+            "ontology": "magnetic-materials.LocalMassPercent",
+            "iri": "https://w3id.org/emmo/domain/magnetic-materials#EMMO_ff8c1d96-1eb2-5385-8036-82aff23797df"
+        },
+        "a": {
+            "ontology": "magnetic-materials.LocalLatticeConstantA",
+            "iri": "https://w3id.org/emmo/domain/magnetic-materials#EMMO_c6ed4948-e599-5f09-aa07-b70121c41fcf"
+        },
+        "c": {
+            "ontology": "magnetic-materials.LocalLatticeConstantC",
+            "iri": "https://w3id.org/emmo/domain/magnetic-materials#EMMO_dbb7c1bc-034f-5f4b-9329-d23ed8915961"
+        },
+        "phase_fraction": {
+            "ontology": "magnetic-materials.LocalPhaseFraction",
+            "iri": "https://w3id.org/emmo/domain/magnetic-materials#EMMO_5bf7a2a2-d466-588a-b794-af4ac13285df"
+        },
+        "coercivity_dmdh": {
+            "ontology": "magnetic-materials.LocalCoercivity",
+            "iri": "https://w3id.org/emmo/domain/magnetic-materials#EMMO_17f52ffb-c461-546a-8af6-299a506c8657"
+        },
+        "coercivity_m0": {
+            "ontology": "magnetic-materials.LocalCoercivity",
+            "iri": "https://w3id.org/emmo/domain/magnetic-materials#EMMO_17f52ffb-c461-546a-8af6-299a506c8657"
+        },
+        "reflectivity": {
+            "ontology": "magnetic-materials.LocalReflectivity",
+            "iri": "https://w3id.org/emmo/domain/magnetic-materials#EMMO_c44c0546-452e-592f-b6bc-27a64e79244c"
+        },
+        "measured_thickness": {
+            "ontology": "magnetic-materials.LocalThickness",
+            "iri": "https://w3id.org/emmo/domain/magnetic-materials#EMMO_efffe3e8-6bd8-5944-ba38-6facf656c61d"
+        },
+    }
+
+    return ontology_dict
+
+def add_ontology_labels(name, hdf5_group):
+    ontology_dict = return_ontology_dict()
+    last_name = name.split("/")[-1]
+    if last_name in ontology_dict:
+        print(name)
+        hdf5_group.attrs["ontology"] = ontology_dict[last_name]["ontology"]
+        hdf5_group.attrs["iri"] = ontology_dict[last_name]["iri"]
+
+def populate_all_ontology_labels(hdf5_file):
+    hdf5_file.visititems(add_ontology_labels)
+
+
 
 
     

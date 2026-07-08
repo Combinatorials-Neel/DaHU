@@ -318,7 +318,7 @@ def write_edx_to_hdf5(hdf5_path, source_path, dataset_name=None):
 
             # Instrument group for metadata
             instrument = position_group.create_group("instrument")
-            instrument.attrs["NX_class"] = "HTinstrument"
+            instrument.attrs["HT_class"] = "HT_instrument"
 
             instrument["x_pos"] = wafer_positions[0]
             instrument["y_pos"] = wafer_positions[1]
@@ -327,12 +327,12 @@ def write_edx_to_hdf5(hdf5_path, source_path, dataset_name=None):
 
             # Result group
             results = position_group.create_group("results")
-            results.attrs["NX_class"] = "HTresult"
+            results.attrs["HT_class"] = "HT_results"
             set_instrument_and_result_from_dict(edx_dict, instrument, results)
 
             # Measurement group
             data = position_group.create_group("measurement")
-            data.attrs["NX_class"] = "HTdata"
+            data.attrs["HT_class"] = "HT_measurement"
 
             counts = data.create_dataset(
                 "counts", (len(channels),), data=channels, dtype="int"

@@ -793,3 +793,40 @@ def moke_plot_loop_map(hdf5_file, options_dict, normalize=False):
             fig.update_yaxes(range=[-y_max, y_max], row=fig_row, col=fig_col)
 
     return fig
+
+
+def moke_export_spectra_to_files(moke_group, export_path, loop_mode=True):
+    dataset_name = moke_group.name
+    sample_name = moke_group["experiment_info/sample/sample_name"][()].decode()
+    positions_group = moke_group["positions"]
+
+    export_folder = export_path / dataset_name
+    if not os.path.exists(export_folder):
+        os.makedirs(export_folder)
+
+    for position, position_group in positions_group.items():
+        file_path = (export_path / index).with_suffix(".xy")
+
+        index = position_group.attrs["index"]
+        x_pos = position_group["instrument/x_pos"][()]
+        y_pos = position_group["instrument/y_pos"][()]
+
+        if loop_mode:
+            integrated_group = position_group.get("measurement/integrated")
+            tth_array = integrated_group["tth"][()]
+            counts_array = integrated_group["counts"][()]
+
+            with open(file_path, "w") as export_file:
+                export_file.write(f"#sample_name: {sample_name}\n")
+                export_file.write(f"#dataset_name: {dataset_name}\n")
+                export_file.write(f"#x_pos: {x_pos}\n")
+                export_file.write(f"#y_pos: {y_pos}\n")
+                export_file.write(f"#index: {index}\n")
+                export_file.write(f"tth\tcounts\n")
+
+                for x, y in zip(tth_array, counts_array):
+                    export_file.write(f"{x}\t{y}\n")
+
+                export_file.flush()
+
+    return True
