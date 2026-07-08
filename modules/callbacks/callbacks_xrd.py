@@ -295,22 +295,15 @@ def callbacks_xrd(app):
             raise PreventUpdate
         if n_clicks > 0:
             hdf5_path = Path(hdf5_path)
-            export_path = hdf5_path.parent / selected_dataset / "xrd_export"
-            if not os.path.exists(export_path):
-                os.makedirs(export_path)
-            else:
-                raise NameError(f"{export_path} already exists, aborting to prevent overwrite")
+            export_path = make_exports_folder(hdf5_path)
 
             with h5py.File(hdf5_path, "r") as hdf5_file:
                 xrd_group = hdf5_file[selected_dataset]
-                positions_group = get_positions_group(xrd_group)
-                xrd_export_sum_spectrum(positions_group, export_path)
-                for position, position_group in positions_group.items():
-                    if position == "alignment_scans":
-                        continue
-                    export_xrd_position_to_files(position_group, export_path)
+                xrd_export_spectra_to_files(xrd_group, export_path)
 
             return f"Successfully exported to {export_path}"
+
+        return None
 
     @app.callback(
         Output("xrd_nexus_mode_store", "data"),

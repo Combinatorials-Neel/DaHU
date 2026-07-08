@@ -268,7 +268,7 @@ def xrd_plot_esrfimage_from_array(array, z_min, z_max):
     return fig
 
 
-def xrd_export_sum_spectrum(positions_group, export_path):
+def xrd_export_sum_spectrum(positions_group, export_path, sample_name=None, dataset_name=None):
     counts_array = None
     tth_array = None
 
@@ -284,40 +284,55 @@ def xrd_export_sum_spectrum(positions_group, export_path):
 
     with open(export_path/"sum.xy", "w") as export_file:
         for x, y in zip(tth_array, counts_array):
-            export_file.write(f"{x}\t{y}\n")
+            export_file.write(f"#sample_name: {sample_name}\n")
+            export_file.write(f"#dataset_name: {dataset_name}\n")
+            export_file.write(f"#index: sum_file\n")
 
     return True
 
 
-def export_xrd_position_to_files(position_group, export_path, save_metadata = False, save_image=False):
-    index = position_group.attrs["index"]
-    group_name = position_group.name
+def xrd_export_spectra_to_files(xrd_group, export_path, save_image=False):
+    dataset_name = xrd_group.name
+    sample_name = xrd_group["experiment_info/sample/sample_name"][()].decode()
+    positions_group = xrd_group["positions"]
 
-    image_path = (export_path / index).with_suffix(".img")
-    file_path = (export_path / index).with_suffix(".xy")
+    export_folder = export_path / dataset_name
+    if not os.path.exists(export_folder):
+        os.makedirs(export_folder)
 
-    instrument_group = position_group.get("instrument")
-    metadata_dict = hdf5_group_to_dict(instrument_group)
+    xrd_export_sum_spectrum(positions_group, export_path)
 
-    image_array = position_group["measurement/2Dimage"][()]
-    # Creating a new image with fabio
-    image_file = dtrekimage.DtrekImage()
-    image_file.data = image_array
+    for position, position_group in positions_group.items():
+        file_path = (export_path / index).with_suffix(".xy")
 
-    if save_image:
-        image_file.save(image_path)
+        index = position_group.attrs["index"]
+        x_pos = position_group["instrument/x_pos"][()]
+        y_pos = position_group["instrument/y_pos"][()]
 
-    integrated_group = position_group.get("measurement/integrated")
-    counts_array = integrated_group["counts"][()]
-    tth_array = integrated_group["tth"][()]
+        integrated_group = position_group.get("measurement/integrated")
+        tth_array = integrated_group["tth"][()]
+        counts_array = integrated_group["counts"][()]
 
-    with open(file_path, "w") as export_file:
-        if save_metadata:
-            for key, metadata in metadata_dict.items():
-                pass
-                # export_file.write(f"#{key}: {metadata}\n")
-        for x, y in zip(tth_array, counts_array):
-            export_file.write(f"{x}\t{y}\n")
+        with open(file_path, "w") as export_file:
+            export_file.write(f"#sample_name: {sample_name}\n")
+            export_file.write(f"#dataset_name: {dataset_name}\n")
+            export_file.write(f"#x_pos: {x_pos}\n")
+            export_file.write(f"#y_pos: {y_pos}\n")
+            export_file.write(f"#index: {index}\n")
+            export_file.write(f"tth\tcounts\n")
+
+            for x, y in zip(tth_array, counts_array):
+                export_file.write(f"{x}\t{y}\n")
+
+            export_file.flush()
+
+        if save_image:
+            image_path = (export_path / index).with_suffix(".img")
+            image_array = position_group["measurement/2Dimage"][()]
+            # Creating a new image with fabio
+            image_file = dtrekimage.DtrekImage()
+            image_file.data = image_array
+            image_file.save(image_path)
 
     return True
 
