@@ -142,7 +142,7 @@ def create_new_hdf5(hdf5_path, hdf5_type, sample_dict):
             hdf5_file.attrs["library_writer"] = LIBRARY_WRITER_VERSION
 
             sample = hdf5_file.create_group("sample")
-            sample.attrs["HT_class"] = "sample"
+            sample.attrs["HT_type"] = "sample"
             save_dict_to_hdf5(sample, sample_dict)
 
         if hdf5_type == "dataset":
@@ -150,7 +150,7 @@ def create_new_hdf5(hdf5_path, hdf5_type, sample_dict):
             hdf5_file.attrs["dataset_writer"] = DATASET_WRITER_VERSION
 
             samples = hdf5_file.create_group("samples")
-            samples.attrs["HT_class"] = "samples"
+            samples.attrs["HT_type"] = "samples"
 
         return True
 
@@ -217,7 +217,7 @@ def update_library_hdf5(hdf5_file):
         hdf5_file.attrs["HT_type"] = "library"
 
         sample = hdf5_file.get("sample")
-        sample.attrs["HT_class"] = "sample"
+        sample.attrs["HT_type"] = "sample"
         # end of patch
 
         # Update the version tag to the current version
