@@ -114,11 +114,12 @@ def detect_measurement(filename_list: list):
         "EDX": ["spx"],
         "PROFIL": ["asc2d"],
         "ESRF": ["h5"],
+        "SEM": ["png"],
         "XRD results": ["lst"],
         "Annealing": ["HIS"],
         "Magnetron": ["prp"],
         "SQUID": ["dat"],
-        "Picture": ["png, jpg, jpeg"],
+        "Picture": ["jpg, jpeg"],
         "HT hdf5": ["hdf5"],
     }
 

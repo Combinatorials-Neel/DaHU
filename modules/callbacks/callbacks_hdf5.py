@@ -12,6 +12,7 @@ from ..hdf5_compilers.hdf5compile_moke import *
 from ..hdf5_compilers.hdf5compile_profil import *
 from ..hdf5_compilers.hdf5compile_squid import *
 from ..hdf5_compilers.hdf5compile_xrd import *
+from ..hdf5_compilers.hdf5compile_sem import *
 from ..interface.widgets_base import *
 
 
@@ -47,6 +48,9 @@ def callbacks_hdf5(app):
                 return f'Added {measurement_type} measurement to {hdf5_path} as {dataset_name}.'
             if measurement_type == 'EDX':
                 write_edx_to_hdf5(hdf5_path, uploaded_folder_path, dataset_name=dataset_name)
+                return f'Added {measurement_type} measurement to {hdf5_path} as {dataset_name}.'
+            if measurement_type == 'SEM':
+                write_sem_to_hdf5(hdf5_path, uploaded_folder_path, dataset_name=dataset_name)
                 return f'Added {measurement_type} measurement to {hdf5_path} as {dataset_name}.'
             if measurement_type =='MOKE':
                 write_moke_to_hdf5(hdf5_path, uploaded_folder_path, dataset_name=dataset_name)

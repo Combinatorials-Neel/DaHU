@@ -76,7 +76,7 @@ def top_left_card():
                             dbc.Select(id="hdf5_measurement_type",
                                        options=[
                                            "EDX", "PROFIL", "MOKE", "XRD", "ESRF", "XRD results", "Annealing",
-                                           "Magnetron", "Triode", "SQUID", "Picture", "HT hdf5"],
+                                           "Magnetron", "Triode", "SQUID", "Picture", "HT hdf5", "SEM"],
                                        value=None),
                             width=9
                         )
