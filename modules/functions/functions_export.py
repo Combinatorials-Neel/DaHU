@@ -48,11 +48,12 @@ def hdf5_export_sem_images(sem_group, export_path, format="png"):
 
     for position, position_group in positions_group.items():
         index = str(position_group.attrs["index"])
-        print(index)
-        file_path = (export_path / index).with_suffix(f".{format}")
 
         x_pos = position_group["instrument/x_pos"][()]
         y_pos = position_group["instrument/y_pos"][()]
+
+        filename = f"x{x_pos}_y{y_pos}"
+        file_path = (export_path / filename).with_suffix(f".{format}")
 
         image_data = position_group.get("measurement/image")[()]
         image = Image.fromarray(image_data, "RGB")
