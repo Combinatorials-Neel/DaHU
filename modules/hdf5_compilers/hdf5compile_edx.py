@@ -126,6 +126,7 @@ def get_position_from_path(filepath):
 
     return int(x_idx), int(y_idx)
 
+
 def find_max_idx(source_path):
     max_x = 0
     max_y = 0
@@ -138,7 +139,6 @@ def find_max_idx(source_path):
             max_y = scan_numbers[1]
 
     return max_x, max_y
-
 
 
 
