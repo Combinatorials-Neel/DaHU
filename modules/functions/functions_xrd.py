@@ -303,9 +303,9 @@ def xrd_export_spectra_to_files(xrd_group, export_path, save_image=False):
     xrd_export_sum_spectrum(positions_group, export_path)
 
     for position, position_group in positions_group.items():
+        index = position_group.attrs["index"]
         file_path = (export_path / index).with_suffix(".xy")
 
-        index = position_group.attrs["index"]
         x_pos = position_group["instrument/x_pos"][()]
         y_pos = position_group["instrument/y_pos"][()]
 

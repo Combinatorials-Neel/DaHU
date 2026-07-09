@@ -1,5 +1,7 @@
 import h5py
 from pathlib import Path
+import os
+from PIL import Image, PngImagePlugin
 
 from ..functions.functions_edx import edx_make_results_dataframe_from_hdf5
 from ..functions.functions_profil import profil_make_results_dataframe_from_hdf5
@@ -33,3 +35,32 @@ def hdf5_export_results_to_csv(hdf5_path):
                 general_df = general_df.join(df, how='outer')
 
     general_df.to_csv(hdf5_path.with_suffix(".csv"), index=True)
+
+
+def hdf5_export_sem_images(sem_group, export_path, format="png"):
+    dataset_name = sem_group.name
+    sample_name = sem_group["experiment_info/sample/sample_name"][()].decode()
+    positions_group = sem_group["positions"]
+
+    export_folder = export_path / dataset_name
+    if not os.path.exists(export_folder):
+        os.makedirs(export_folder)
+
+    for position, position_group in positions_group.items():
+        index = str(position_group.attrs["index"])
+        print(index)
+        file_path = (export_path / index).with_suffix(f".{format}")
+
+        x_pos = position_group["instrument/x_pos"][()]
+        y_pos = position_group["instrument/y_pos"][()]
+
+        image_data = position_group.get("measurement/image")[()]
+        image = Image.fromarray(image_data, "RGB")
+
+        metadata = PngImagePlugin.PngInfo()
+        metadata.add_text("Sample", sample_name)
+        metadata.add_text("Dataset", dataset_name)
+        metadata.add_text("x_pos", str(x_pos))
+        metadata.add_text("y_pos", str(y_pos))
+        metadata.add_text("index", index)
+        image.save(file_path, png_info=metadata)
