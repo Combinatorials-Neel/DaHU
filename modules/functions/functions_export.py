@@ -2,7 +2,9 @@ import h5py
 from pathlib import Path
 import os
 from PIL import Image, PngImagePlugin
+import pandas as pd
 
+from .functions_moke import moke_read_treatment_dict_from_hdf5, moke_get_measurement_from_hdf5, moke_treat_measurement_dataframe
 from ..functions.functions_edx import edx_make_results_dataframe_from_hdf5
 from ..functions.functions_profil import profil_make_results_dataframe_from_hdf5
 from ..functions.functions_xrd import xrd_make_results_dataframe_from_hdf5
@@ -53,7 +55,7 @@ def hdf5_export_sem_images(sem_group, export_path, format="png"):
         y_pos = position_group["instrument/y_pos"][()]
 
         filename = f"x{x_pos}_y{y_pos}"
-        file_path = (export_path / filename).with_suffix(f".{format}")
+        file_path = (export_folder / filename).with_suffix(f".{format}")
 
         image_data = position_group.get("measurement/image")[()]
         image = Image.fromarray(image_data, "RGB")
@@ -65,3 +67,45 @@ def hdf5_export_sem_images(sem_group, export_path, format="png"):
         metadata.add_text("y_pos", str(y_pos))
         metadata.add_text("index", index)
         image.save(file_path, png_info=metadata)
+
+
+def hdf5_export_moke_loops(moke_group, export_path):
+    dataset_name = moke_group.name
+    sample_name = moke_group["experiment_info/sample/sample_name"][()].decode()
+    positions_group = moke_group["positions"]
+
+    export_folder = export_path / dataset_name
+    if not os.path.exists(export_folder):
+        os.makedirs(export_folder)
+
+    for position, position_group in positions_group.items():
+        index = str(position_group.attrs["index"])
+
+        x_pos = position_group["instrument/x_pos"][()]
+        y_pos = position_group["instrument/y_pos"][()]
+
+        filename = f"x{x_pos}_y{y_pos}"
+        file_path = (export_folder / filename).with_suffix(".xy")
+
+        treatment_dict = moke_read_treatment_dict_from_hdf5(position_group)
+
+        df = moke_get_measurement_from_hdf5(moke_group, target_x=x_pos, target_y=y_pos, index=0)
+        df = moke_treat_measurement_dataframe(df, treatment_dict)
+
+        field_array = df["field"].values
+        magnetization_array = df["magnetization"].values
+
+        with open(file_path, "w") as export_file:
+            export_file.write(f"#sample_name: {sample_name}\n")
+            export_file.write(f"#dataset_name: {dataset_name}\n")
+            export_file.write(f"#x_pos: {x_pos}\n")
+            export_file.write(f"#y_pos: {y_pos}\n")
+            export_file.write(f"#index: {index}\n")
+            export_file.write(f"Applied Field (T)\tMoke Signal (V)\n")
+
+            for x, y in zip(field_array, magnetization_array):
+                export_file.write(f"{x}\t{y}\n")
+
+            export_file.flush()
+
+

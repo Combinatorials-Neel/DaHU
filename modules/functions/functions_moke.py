@@ -1,6 +1,6 @@
 """ """
 import numpy as np
-from numpy.f2py.crackfortran import groupends
+import pandas as pd
 from collections import defaultdict
 from scipy.signal import savgol_filter
 from plotly.subplots import make_subplots
@@ -42,13 +42,13 @@ def moke_make_path_dictionary(source_path, pattern=r"^p(\d+)"):
     return grouped_dict
 
 
-def moke_get_measurement_from_hdf5(moke_group, target_x, target_y, index=1):
+def moke_get_measurement_from_hdf5(moke_group, target_x, target_y, index=0):
     position_group = get_target_position_group(moke_group, target_x, target_y)
     measurement_group = position_group.get("measurement")
     time_array = measurement_group[f"time"][()]
 
     if index == 0:
-        mean_shot_group = measurement_group.get(["shot_mean"])
+        mean_shot_group = measurement_group.get("shot_mean")
 
         magnetization_array = mean_shot_group["magnetization_mean"][()]
         pulse_array = mean_shot_group["pulse_mean"][()]
@@ -795,38 +795,10 @@ def moke_plot_loop_map(hdf5_file, options_dict, normalize=False):
     return fig
 
 
-def moke_export_spectra_to_files(moke_group, export_path, loop_mode=True):
-    dataset_name = moke_group.name
-    sample_name = moke_group["experiment_info/sample/sample_name"][()].decode()
-    positions_group = moke_group["positions"]
+def moke_read_treatment_dict_from_hdf5(position_group):
+    treatment_dict = {}
+    parameters_group = position_group["results/parameters"]
+    for name, group in parameters_group.items():
+        treatment_dict[name] = group[()]
 
-    export_folder = export_path / dataset_name
-    if not os.path.exists(export_folder):
-        os.makedirs(export_folder)
-
-    for position, position_group in positions_group.items():
-        file_path = (export_path / index).with_suffix(".xy")
-
-        index = position_group.attrs["index"]
-        x_pos = position_group["instrument/x_pos"][()]
-        y_pos = position_group["instrument/y_pos"][()]
-
-        if loop_mode:
-            integrated_group = position_group.get("measurement/integrated")
-            tth_array = integrated_group["tth"][()]
-            counts_array = integrated_group["counts"][()]
-
-            with open(file_path, "w") as export_file:
-                export_file.write(f"#sample_name: {sample_name}\n")
-                export_file.write(f"#dataset_name: {dataset_name}\n")
-                export_file.write(f"#x_pos: {x_pos}\n")
-                export_file.write(f"#y_pos: {y_pos}\n")
-                export_file.write(f"#index: {index}\n")
-                export_file.write(f"tth\tcounts\n")
-
-                for x, y in zip(tth_array, counts_array):
-                    export_file.write(f"{x}\t{y}\n")
-
-                export_file.flush()
-
-    return True
+    return treatment_dict
