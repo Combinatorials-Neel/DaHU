@@ -40,7 +40,7 @@ def hdf5_export_results_to_csv(hdf5_path):
 
 
 def hdf5_export_sem_images(sem_group, export_path, format="png"):
-    dataset_name = sem_group.name
+    dataset_name = str(sem_group.name)[1:]
     sample_name = sem_group["experiment_info/sample/sample_name"][()].decode()
     positions_group = sem_group["positions"]
 
@@ -70,7 +70,7 @@ def hdf5_export_sem_images(sem_group, export_path, format="png"):
 
 
 def hdf5_export_moke_loops(moke_group, export_path):
-    dataset_name = moke_group.name
+    dataset_name = str(moke_group.name)[1:]
     sample_name = moke_group["experiment_info/sample/sample_name"][()].decode()
     positions_group = moke_group["positions"]
 

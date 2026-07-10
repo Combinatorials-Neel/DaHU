@@ -292,7 +292,7 @@ def xrd_export_sum_spectrum(positions_group, export_path, sample_name=None, data
 
 
 def xrd_export_spectra_to_files(xrd_group, export_path, save_image=False):
-    dataset_name = xrd_group.name
+    dataset_name = str(xrd_group.name)[1:]
     sample_name = xrd_group["experiment_info/sample/sample_name"][()].decode()
     positions_group = xrd_group["positions"]
 
@@ -300,7 +300,7 @@ def xrd_export_spectra_to_files(xrd_group, export_path, save_image=False):
     if not os.path.exists(export_folder):
         os.makedirs(export_folder)
 
-    xrd_export_sum_spectrum(positions_group, export_path)
+    xrd_export_sum_spectrum(positions_group, export_folder)
 
     for position, position_group in positions_group.items():
         index = position_group.attrs["index"]
