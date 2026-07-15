@@ -82,7 +82,7 @@ def get_hdf5_datasets(hdf5_file, dataset_type):
         dataset_list = []
         for dataset, dataset_group in hdf5_file.items():
             if "HT_type" in dataset_group.attrs:
-                if dataset_type == dataset_group.attrs["HT_type"]:
+                if dataset_type in dataset_group.attrs["HT_type"]:
                     dataset_list.append(dataset)
 
         return dataset_list
