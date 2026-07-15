@@ -309,6 +309,7 @@ def xrd_export_spectra_to_files(xrd_group, export_path, save_image=False):
 
         filename = f"x{x_pos}_y{y_pos}"
         file_path = (export_folder / filename).with_suffix(".xy")
+        print(file_path)
 
         integrated_group = position_group.get("measurement/integrated")
         tth_array = integrated_group["tth"][()]

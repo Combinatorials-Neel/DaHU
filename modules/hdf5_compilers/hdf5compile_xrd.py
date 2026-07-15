@@ -193,7 +193,7 @@ def write_smartlab_to_hdf5(hdf5_path, source_path, dataset_name):
 
     with h5py.File(hdf5_path, "a") as hdf5_file:
         xrd_group = hdf5_file.create_group(dataset_name)
-        xrd_group.attrs["HT_type"] = "xrd"
+        xrd_group.attrs["HT_type"] = "xrd_wafer"
         xrd_group.attrs["instrument"] = "Rigaku Smartlab"
         xrd_group.attrs["smartlab_writer"] = SMARTLAB_WRITER_VERSION
 

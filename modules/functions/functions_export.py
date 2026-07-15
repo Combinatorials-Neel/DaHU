@@ -23,7 +23,7 @@ def hdf5_export_results_to_csv(hdf5_path):
                     df = edx_make_results_dataframe_from_hdf5(dataset_group)
                 if dataset_group.attrs["HT_type"] == "moke":
                     df = moke_make_results_dataframe_from_hdf5(dataset_group)
-                if dataset_group.attrs["HT_type"] in ["esrf", "xrd"]:
+                if dataset_group.attrs["HT_type"] in ["esrf", "xrd", "xrd_wafer"]:
                     df = xrd_make_results_dataframe_from_hdf5(dataset_group)
                 if dataset_group.attrs["HT_type"] == "profil":
                     df = profil_make_results_dataframe_from_hdf5(dataset_group)
@@ -56,6 +56,7 @@ def hdf5_export_sem_images(sem_group, export_path, format="png"):
 
         filename = f"x{x_pos}_y{y_pos}"
         file_path = (export_folder / filename).with_suffix(f".{format}")
+        print(file_path)
 
         image_data = position_group.get("measurement/image")[()]
         image = Image.fromarray(image_data, "RGB")
@@ -86,6 +87,7 @@ def hdf5_export_moke_loops(moke_group, export_path):
 
         filename = f"x{x_pos}_y{y_pos}"
         file_path = (export_folder / filename).with_suffix(".xy")
+        print(file_path)
 
         treatment_dict = moke_read_treatment_dict_from_hdf5(position_group)
 
