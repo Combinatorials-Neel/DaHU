@@ -108,7 +108,6 @@ def write_sem_to_hdf5(hdf5_path, source_path, dataset_name):
 
             # Instrument group for metadata
             instrument = position_group.create_group("instrument")
-            instrument.attrs["HT_class"] = "HT_instrument"
 
             instrument["x_pos"] = format_position_value(wafer_positions[0])
             instrument["y_pos"] = format_position_value(wafer_positions[1])
@@ -117,7 +116,6 @@ def write_sem_to_hdf5(hdf5_path, source_path, dataset_name):
 
             # Measurement group
             measurement_group = position_group.create_group("measurement")
-            measurement_group.attrs["HT_class"] = "HT_measurement"
 
             img = np.array(Image.open(file_path))
             measurement_group.create_dataset("image", data=img, compression="gzip")

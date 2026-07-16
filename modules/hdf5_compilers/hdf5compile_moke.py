@@ -224,7 +224,6 @@ def write_moke_to_hdf5(hdf5_path, source_path, dataset_name = None, mode="a"):
 
             # Instrument group for metadata
             instrument_group = position_group.create_group("instrument")
-            instrument_group.attrs["HT_class"] = "HT_instrument"
             instrument_group["x_pos"] = format_position_value(x_pos)
             instrument_group["y_pos"] = format_position_value(y_pos)
             set_instrument_from_dict(header_dict, instrument_group)
@@ -233,7 +232,6 @@ def write_moke_to_hdf5(hdf5_path, source_path, dataset_name = None, mode="a"):
 
             # Measurement group for data
             measurement_group = position_group.create_group("measurement")
-            measurement_group.attrs["HT_class"] = "HT_measurement"
             time = [convertFloat(t) for t in time_dict]
             time_node = measurement_group.create_dataset("time", data=time, dtype="float")
             time_node.attrs["units"] = "μs"

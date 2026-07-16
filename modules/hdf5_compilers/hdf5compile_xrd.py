@@ -220,7 +220,6 @@ def write_smartlab_to_hdf5(hdf5_path, source_path, dataset_name):
 
             # Instrument group for metadata
             instrument_group = position_group.create_group("instrument")
-            instrument_group.attrs["NX_class"] = "HTinstrument"
 
             instrument_group["x_pos"] = format_position_value(x_pos)
             instrument_group["y_pos"] = format_position_value(y_pos)
@@ -242,7 +241,6 @@ def write_smartlab_to_hdf5(hdf5_path, source_path, dataset_name):
             # Data group
             measurement_group = position_group.create_group("measurement")
             integrated_group = measurement_group.create_group("integrated")
-            measurement_group.attrs["NX_class"] = "HTmeasurement"
             tth_data = [convertFloat(elm[0][0]) for elm in data]
             counts_data = [convertFloat(elm[1][0]) for elm in data]
             q_data = xrd_tth_q(tth_data, energy=8.04)
