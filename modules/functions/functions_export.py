@@ -21,12 +21,14 @@ def hdf5_export_results_to_csv(hdf5_path):
             else:
                 if dataset_group.attrs["HT_type"] == "edx":
                     df = edx_make_results_dataframe_from_hdf5(dataset_group)
-                if dataset_group.attrs["HT_type"] == "moke":
+                elif dataset_group.attrs["HT_type"] == "moke":
                     df = moke_make_results_dataframe_from_hdf5(dataset_group)
-                if dataset_group.attrs["HT_type"] in ["esrf", "xrd", "xrd_wafer"]:
+                elif dataset_group.attrs["HT_type"] in ["esrf", "xrd", "xrd_wafer"]:
                     df = xrd_make_results_dataframe_from_hdf5(dataset_group)
-                if dataset_group.attrs["HT_type"] == "profil":
+                elif dataset_group.attrs["HT_type"] == "profil":
                     df = profil_make_results_dataframe_from_hdf5(dataset_group)
+                else:
+                    continue
 
             df = df.drop('ignored', axis=1, errors='ignore')
             df = df.set_index(["x_pos (mm)", "y_pos (mm)"])
