@@ -28,6 +28,13 @@ def convertFloat(item):
 
     return item
 
+def format_position_value(position_value, decimals=2):
+    position_value = float(position_value)
+    np.round(position_value, decimals)
+    if position_value == 0:
+        item = np.abs(0)
+    return position_value
+
 
 def get_all_keys(d):
     """

@@ -225,8 +225,8 @@ def write_moke_to_hdf5(hdf5_path, source_path, dataset_name = None, mode="a"):
             # Instrument group for metadata
             instrument_group = position_group.create_group("instrument")
             instrument_group.attrs["HT_class"] = "HT_instrument"
-            instrument_group["x_pos"] = convertFloat(x_pos)
-            instrument_group["y_pos"] = convertFloat(y_pos)
+            instrument_group["x_pos"] = format_position_value(x_pos)
+            instrument_group["y_pos"] = format_position_value(y_pos)
             set_instrument_from_dict(header_dict, instrument_group)
             instrument_group["x_pos"].attrs["units"] = "mm"
             instrument_group["y_pos"].attrs["units"] = "mm"

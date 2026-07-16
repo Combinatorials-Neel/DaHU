@@ -222,8 +222,8 @@ def write_smartlab_to_hdf5(hdf5_path, source_path, dataset_name):
             instrument_group = position_group.create_group("instrument")
             instrument_group.attrs["NX_class"] = "HTinstrument"
 
-            instrument_group["x_pos"] = convertFloat(x_pos)
-            instrument_group["y_pos"] = convertFloat(y_pos)
+            instrument_group["x_pos"] = format_position_value(x_pos)
+            instrument_group["y_pos"] = format_position_value(y_pos)
             instrument_group["x_pos"].attrs["units"] = "mm"
             instrument_group["y_pos"].attrs["units"] = "mm"
 

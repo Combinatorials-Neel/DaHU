@@ -255,8 +255,8 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
 
                 target_instrument_group = target_position_group.get("instrument")
                 if mode == "wafer":
-                    target_instrument_group.create_dataset(name = "x_pos", data = x_pos)
-                    target_instrument_group.create_dataset(name = "y_pos", data = y_pos)
+                    target_instrument_group.create_dataset(name = "x_pos", data = format_position_value(x_pos))
+                    target_instrument_group.create_dataset(name = "y_pos", data = format_position_value(y_pos))
                 elif mode == "furnace":
                     target_instrument_group.create_dataset(name = "temperature", data = temperature)
 

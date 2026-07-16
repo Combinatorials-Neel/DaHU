@@ -101,8 +101,8 @@ def write_dektak_to_hdf5(hdf5_path, source_path, dataset_name=None, mode="a"):
             # Instrument group for metadata
             instrument = position_group.create_group("instrument")
             instrument.attrs["NX_class"] = "HTinstrument"
-            instrument["x_pos"] = convertFloat(x_pos)
-            instrument["y_pos"] = convertFloat(y_pos)
+            instrument["x_pos"] = format_position_value(x_pos)
+            instrument["y_pos"] = format_position_value(y_pos)
             instrument["x_pos"].attrs["units"] = "mm"
             instrument["y_pos"].attrs["units"] = "mm"
 

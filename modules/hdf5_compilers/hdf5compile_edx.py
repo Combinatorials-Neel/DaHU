@@ -320,8 +320,8 @@ def write_edx_to_hdf5(hdf5_path, source_path, dataset_name=None):
             instrument = position_group.create_group("instrument")
             instrument.attrs["HT_class"] = "HT_instrument"
 
-            instrument["x_pos"] = wafer_positions[0]
-            instrument["y_pos"] = wafer_positions[1]
+            instrument["x_pos"] = format_position_value([0])
+            instrument["y_pos"] = format_position_value([1])
             instrument["x_pos"].attrs["units"] = "mm"
             instrument["y_pos"].attrs["units"] = "mm"
 
