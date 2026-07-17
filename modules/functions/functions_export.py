@@ -56,7 +56,7 @@ def hdf5_export_sem_images(sem_group, export_path, format="png"):
         x_pos = position_group["instrument/x_pos"][()]
         y_pos = position_group["instrument/y_pos"][()]
 
-        filename = f"x{x_pos}_y{y_pos}"
+        filename = f"x{str(x_pos).replace(".", ",")}_y{str(y_pos).replace(".", ",")}"
         file_path = (export_folder / filename).with_suffix(f".{format}")
         print(file_path)
 
@@ -87,7 +87,7 @@ def hdf5_export_moke_loops(moke_group, export_path):
         x_pos = position_group["instrument/x_pos"][()]
         y_pos = position_group["instrument/y_pos"][()]
 
-        filename = f"x{x_pos}_y{y_pos}"
+        filename = f"x{str(x_pos).replace(".", ",")}_y{str(y_pos).replace(".", ",")}"
         file_path = (export_folder / filename).with_suffix(".xy")
         print(file_path)
 

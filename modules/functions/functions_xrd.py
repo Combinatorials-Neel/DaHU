@@ -307,7 +307,7 @@ def xrd_export_spectra_to_files(xrd_group, export_path, save_image=False):
         x_pos = position_group["instrument/x_pos"][()]
         y_pos = position_group["instrument/y_pos"][()]
 
-        filename = f"x{x_pos}_y{y_pos}"
+        filename = f"x{str(x_pos).replace(".", ",")}_y{str(y_pos).replace(".", ",")}"
         file_path = (export_folder / filename).with_suffix(".xy")
         print(file_path)
 
