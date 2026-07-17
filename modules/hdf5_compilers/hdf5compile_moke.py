@@ -7,9 +7,7 @@ import stringcase
 from ..functions.functions_moke import *
 from ..hdf5_compilers.hdf5compile_base import *
 
-MOKE_WRITER_VERSION = '0.4'
-
-POSITION_DECIMAL_ROUND_NUMBER = 3
+MOKE_WRITER_VERSION = '0.9'
 
 moke_dict = {
 
@@ -215,8 +213,8 @@ def write_moke_to_hdf5(hdf5_path, source_path, dataset_name = None, mode="a"):
             time_dict = get_time_from_moke(len(mag_array))
             nb_acquisitions = len(mag_array[0])
 
-            x_pos = np.round(info_dict['x_pos'], POSITION_DECIMAL_ROUND_NUMBER)
-            y_pos = np.round(info_dict['y_pos'], POSITION_DECIMAL_ROUND_NUMBER)
+            x_pos = format_position_value(info_dict['x_pos'])
+            y_pos = format_position_value(info_dict['y_pos'])
 
             position_group = positions_group.create_group(f"({x_pos},{y_pos})")
             position_group.attrs["index"] = scan_number
@@ -224,8 +222,8 @@ def write_moke_to_hdf5(hdf5_path, source_path, dataset_name = None, mode="a"):
 
             # Instrument group for metadata
             instrument_group = position_group.create_group("instrument")
-            instrument_group["x_pos"] = format_position_value(x_pos)
-            instrument_group["y_pos"] = format_position_value(y_pos)
+            instrument_group["x_pos"] = x_pos
+            instrument_group["y_pos"] = y_pos
             set_instrument_from_dict(header_dict, instrument_group)
             instrument_group["x_pos"].attrs["units"] = "mm"
             instrument_group["y_pos"].attrs["units"] = "mm"

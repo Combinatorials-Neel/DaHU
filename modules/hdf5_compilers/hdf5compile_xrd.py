@@ -9,7 +9,7 @@ from ..functions.functions_shared import *
 from ..functions.functions_xrd import *
 from ..hdf5_compilers.hdf5compile_base import *
 
-SMARTLAB_WRITER_VERSION = "0.2"
+SMARTLAB_WRITER_VERSION = "0.9"
 
 
 def get_scan_numbers(filename):
@@ -208,6 +208,9 @@ def write_smartlab_to_hdf5(hdf5_path, source_path, dataset_name):
             x_pos = float(meas_dict["COND_AXIS_POSITION-6"].strip('"'))
             y_pos = float(meas_dict["COND_AXIS_POSITION-7"].strip('"'))
 
+            x_pos = format_position_value(x_pos)
+            y_pos = format_position_value(y_pos)
+
             for img_name in safe_rglob(source_path, pattern="*.img"):
                 if str(ras_path.stem) in str(img_name):
                     img_path = source_path / img_name
@@ -221,8 +224,8 @@ def write_smartlab_to_hdf5(hdf5_path, source_path, dataset_name):
             # Instrument group for metadata
             instrument_group = position_group.create_group("instrument")
 
-            instrument_group["x_pos"] = format_position_value(x_pos)
-            instrument_group["y_pos"] = format_position_value(y_pos)
+            instrument_group["x_pos"] = x_pos
+            instrument_group["y_pos"] = y_pos
             instrument_group["x_pos"].attrs["units"] = "mm"
             instrument_group["y_pos"].attrs["units"] = "mm"
 

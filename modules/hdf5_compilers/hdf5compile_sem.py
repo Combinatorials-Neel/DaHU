@@ -8,10 +8,7 @@ import xml.etree.ElementTree as et
 from ..functions.functions_moke import *
 from ..hdf5_compilers.hdf5compile_base import *
 
-SEM_WRITER_VERSION = '0.1'
-
-POSITION_DECIMAL_ROUND_NUMBER = 3
-
+SEM_WRITER_VERSION = '0.9'
 
 def get_position_from_path(filepath):
     """
@@ -100,17 +97,21 @@ def write_sem_to_hdf5(hdf5_path, source_path, dataset_name):
             scan_numbers = get_position_from_path(file_path)
             wafer_positions = calculate_wafer_positions(scan_numbers, max_idx_x=max_x, max_idx_y=max_y)
 
+            x_pos = format_position_value(wafer_positions[0])
+            y_pos = format_position_value(wafer_positions[1])
+
             position_group = positions_group.create_group(
-                f"({wafer_positions[0]},{wafer_positions[1]})"
+                f"({x_pos},{y_pos})"
             )
+
             position_group.attrs["index"] = scan_numbers
             position_group.attrs["ignored"] = False
 
             # Instrument group for metadata
             instrument = position_group.create_group("instrument")
 
-            instrument["x_pos"] = format_position_value(wafer_positions[0])
-            instrument["y_pos"] = format_position_value(wafer_positions[1])
+            instrument["x_pos"] = x_pos
+            instrument["y_pos"] = y_pos
             instrument["x_pos"].attrs["units"] = "mm"
             instrument["y_pos"].attrs["units"] = "mm"
 

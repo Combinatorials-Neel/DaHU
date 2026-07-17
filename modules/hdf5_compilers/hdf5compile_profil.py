@@ -5,7 +5,7 @@ Functions for DEKTAK parsing
 from ..functions.functions_shared import *
 from ..hdf5_compilers.hdf5compile_base import *
 
-PROFIL_WRITER_VERSION = "0.4"
+PROFIL_WRITER_VERSION = "0.9"
 
 
 def read_header_from_dektak(file_path):
@@ -85,23 +85,18 @@ def write_dektak_to_hdf5(hdf5_path, source_path, dataset_name=None, mode="a"):
             scan_number = header_dict["TargetName"]
 
             x_pos, y_pos = position_from_tuple(scan_number)
+            x_pos = format_position_value(x_pos)
+            y_pos = format_position_value(y_pos)
 
-            try:
-                position_group = positions_group.create_group(
-                    f"({round(float(x_pos), 1)},{round(float(y_pos),1)})"
-                )
-                position_group.attrs["ignored"] = False
-            except ValueError:
-                print(
-                    f"Warning, data for position {round(float(x_pos), 1)},{round(float(y_pos),1)} already exists"
-                    f"This should not happen, skipping."
-                )
-                continue
+            position_group = positions_group.create_group(
+                f"({x_pos},{y_pos})"
+            )
+            position_group.attrs["ignored"] = False
 
             # Instrument group for metadata
             instrument = position_group.create_group("instrument")
-            instrument["x_pos"] = format_position_value(x_pos)
-            instrument["y_pos"] = format_position_value(y_pos)
+            instrument["x_pos"] = x_pos
+            instrument["y_pos"] = y_pos
             instrument["x_pos"].attrs["units"] = "mm"
             instrument["y_pos"].attrs["units"] = "mm"
 

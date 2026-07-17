@@ -7,7 +7,7 @@ from ..hdf5_compilers.hdf5compile_base import *
 
 import xml.etree.ElementTree as et
 
-EDX_WRITER_VERSION = "0.2"
+EDX_WRITER_VERSION = "0.9"
 
 
 def visit_items(item, edx_dict=None):
@@ -310,8 +310,11 @@ def write_edx_to_hdf5(hdf5_path, source_path, dataset_name=None):
             edx_dict, channels = read_data_from_spx(file_path)
             energy = make_energy_dataset(edx_dict, channels)
 
+            x_pos = format_position_value(wafer_positions[0])
+            y_pos = format_position_value(wafer_positions[1])
+
             position_group = positions_group.create_group(
-                f"({wafer_positions[0]},{wafer_positions[1]})"
+                f"({x_pos},{y_pos})"
             )
             position_group.attrs["index"] = scan_numbers
             position_group.attrs["ignored"] = False
@@ -319,8 +322,8 @@ def write_edx_to_hdf5(hdf5_path, source_path, dataset_name=None):
             # Instrument group for metadata
             instrument = position_group.create_group("instrument")
 
-            instrument["x_pos"] = format_position_value([0])
-            instrument["y_pos"] = format_position_value([1])
+            instrument["x_pos"] = x_pos
+            instrument["y_pos"] = y_pos
             instrument["x_pos"].attrs["units"] = "mm"
             instrument["y_pos"].attrs["units"] = "mm"
 

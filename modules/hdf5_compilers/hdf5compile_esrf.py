@@ -6,7 +6,7 @@ from ..functions.functions_shared import *
 from ..functions.functions_xrd import xrd_q_tth
 from ..hdf5_compilers.hdf5compile_base import *
 
-ESRF_WRITER_VERSION = "0.4"
+ESRF_WRITER_VERSION = "0.9"
 
 
 def return_cdte_source_path(dataset_group):
@@ -202,13 +202,12 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                 source_measurement_group = group.get("measurement")
 
                 if mode == "wafer":
-                    x_pos = np.round(source_instrument_group["positioners/xsamp"][()], 2)
-                    # Correct for when the dial gives negative 0
-                    if x_pos == -0:
-                        x_pos = 0.0
-                    y_pos = np.round(source_instrument_group["positioners/ysamp"][()], 2)
-                    if y_pos == -0:
-                        y_pos = 0.0
+                    x_pos = source_instrument_group["positioners/xsamp"][()]
+                    y_pos = source_instrument_group["positioners/ysamp"][()]
+
+                    x_pos = format_position_value(x_pos)
+                    y_pos = format_position_value(y_pos)
+
                 elif mode == "furnace":
                     temperature = np.round(source_instrument_group["nanodacse_in1/data"][()], 0)
                     if len(temperature) > 1:
@@ -255,8 +254,8 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
 
                 target_instrument_group = target_position_group.get("instrument")
                 if mode == "wafer":
-                    target_instrument_group.create_dataset(name = "x_pos", data = format_position_value(x_pos))
-                    target_instrument_group.create_dataset(name = "y_pos", data = format_position_value(y_pos))
+                    target_instrument_group.create_dataset(name = "x_pos", data = x_pos)
+                    target_instrument_group.create_dataset(name = "y_pos", data = y_pos)
                 elif mode == "furnace":
                     target_instrument_group.create_dataset(name = "temperature", data = temperature)
 
