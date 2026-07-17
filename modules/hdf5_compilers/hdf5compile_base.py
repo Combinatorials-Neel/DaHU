@@ -30,9 +30,9 @@ def convertFloat(item):
 
 def format_position_value(position_value, decimals=2):
     position_value = float(position_value)
-    np.round(position_value, decimals)
+    position_value = np.round(position_value, decimals)
     if position_value == 0:
-        item = np.abs(0)
+        position_value  = np.abs(0)
     return position_value
 
 
