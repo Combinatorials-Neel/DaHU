@@ -201,6 +201,12 @@ def write_esrf_to_hdf5(hdf5_path, source_path, dataset_name):
                 source_instrument_group = group.get("instrument")
                 source_measurement_group = group.get("measurement")
 
+                end_reason = group["end_reason"][()].decode()
+
+                if  end_reason!= "SUCCESS":
+                    print(f"{name} has end reason {end_reason}, skipping")
+                    continue
+
                 if mode == "wafer":
                     x_pos = source_instrument_group["positioners/xsamp"][()]
                     y_pos = source_instrument_group["positioners/ysamp"][()]
