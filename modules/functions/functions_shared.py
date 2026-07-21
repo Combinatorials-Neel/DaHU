@@ -12,6 +12,7 @@ from scipy.stats import linregress
 from io import StringIO
 import json
 
+COLORSCALE = "plasma"
 
 # Decorator function to check conditions before executing callbacks, preventing errors
 def check_conditions(conditions_function, hdf5_path_index):
@@ -305,7 +306,7 @@ def make_heatmap_from_dataframe(
     plot_title="",
     colorbar_title="",
     masking=False,
-    colorscale="Plasma",
+    colorscale=COLORSCALE,
     scaling=1,
 ):
     if values is None:

@@ -215,7 +215,7 @@ def xrd_plot_xrdimage_from_array(array, z_min, z_max):
     fig = go.Figure(
         data=go.Heatmap(
             z=array,
-            colorscale="Plasma",
+            colorscale=COLORSCALE,
             colorbar=colorbar_layout(z_min, z_max, precision=0, title="count"),
         )
     )
@@ -246,7 +246,7 @@ def xrd_plot_esrfimage_from_array(array, z_min, z_max):
     fig = go.Figure(
         data=go.Heatmap(
             z=array,
-            colorscale="Plasma",
+            colorscale=COLORSCALE,
             colorbar=colorbar_layout(z_min, z_max, precision=0, title="count"),
         )
     )
