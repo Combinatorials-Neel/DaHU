@@ -312,7 +312,7 @@ def xrd_export_spectra_to_files(xrd_group, export_path, save_image=False):
 
         elif dataset_type == "xrd_furnace":
             temperature = np.round(position_group["instrument/nanodacse_in1/data"][()][0], 0)
-            filename = f"T{str(temperature)}C"
+            filename = f"{str(index).replace(".", ",")}_T{str(temperature)}C"
 
         file_path = (export_folder / filename).with_suffix(".xy")
         print(file_path)
