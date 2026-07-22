@@ -21,10 +21,7 @@ def xrd_conditions(hdf5_path, *args, **kwargs):
     if not h5py.is_hdf5(hdf5_path):
         return False
     with h5py.File(hdf5_path, "r") as hdf5_file:
-        dataset_list = []
-        dataset_list = dataset_list + get_hdf5_datasets(hdf5_file, dataset_type="xrd")
-        dataset_list = dataset_list + get_hdf5_datasets(hdf5_file, dataset_type="xrd_wafer")
-        dataset_list = dataset_list + get_hdf5_datasets(hdf5_file, dataset_type="xrd_furnace")
+        dataset_list = get_hdf5_datasets(hdf5_file, dataset_type="xrd")
         if len(dataset_list) == 0:
             return False
     return True
@@ -295,6 +292,7 @@ def xrd_export_spectra_to_files(xrd_group, export_path, save_image=False):
     dataset_name = str(xrd_group.name)[1:]
     sample_name = xrd_group["experiment_info/sample/sample_name"][()].decode()
     positions_group = xrd_group["positions"]
+    dataset_type = xrd_group.attrs["HT_type"]
 
     export_folder = export_path / dataset_name
     if not os.path.exists(export_folder):
@@ -304,10 +302,16 @@ def xrd_export_spectra_to_files(xrd_group, export_path, save_image=False):
 
     for position, position_group in positions_group.items():
         index = position_group.attrs["index"]
-        x_pos = position_group["instrument/x_pos"][()]
-        y_pos = position_group["instrument/y_pos"][()]
 
-        filename = f"x{str(x_pos).replace(".", ",")}_y{str(y_pos).replace(".", ",")}"
+        if dataset_type == "xrd_wafer":
+            x_pos = position_group["instrument/x_pos"][()]
+            y_pos = position_group["instrument/y_pos"][()]
+            filename = f"x{str(x_pos).replace(".", ",")}_y{str(y_pos).replace(".", ",")}"
+
+        elif dataset_type == "xrd_furnace":
+            temperature = np.round(position_group["instrument/nanodacse_in1/data"][()][0], 0)
+            filename = f"T{str(temperature)}C"
+
         file_path = (export_folder / filename).with_suffix(".xy")
         print(file_path)
 
@@ -318,8 +322,11 @@ def xrd_export_spectra_to_files(xrd_group, export_path, save_image=False):
         with open(file_path, "w") as export_file:
             export_file.write(f"#sample_name: {sample_name}\n")
             export_file.write(f"#dataset_name: {dataset_name}\n")
-            export_file.write(f"#x_pos: {x_pos}\n")
-            export_file.write(f"#y_pos: {y_pos}\n")
+            if dataset_type == "xrd_wafer":
+                export_file.write(f"#x_pos: {x_pos}\n")
+                export_file.write(f"#y_pos: {y_pos}\n")
+            elif dataset_type == "xrd_furnace":
+                export_file.write(f"#temperature (C): {temperature}\n")
             export_file.write(f"#index: {index}\n")
             export_file.write(f"tth\tcounts\n")
 
