@@ -280,10 +280,12 @@ def xrd_export_sum_spectrum(positions_group, export_path, sample_name=None, data
             counts_array = counts_array + position_group["measurement/integrated/counts"][()]
 
     with open(export_path/"sum.xy", "w") as export_file:
+        export_file.write(f"#sample_name: {sample_name}\n")
+        export_file.write(f"#dataset_name: {dataset_name}\n")
+        export_file.write(f"#index: sum_file\n")
         for x, y in zip(tth_array, counts_array):
-            export_file.write(f"#sample_name: {sample_name}\n")
-            export_file.write(f"#dataset_name: {dataset_name}\n")
-            export_file.write(f"#index: sum_file\n")
+            export_file.write(f"{x}\t{y}\n")
+
 
     return True
 
