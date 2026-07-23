@@ -12,7 +12,9 @@ from scipy.stats import linregress
 from io import StringIO
 import json
 
-COLORSCALE = "plasma"
+COLORSCALE = "YlGn"
+FONT = "DejaVu Sans"
+FONT_COLOR = "#132440"
 
 # Decorator function to check conditions before executing callbacks, preventing errors
 def check_conditions(conditions_function, hdf5_path_index):
@@ -142,11 +144,26 @@ def heatmap_layout(title=""):
         go.Layout(): layout object that can be passed to a figure
     """
     layout = go.Layout(
-        title=dict(text=title, font=dict(size=24)),
+        title=dict(
+            text=title,
+            font=dict(
+                family=FONT,
+                size=24,
+                color=FONT_COLOR
+            )
+        ),
         xaxis=dict(
             title="X (mm)",
-            tickfont=dict(size=28),
-            title_font=dict(size=20),
+            tickfont=dict(
+                family=FONT,
+                size=28,
+                color=FONT_COLOR
+            ),
+            title_font=dict(
+                family=FONT,
+                size=20,
+                color=FONT_COLOR
+            ),
             range=[-43, 43],
             tickmode="linear",
             tick0=-40,
@@ -154,8 +171,16 @@ def heatmap_layout(title=""):
         ),
         yaxis=dict(
             title="Y (mm)",
-            tickfont=dict(size=28),
-            title_font=dict(size=20),
+            tickfont=dict(
+                family=FONT,
+                size=28,
+                color=FONT_COLOR
+            ),
+            title_font=dict(
+                family=FONT,
+                size=20,
+                color=FONT_COLOR
+            ),
             range=[-43, 43],
             tickmode="linear",
             tick0=-40,
@@ -182,14 +207,37 @@ def plot_layout(title="", showlegend=False):
     layout = go.Layout(
         height=750,
         width=1100,
-        title=dict(text=title, font=dict(size=24)),
+        title=dict(
+            text=title,
+            font=dict(
+                family=FONT,
+                size=28,
+                color=FONT_COLOR
+            ),
+        ),
         xaxis=dict(
-            tickfont=dict(size=18),
-            title_font=dict(size=20),
+            tickfont=dict(
+                family=FONT,
+                size=24,
+                color=FONT_COLOR
+            ),
+            title_font=dict(
+                family=FONT,
+                size=22,
+                color=FONT_COLOR
+            ),
         ),
         yaxis=dict(
-            tickfont=dict(size=18),
-            title_font=dict(size=20),
+            tickfont=dict(
+                family=FONT,
+                size=24,
+                color=FONT_COLOR
+            ),
+            title_font=dict(
+                family=FONT,
+                size=22,
+                color=FONT_COLOR
+            ),
         ),
         showlegend=showlegend,
     )
@@ -211,8 +259,19 @@ def colorbar_layout(z_min, z_max, precision=0, title=""):
     """
     z_mid = (z_min + z_max) / 2
     colorbar = dict(
-        title=dict(text=f"{title} <br>&nbsp;<br>", font=dict(size=20)),
-        tickfont=dict(size=28),
+        title=dict(
+            text=f"{title} <br>&nbsp;<br>",
+            font=dict(
+                family=FONT,
+                size=20,
+                color=FONT_COLOR
+            ),
+        ),
+        tickfont=dict(
+            family=FONT,
+            size=28,
+            color=FONT_COLOR
+        ),
         tickvals=[
             z_min,
             (z_min + z_mid) / 2,
