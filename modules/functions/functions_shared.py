@@ -12,7 +12,7 @@ from scipy.stats import linregress
 from io import StringIO
 import json
 
-COLORSCALE = "YlGn"
+COLORSCALE = "plasma"
 FONT = "DejaVu Sans"
 FONT_COLOR = "#132440"
 
