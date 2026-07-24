@@ -7,7 +7,7 @@ name = "combinatorials_app"
 version = "0.5"
 description = "High throughput data vizualisation and treatment with interactive interface"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.12"
 license = { file = "LICENSE" }
 
 authors = [{ name = "William Rigaut" }, { name = "Pierre Le Berre" }]
@@ -40,6 +40,11 @@ dependencies = [
     "setuptools~=75.8.0",
     "dash-bootstrap-components~=1.7.1",
     "h5py~=3.12.1",
+    "dash_uploader~=0.6.1",
+    "pillow~=11.1.0",
+    "pyFAI~=2025.3.0",
+    "dash_daq~=0.6.0",
+    "stringcase~=1.2.0"
 ]
 
 [project.optional-dependencies]
