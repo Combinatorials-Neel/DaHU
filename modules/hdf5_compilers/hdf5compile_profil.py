@@ -160,10 +160,10 @@ def write_dektak_reference_results_to_hdf5(position_group):
     results_group = position_group.get("results")
     measured_thickness = results_group["measured_thickness"][()]
 
-    results_group["sample_thickness"] = measured_thickness * ratio
+    results_group["sample_thickness"][()] = measured_thickness * ratio
     results_group["sample_thickness"].attrs["units"] = "nm"
 
-    results_group["ratio"] = ratio
+    results_group["ratio"][()] = ratio
 
 
 def update_dektak_hdf5(dektak_group):

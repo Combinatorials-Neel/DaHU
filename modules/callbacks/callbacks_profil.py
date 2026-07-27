@@ -205,6 +205,14 @@ def callbacks_profil(app):
         n_clicks, fit_mode, nb_steps, x0, hdf5_path, selected_dataset, target_position
     ):
         if n_clicks > 0:
+            if fit_mode == "Scale measurement":
+                with h5py.File(hdf5_path, "a") as hdf5_file:
+                    profil_group = hdf5_file[selected_dataset]
+                    positions_group = get_positions_group(profil_group)
+                    for position, position_group in positions_group.items():
+                        write_dektak_reference_results_to_hdf5(position_group)
+                return "Successfully rescaled data"
+
             if fit_mode == "Batch fitting":
                 with h5py.File(hdf5_path, "a") as hdf5_file:
                     profil_group = hdf5_file[selected_dataset]
@@ -216,7 +224,6 @@ def callbacks_profil(app):
                         write_dektak_results_to_hdf5(
                             position_group, results_dict, overwrite=True
                         )
-
                 return "Successfully refitted data"
 
             if fit_mode == "Spot fitting":

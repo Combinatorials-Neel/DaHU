@@ -180,7 +180,7 @@ def profil_spot_fit_steps(position_group, nb_steps, x0):
 
 
 def profil_make_results_dataframe_from_hdf5(profil_group):
-    valid_results = ["measured_thickness"]
+    valid_results = ["measured_thickness", "sample_thickness"]
     data_dict_list = []
     positions_group = get_positions_group(profil_group)
 

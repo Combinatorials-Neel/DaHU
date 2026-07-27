@@ -81,7 +81,7 @@ def profil_top_right_card():
         dbc.CardBody([
             dbc.Row([
                 dbc.Col([html.Label("Select mode"),
-                        dbc.Select(id="profil_select_fit_mode", options=["Spot fitting", "Batch fitting", "Manual"],
+                        dbc.Select(id="profil_select_fit_mode", options=["Spot fitting", "Batch fitting", "Manual", "Scale measurement"],
                                    value="Spot fitting"),]),
                 dbc.Col(id="profil_fit_inputs", children=[]),
                 dbc.Col([dbc.Button(children="Go", id="profil_fit_button", className="long-item", n_clicks=0)]),
