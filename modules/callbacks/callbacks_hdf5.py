@@ -480,7 +480,7 @@ def callbacks_hdf5(app):
                     placeholder="Dataset Name",
                     value=None,
                 ),
-                html.Label("Annealing temperature"),
+                html.Label("Annealing temperature (°C)"),
                 dcc.Input(
                     id="hdf5_manual_1",
                     className="long-item",
