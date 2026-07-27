@@ -216,6 +216,7 @@ def callbacks_profil(app):
                         write_dektak_results_to_hdf5(
                             position_group, results_dict, overwrite=True
                         )
+
                 return "Successfully refitted data"
 
             if fit_mode == "Spot fitting":

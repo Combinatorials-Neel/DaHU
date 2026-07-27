@@ -140,7 +140,30 @@ def write_dektak_results_to_hdf5(position_group, results_dict, overwrite=True):
         for key, result in results_dict.items():
             results[key] = result
         results["measured_thickness"].attrs["units"] = "nm"
+
+    write_dektak_reference_results_to_hdf5(position_group)
+
     return None
+
+
+def write_dektak_reference_results_to_hdf5(position_group):
+    measurement_sample_group = position_group.parent.parent["experiment_info/sample"]
+    measurement_active_layer_group = return_active_layer_group(measurement_sample_group)
+    measurement_sample_time = measurement_active_layer_group["time"][()]
+
+    current_sample_group = position_group.parent.parent.parent["sample"]
+    current_active_layer_group = return_active_layer_group(current_sample_group)
+    current_sample_time = current_active_layer_group["time"][()]
+
+    ratio = current_sample_time / measurement_sample_time
+
+    results_group = position_group.get("results")
+    measured_thickness = results_group["measured_thickness"][()]
+
+    results_group["sample_thickness"] = measured_thickness * ratio
+    results_group["sample_thickness"].attrs["units"] = "nm"
+
+    results_group["ratio"] = ratio
 
 
 def update_dektak_hdf5(dektak_group):

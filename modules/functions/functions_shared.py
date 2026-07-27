@@ -498,3 +498,12 @@ def make_exports_folder(path):
         os.makedirs(export_path)
 
     return export_path
+
+
+def return_active_layer_group(sample_group):
+    for name, group in sample_group.items():
+        if "layer" in name:
+            if group["type"][()].decode("utf-8") == "active":
+                return group
+    else:
+        raise KeyError(f"Failed to find active layer in {sample_group}")
