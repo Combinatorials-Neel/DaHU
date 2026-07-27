@@ -1,4 +1,6 @@
 import zipfile
+
+import numpy as np
 from dash import html, dcc, Input, Output, State, ctx
 
 from ..functions.functions_export import *
@@ -741,8 +743,11 @@ def callbacks_hdf5(app):
             #Set default value for comment to ensure the group is created regardless
             if not comment:
                 comment = ""
+            # Set default value for thickness in case it is not specified.
+            if not thickness:
+                thickness = np.nan
             if None in [type, element, time, thickness, temperature, power, distance, angle, comment]:
-                raise ValueError("All fields must be filled to create a new layer")
+                raise ValueError("All fields (except thickness) must be filled to create a new layer")
             with h5py.File(hdf5_path, "a") as hdf5_file:
                 sample_group = hdf5_file.get("sample")
                 #If layer group exists, overwrite the values
