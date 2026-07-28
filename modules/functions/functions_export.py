@@ -3,6 +3,9 @@ from pathlib import Path
 import os
 from PIL import Image, PngImagePlugin
 import pandas as pd
+import numpy as np
+import mammos_units as mu
+import mammos_entity as me
 
 from .functions_moke import moke_read_treatment_dict_from_hdf5, moke_get_measurement_from_hdf5, moke_treat_measurement_dataframe
 from ..functions.functions_edx import edx_make_results_dataframe_from_hdf5
@@ -27,6 +30,7 @@ def hdf5_export_results_to_csv(hdf5_path):
                     df = xrd_make_results_dataframe_from_hdf5(dataset_group)
                 elif dataset_group.attrs["HT_type"] == "profil":
                     df = profil_make_results_dataframe_from_hdf5(dataset_group)
+                    #df.drop measured_thickness
                 else:
                     continue
 
@@ -38,7 +42,19 @@ def hdf5_export_results_to_csv(hdf5_path):
             else:
                 general_df = general_df.join(df, how='outer')
 
-    general_df.to_csv(hdf5_path.with_suffix(".csv"), index=True)
+        if "sample" in hdf5_file:
+            sample_group = hdf5_file["sample"]
+            if not isinstance(sample_group, h5py.Group):
+                return
+
+            sample_df = get_sample_dataframe_from_hdf5(sample_group)
+            if general_df is None:
+                return 
+            for col in sample_df.columns:
+                general_df[col] = sample_df[col].iloc[0]  # Same value for all rows
+
+    if general_df is not None:
+        general_df.to_csv(hdf5_path.with_suffix(".csv"), index=True)
 
 
 def hdf5_export_sem_images(sem_group, export_path, format="png"):
@@ -113,3 +129,49 @@ def hdf5_export_moke_loops(moke_group, export_path):
             export_file.flush()
 
 
+def get_sample_dataframe_from_hdf5(sample_group: h5py.Group) -> pd.DataFrame:
+    """
+    Extract sample metadata from the HDF5 file.
+
+    Args:
+        sample_group (h5py.Group): Group where sample metadata is located in the HDF5 file.
+
+    Returns:
+        pd.DataFrame: DataFrame with metadata columns (single row, since metadata is sample-wide).
+    """
+    metadata = {}
+
+    # Iterate through all subgroups in the sample group
+    for subgroup_name, subgroup in sample_group.items():
+        if isinstance(subgroup, h5py.Group):
+            if "HT_type" in subgroup.attrs and subgroup.attrs["HT_type"] == "annealing":
+                results_group = subgroup.get("results")
+                if isinstance(results_group, h5py.Group):
+                    if "temperature" in results_group.keys():
+                        temp = results_group["temperature"]
+                        if isinstance(temp, h5py.Dataset):
+                            metadata["annealing_temperature (°C)"] = temp[()]
+                    if "time" in results_group:
+                        time = results_group["time"]
+                        if isinstance(time, h5py.Dataset):
+                            metadata["annealing_time (s)"] = time[()]
+
+            # --- Layer metadata (e.g., layer_1, layer_2, ...) ---
+            elif subgroup_name.startswith("layer_"):
+                element = subgroup["element"][()].decode()
+
+                if "element" in subgroup and element == "NdCeFeB":
+                    if "distance" in subgroup.keys():
+                        dist = subgroup["distance"][()]
+                        metadata["target_distance (mm)"] = dist
+
+                    #if "power" in subgroup.keys():
+                    #    power = subgroup["power"][()]
+                    #    metadata["magnetron_power"] = power
+
+                    if "time" in subgroup.keys():
+                        time = subgroup["time"][()]
+                        metadata["deposition_time (s)"] = time
+
+    # Return as a single-row DataFrame (metadata is sample-wide)
+    return pd.DataFrame([metadata]) if metadata else pd.DataFrame()
