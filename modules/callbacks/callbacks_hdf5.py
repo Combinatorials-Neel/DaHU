@@ -750,7 +750,11 @@ def callbacks_hdf5(app):
                 raise ValueError("All fields (except thickness) must be filled to create a new layer")
             with h5py.File(hdf5_path, "a") as hdf5_file:
                 sample_group = hdf5_file.get("sample")
-                #If layer group exists, overwrite the values
+
+                if sample_group is None:
+                    sample_group = hdf5_file.create_group("sample")
+
+                # If layer group exists, overwrite the values
                 if f"layer_{index}" in sample_group:
                     layer_group = sample_group[f"layer_{index}"]
                     layer_group["type"][()] = type
@@ -762,8 +766,8 @@ def callbacks_hdf5(app):
                     layer_group["distance"][()] = distance
                     layer_group["angle"][()] = angle
                     layer_group["comment"][()] = comment
-                #If layer group doesn't exist, create an incrementally numbered group
-                #Create and write all datasets
+
+                # If layer group doesn't exist, create an incrementally numbered group and create datasets
                 else:
                     layer_group = create_incremental_group(sample_group, base_name="layer")
 

@@ -14,7 +14,7 @@ from ..functions.functions_xrd import xrd_make_results_dataframe_from_hdf5
 from ..functions.functions_moke import moke_make_results_dataframe_from_hdf5
 
 
-def hdf5_export_results_to_csv(hdf5_path):
+def hdf5_export_results_to_csv(hdf5_path, layer_key):
     hdf5_path = Path(hdf5_path)
     general_df = None
     with h5py.File(hdf5_path, "r") as hdf5_file:
@@ -47,7 +47,7 @@ def hdf5_export_results_to_csv(hdf5_path):
             if not isinstance(sample_group, h5py.Group):
                 return
 
-            sample_df = get_sample_dataframe_from_hdf5(sample_group)
+            sample_df = get_sample_dataframe_from_hdf5(sample_group, layer_key)
             if general_df is None:
                 return 
             for col in sample_df.columns:
@@ -129,7 +129,7 @@ def hdf5_export_moke_loops(moke_group, export_path):
             export_file.flush()
 
 
-def get_sample_dataframe_from_hdf5(sample_group: h5py.Group) -> pd.DataFrame:
+def get_sample_dataframe_from_hdf5(sample_group: h5py.Group, layer_key: str) -> pd.DataFrame:
     """
     Extract sample metadata from the HDF5 file.
 
@@ -160,7 +160,7 @@ def get_sample_dataframe_from_hdf5(sample_group: h5py.Group) -> pd.DataFrame:
             elif subgroup_name.startswith("layer_"):
                 element = subgroup["element"][()].decode()
 
-                if "element" in subgroup and element == "NdCeFeB":
+                if "element" in subgroup and element == layer_key:
                     if "distance" in subgroup.keys():
                         dist = subgroup["distance"][()]
                         metadata["target_distance (mm)"] = dist
