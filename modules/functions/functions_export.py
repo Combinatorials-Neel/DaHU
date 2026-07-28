@@ -3,9 +3,6 @@ from pathlib import Path
 import os
 from PIL import Image, PngImagePlugin
 import pandas as pd
-import numpy as np
-import mammos_units as mu
-import mammos_entity as me
 
 from .functions_moke import moke_read_treatment_dict_from_hdf5, moke_get_measurement_from_hdf5, moke_treat_measurement_dataframe
 from ..functions.functions_edx import edx_make_results_dataframe_from_hdf5
