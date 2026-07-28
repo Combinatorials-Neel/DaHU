@@ -559,3 +559,13 @@ def xrd_write_integrated_to_hdf5(position_group, reintegrated_dict, overwrite=Tr
 
     instrument_group.create_dataset("program", data="pyFAI")
     instrument_group.create_dataset("version", data=reintegrated_dict["version"])
+
+
+def get_index_from_xy_file(xy_filepath):
+    with open(xy_filepath, 'r') as file:
+        for line in file:
+            if line.startswith('#index'):
+                # Extract the index number
+                index = int(line.split(':')[1].strip())
+                return index
+    return None  # Return None if the index line is not found

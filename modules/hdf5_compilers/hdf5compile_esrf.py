@@ -1,7 +1,7 @@
 """
 Functions for XRD parsing (Rigaku SmartLab and ESRF NeXuS)
 """
-
+from functions.functions_xrd import get_index_from_xy_file
 from ..functions.functions_shared import *
 from ..functions.functions_xrd import xrd_q_tth
 from ..hdf5_compilers.hdf5compile_base import *
@@ -383,13 +383,14 @@ def write_xrd_results_to_hdf5(hdf5_path, results_folderpath, target_dataset):
 
         for lst_filepath in safe_rglob(results_folderpath, pattern="*.lst"):
             dia_filepath = lst_filepath.with_suffix(".dia")
-            file_index = str(lst_filepath.stem).split("_")[-1]
+            xy_filepath = lst_filepath.with_suffix(".xy")
+            file_index = str(get_index_from_xy_file(xy_filepath))
             positions_group = get_positions_group(target_group)
             for name, group in positions_group.items():
                 if name == "alignment_scans":
                     continue
                 else:
-                    if group.attrs["index"].split(".")[0] == file_index:
+                    if group.attrs["index"] == file_index:
                         r_coeffs, global_params, phases = get_results_from_refinement(
                             lst_filepath
                         )
