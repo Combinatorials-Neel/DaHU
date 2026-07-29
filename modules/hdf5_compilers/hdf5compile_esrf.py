@@ -1,9 +1,8 @@
 """
 Functions for XRD parsing (Rigaku SmartLab and ESRF NeXuS)
 """
-from functions.functions_xrd import get_index_from_xy_file
 from ..functions.functions_shared import *
-from ..functions.functions_xrd import xrd_q_tth
+from ..functions.functions_xrd import *
 from ..hdf5_compilers.hdf5compile_base import *
 
 ESRF_WRITER_VERSION = "0.9"

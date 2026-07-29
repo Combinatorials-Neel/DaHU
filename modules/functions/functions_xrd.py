@@ -10,7 +10,7 @@ from fabio import dtrekimage
 import pyFAI
 from scipy.signal import find_peaks
 
-from ..hdf5_compilers.hdf5compile_base import rename_group
+from ..hdf5_compilers.hdf5compile_base import *
 from ..functions.functions_shared import *
 from ..functions.functions_hdf5 import *
 
