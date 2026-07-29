@@ -566,6 +566,6 @@ def get_index_from_xy_file(xy_filepath):
         for line in file:
             if line.startswith('#index'):
                 # Extract the index number
-                index = int(line.split(':')[1].strip())
+                index = line.split(':')[1].strip()
                 return index
     return None  # Return None if the index line is not found
