@@ -384,6 +384,8 @@ def write_xrd_results_to_hdf5(hdf5_path, results_folderpath, target_dataset):
             dia_filepath = lst_filepath.with_suffix(".dia")
             xy_filepath = lst_filepath.with_suffix(".xy")
             file_index = str(get_index_from_xy_file(xy_filepath))
+            if file_index == "sum_file":
+                continue
             positions_group = get_positions_group(target_group)
             for name, group in positions_group.items():
                 if name == "alignment_scans":
