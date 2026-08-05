@@ -11,7 +11,7 @@ from ..functions.functions_xrd import xrd_make_results_dataframe_from_hdf5
 from ..functions.functions_moke import moke_make_results_dataframe_from_hdf5
 
 
-def hdf5_export_results_to_csv(hdf5_path, layer_key):
+def hdf5_export_results_to_csv(hdf5_path):
     hdf5_path = Path(hdf5_path)
     general_df = None
     with h5py.File(hdf5_path, "r") as hdf5_file:
@@ -27,7 +27,6 @@ def hdf5_export_results_to_csv(hdf5_path, layer_key):
                     df = xrd_make_results_dataframe_from_hdf5(dataset_group)
                 elif dataset_group.attrs["HT_type"] == "profil":
                     df = profil_make_results_dataframe_from_hdf5(dataset_group)
-                    #df.drop measured_thickness
                 else:
                     continue
 
@@ -39,16 +38,16 @@ def hdf5_export_results_to_csv(hdf5_path, layer_key):
             else:
                 general_df = general_df.join(df, how='outer')
 
-        if "sample" in hdf5_file:
-            sample_group = hdf5_file["sample"]
-            if not isinstance(sample_group, h5py.Group):
-                return
-
-            sample_df = get_sample_dataframe_from_hdf5(sample_group, layer_key)
-            if general_df is None:
-                return 
-            for col in sample_df.columns:
-                general_df[col] = sample_df[col].iloc[0]  # Same value for all rows
+        # if "sample" in hdf5_file:
+        #     sample_group = hdf5_file["sample"]
+        #     if not isinstance(sample_group, h5py.Group):
+        #         return
+        #
+        #     sample_df = get_sample_dataframe_from_hdf5(sample_group)
+        #     if general_df is None:
+        #         return
+        #     for col in sample_df.columns:
+        #         general_df[col] = sample_df[col].iloc[0]  # Same value for all rows
 
     if general_df is not None:
         general_df.to_csv(hdf5_path.with_suffix(".csv"), index=True)
