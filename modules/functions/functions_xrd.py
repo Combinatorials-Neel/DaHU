@@ -330,7 +330,7 @@ def xrd_export_spectra_to_files(xrd_group, export_path, save_image=False):
             elif dataset_type == "xrd_furnace":
                 export_file.write(f"#temperature (C): {temperature}\n")
             export_file.write(f"#index: {index}\n")
-            export_file.write(f"tth\tcounts\n")
+            export_file.write(f"#tth\tcounts\n")
 
             for x, y in zip(tth_array, counts_array):
                 export_file.write(f"{x}\t{y}\n")
