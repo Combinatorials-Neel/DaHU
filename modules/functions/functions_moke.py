@@ -393,7 +393,7 @@ def moke_fit_intercept(data: pd.DataFrame, treatment_dict: dict):
     y2 = pos_sat_section["magnetization"].values
     if force_flat:
         slope2 = 0
-        intercept2 = np.polyfit(x2, y2, 0)
+        intercept2 = np.polyfit(x2, y2, 0)[0]
     else:
         slope2, intercept2 = np.polyfit(x2, y2, 1)
 
@@ -401,7 +401,7 @@ def moke_fit_intercept(data: pd.DataFrame, treatment_dict: dict):
     y3 = neg_sat_section["magnetization"].values
     if force_flat:
         slope3 = 0
-        intercept3 = np.polyfit(x3, y3, 0)
+        intercept3 = np.polyfit(x3, y3, 0)[0]
     else:
         slope3, intercept3 = np.polyfit(x3, y3, 1)
 
