@@ -507,3 +507,29 @@ def return_active_layer_group(sample_group):
                 return group
     else:
         raise KeyError(f"Failed to find active layer in {sample_group}")
+
+
+
+def unit_to_symbol(unit: str) -> str:
+    """Convert a fully spelled-out unit (case-insensitive) to its symbol.
+    Raises ValueError for unknown units."""
+
+    unit_symbols = {
+        # Length
+        "nanometer": "nm", "micrometer": "µm", "millimeter": "mm",
+        "centimeter": "cm", "decimeter": "dm", "meter": "m",
+        "inch": "in", "inches": "in",
+        # Mass
+        "milligram": "mg", "centigram": "cg", "gram": "g",
+        "kilogram": "kg",
+        # Time
+        "millisecond": "ms", "second": "s", "minute": "min",
+        "hour": "h", "hours": "h",
+        # Angles
+        "degree": "deg", "degrees": "deg", "radians": "rad",
+    }
+
+    key = unit.strip().lower()
+    if key not in unit_symbols:
+        raise ValueError(f"Unknown unit: {unit!r}")
+    return unit_symbols[key]

@@ -4,12 +4,50 @@ Functions for DEKTAK parsing
 
 from ..functions.functions_shared import *
 from ..hdf5_compilers.hdf5compile_base import *
+import mammos_units as mu
 
-PROFIL_WRITER_VERSION = "0.9"
+PROFIL_WRITER_VERSION = "0.91"
+
+def get_units_profil(key):
+    """
+    Returns the unit of measurement for a given key.
+
+    Parameters
+    ----------
+    key : str
+        The key to look up in the dictionary.
+
+    Returns
+    -------
+    str or None
+        The unit of measurement associated with the key, or None if key is not found in the dictionary.
+    """
+
+    dict_units = {
+        "DataScale_um" : "um",
+        "ScanRes_um": "um",
+    }
+
+    if key in dict_units.keys():
+        return dict_units[key]
+    return None
+
+
+def split_value_unit_profil(entry):
+    """
+    Some profilometry header entries are str type formatted as "[value] [unit]"
+    This functions takes the full header entry as an input and gives out a value, unit tuple, with value as a float and unit as a str.
+    """
+    value = float(entry.split(" ")[0])
+    unit = str(entry.split(" ")[1])
+    unit_symbol = unit_to_symbol(unit)
+    return value, unit_symbol
 
 
 def read_header_from_dektak(file_path):
     header_dict = {}
+    unit = None
+    keys_with_units = ["DataScale", "EstimatedMeasure", "ScanDuration", "ScanLength", "ScanResolution", "ScanSpeed", "StylusForce", "StylusScanRange", "Theta Axis", "X Axis", "Y Axis"]
 
     with open(file_path, "r") as file:
         lines = file.readlines()
@@ -19,8 +57,16 @@ def read_header_from_dektak(file_path):
         key, value = split[0], split[-1]
         if key == "TargetName":
             value = f"({split[-2].strip('(')},{split[-1].strip(')')})"
+        if key in keys_with_units:
+            value, unit = split_value_unit_profil(value)
+            # Handle inches to metric
+            if unit == "in":
+                value = value * 2.54
+                unit = "cm"
+            value = value * mu.Unit(unit)
         header_dict[key] = value
     del header_dict["FullFilename"]
+
     return header_dict
 
 
@@ -94,13 +140,14 @@ def write_dektak_to_hdf5(hdf5_path, source_path, dataset_name=None, mode="a"):
             position_group.attrs["ignored"] = False
 
             # Instrument group for metadata
-            instrument = position_group.create_group("instrument")
-            instrument["x_pos"] = x_pos
-            instrument["y_pos"] = y_pos
-            instrument["x_pos"].attrs["units"] = "mm"
-            instrument["y_pos"].attrs["units"] = "mm"
+            instrument_group = position_group.create_group("instrument")
+            instrument_group["x_pos"] = x_pos
+            instrument_group["y_pos"] = y_pos
+            instrument_group["x_pos"].attrs["units"] = "mm"
+            instrument_group["y_pos"].attrs["units"] = "mm"
 
-            set_instrument_from_dict(header_dict, instrument)
+            print(header_dict)
+            save_dict_to_hdf5(instrument_group, header_dict)
 
             # Measurement group for data
             data = position_group.create_group("measurement")
