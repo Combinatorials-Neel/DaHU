@@ -7,7 +7,7 @@ import stringcase
 from ..functions.functions_moke import *
 from ..hdf5_compilers.hdf5compile_base import *
 
-MOKE_WRITER_VERSION = '0.9'
+MOKE_WRITER_VERSION = '0.91'
 
 moke_dict = {
 

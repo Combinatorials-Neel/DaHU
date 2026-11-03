@@ -313,6 +313,9 @@ def write_edx_to_hdf5(hdf5_path, source_path, dataset_name=None):
             x_pos = format_position_value(wafer_positions[0])
             y_pos = format_position_value(wafer_positions[1])
 
+            if np.abs(x_pos) + np.abs(y_pos) > 60: #skip positions outside of wafer
+                continue
+
             position_group = positions_group.create_group(
                 f"({x_pos},{y_pos})"
             )

@@ -146,7 +146,6 @@ def write_dektak_to_hdf5(hdf5_path, source_path, dataset_name=None, mode="a"):
             instrument_group["x_pos"].attrs["units"] = "mm"
             instrument_group["y_pos"].attrs["units"] = "mm"
 
-            print(header_dict)
             save_dict_to_hdf5(instrument_group, header_dict)
 
             # Measurement group for data

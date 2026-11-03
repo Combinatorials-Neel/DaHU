@@ -64,23 +64,20 @@ def save_dict_to_hdf5(hdf5_group, results_dict: dict):
         If the dictionary is a key:dict, create a group and recurse
     """
     for key, value in results_dict.items():
-        print(key, value)
-        print(type(value))
         if isinstance(value, dict):
             # Create a group and recurse
             subgroup = hdf5_group.create_group(key)
             save_dict_to_hdf5(subgroup, value)
         else:
             #mu.Quantity is subclass of np.ndarray, so the negative check is needed
-            if not isinstance(value, mu.Quantity) and isinstance(value, (int, float, str, np.ndarray, list, tuple)):
+            if not isinstance(value, mu.Quantity) and isinstance(value, (int, float, np.ndarray, list, tuple)):
                 hdf5_group.create_dataset(key, data=value)
             elif isinstance(value, mu.Quantity):
-                print(value.unit.to_string())
                 node = hdf5_group.create_dataset(key, data=value.value, dtype=float)
                 node.attrs["unit"] = value.unit.to_string()
             else:
                 # Fallback: store as string representation
-                hdf5_group.create_dataset(key, data=str(value))
+                hdf5_group.create_dataset(key, data=str(value), dtype=h5py.string_dtype("utf-8"))
 
 
 def check_group_for_results(hdf5_group):
