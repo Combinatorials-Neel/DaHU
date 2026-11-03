@@ -48,6 +48,7 @@ def callbacks_browser(app):
                 filepath = Path(file)
                 full_path = os.path.join(cwd, filepath.as_posix())
                 is_dir = Path(full_path).is_dir()
+
                 link = html.A(
                     [
                         html.Span(
@@ -70,7 +71,7 @@ def callbacks_browser(app):
                         height=25,
                     )
                 else:
-                    details["extension"] = icon_file(app, details["extension"][1:])
+                    details["extension"] = None
                 all_file_details.append(details)
 
         df = pd.DataFrame(all_file_details)
