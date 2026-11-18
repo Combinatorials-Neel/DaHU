@@ -15,5 +15,6 @@ stringcase
 pyFAI
 dash_daq
 scikit-learn
+mammos_units
 ./modules/
 modules~=0.1

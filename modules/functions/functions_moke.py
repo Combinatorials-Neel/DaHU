@@ -272,32 +272,6 @@ def moke_calc_reflectivity(data: pd.DataFrame):
         raise NameError("reflectivity column not defined")
 
 
-def moke_calc_derivative_coercivity(data: pd.DataFrame):
-    """
-    From a dataframe, return the field values for the extremes of dM/dH
-
-    Parameters:
-       data(pd.Dataframe) : source dataframe with a 'field' and 'magnetization' column
-
-    Returns:
-       float, float
-    """
-    data = derivate_dataframe(data, "magnetization")
-    data.loc[np.abs(data["field"]) < 2e-3, "derivative"] = (
-        0  # Avoid derivative discrepancies around 0 field
-    )
-
-    # For positive / negative field, find index of maximum / minimum derivative and extract corresponding field
-    coercivity_positive = data.loc[
-        data.loc[data["field"] > 0, "derivative"].idxmax(skipna=True), "field"
-    ]
-    coercivity_negative = data.loc[
-        data.loc[data["field"] < 0, "derivative"].idxmin(skipna=True), "field"
-    ]
-
-    return coercivity_positive, coercivity_negative
-
-
 def moke_calc_mzero_coercivity(data: pd.DataFrame, threshold=8.0e-3):
     """
     From a dataframe, return the field values where magnetization is closest to 0
@@ -359,7 +333,7 @@ def moke_fit_intercept(data: pd.DataFrame, treatment_dict: dict):
     pulse_voltage = float(treatment_dict["pulse_voltage"])
     max_field = coil_factor / 100 * pulse_voltage
 
-    sat_field = 1.75  # Should be a data treatment variable, WIP
+    sat_field = 2.1  # Should be a data treatment variable, WIP
 
     Hmin = 0.1
     Hmax = sat_field - 0.25
@@ -454,7 +428,6 @@ def moke_batch_fit(moke_group, treatment_dict):
         max_kerr_rotation = moke_calc_max_kerr_rotation(measurement_dataframe)
         reflectivity = moke_calc_reflectivity(measurement_dataframe)
         coercivity_m0 = list(moke_calc_mzero_coercivity(measurement_dataframe))
-        coercivity_dmdh = list(moke_calc_derivative_coercivity(measurement_dataframe))
         intercepts = list(moke_fit_intercept(measurement_dataframe, treatment_dict))
         remanence = list(moke_calc_remanence(measurement_dataframe))
 
@@ -465,11 +438,6 @@ def moke_batch_fit(moke_group, treatment_dict):
                 "positive": coercivity_m0[0],
                 "negative": coercivity_m0[1],
                 "mean": abs_mean(coercivity_m0),
-            },
-            "coercivity_dmdh": {
-                "positive": coercivity_dmdh[0],
-                "negative": coercivity_dmdh[1],
-                "mean": abs_mean(coercivity_dmdh),
             },
             "intercept_field": {
                 "positive": intercepts[0],

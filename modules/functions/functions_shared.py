@@ -456,7 +456,6 @@ def remove_zero_columns(df):
     df = df.loc[:, (df != 0).any(axis=0)]
     return df
 
-
 def extract_value_unit(str):
     """
     Use regex to extract values and units from a string, provided the format is 'value(unit)'
